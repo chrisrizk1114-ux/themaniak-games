@@ -1,0 +1,55 @@
+FREE CLOUD DATABASE — The Maniak (themaniak.online)
+====================================================
+
+Your PC already has PHP MySQL (pdo_mysql). Use Aiven free MySQL — no credit card.
+
+OPTION A — Aiven free MySQL (recommended)
+-----------------------------------------
+1. Sign up: https://console.aiven.io/signup
+2. Create service → MySQL → Free plan → pick a region near you → Create
+3. Wait until status is "Running" (2–5 minutes)
+4. Open the service → tab "Overview" → "Connection information"
+5. Copy:
+   - Host (e.g. themaniak-xxxxx.a.aivencloud.com)
+   - Port (e.g. 12345)
+   - User (usually avnadmin)
+   - Password (click show / copy)
+   - Database name (usually defaultdb)
+6. Download "CA certificate" → save as:
+   my-laravel-app/database/ssl/ca.pem
+7. Edit my-laravel-app/.env — replace SQLite block with values from .env.cloud.example
+8. Run from my-laravel-app folder:
+   php database/setup-cloud-db.php
+
+That script tests the connection and runs migrations (users, friends, sessions, cache).
+
+OPTION B — Supabase PostgreSQL
+------------------------------
+Only if you enable PostgreSQL in PHP (see below).
+1. https://supabase.com → New project → set a DB password
+2. Settings → Database → Connection string → URI (Session mode)
+3. In .env:
+   DB_CONNECTION=pgsql
+   DB_HOST=db.xxxxx.supabase.co
+   DB_PORT=5432
+   DB_DATABASE=postgres
+   DB_USERNAME=postgres
+   DB_PASSWORD=your-password
+   DB_SSLMODE=require
+4. Enable in XAMPP php.ini (C:\xamppp1\php\php.ini):
+   extension=pdo_pgsql
+   extension=pgsql
+   Restart Apache, then: php database/setup-cloud-db.php
+
+TROUBLESHOOTING
+---------------
+- "could not find driver" → enable pdo_mysql (MySQL) or pdo_pgsql (Postgres) in php.ini
+- SSL error on Aiven → ensure database/ssl/ca.pem exists and MYSQL_ATTR_SSL_CA path is correct
+- Connection timeout → check Aiven allows your IP (free tier usually allows all)
+- After changing .env run: php artisan config:clear
+
+LOCAL vs CLOUD
+--------------
+Keep SQLite for offline dev, or switch .env fully to cloud so phone + themaniak.online share one database.
+
+Production (themaniak.online): use the SAME cloud DB credentials in deploy/env.production

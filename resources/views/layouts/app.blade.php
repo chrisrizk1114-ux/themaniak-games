@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#050510">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="description" content="The Maniak — free browser games at themaniak.online. Bowling, cards, chess, arcade & more.">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <title>@yield('title', config('app.name')) — themaniak.online</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="{{ asset('js/game-sounds.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', Arial, sans-serif;
+            background: linear-gradient(165deg, #050510 0%, #0c0c22 45%, #080818 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        /* ── Navbar ── */
+        .nav-bar {
+            --nav-h: 76px;
+            position: sticky;
+            top: 0;
+            z-index: 2000;
+            height: var(--nav-h);
+            overflow: visible;
+            background: rgba(5, 8, 20, 0.82);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.35), 0 0 40px rgba(0,240,255,0.04);
+        }
+
+        .nav-bar::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f0ff, #ff2d6a, #ffd54a, transparent);
+            opacity: 0.65;
+        }
+
+        .nav-inner {
+            max-width: 1320px;
+            height: 100%;
+            margin: 0 auto;
+            padding: 0 clamp(1rem, 3vw, 2rem);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .nav-logo-icon {
+            font-size: 1.65rem;
+            filter: drop-shadow(0 0 10px rgba(255,45,106,0.5));
+            animation: logo-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logo-pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.08) rotate(-4deg); }
+        }
+
+        .nav-logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1rem, 2.5vw, 1.35rem);
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            background: linear-gradient(90deg, #00f0ff, #fff, #ff2d6a);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: logo-shimmer 5s linear infinite;
+        }
+
+        @keyframes logo-shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .nav-toggle {
+            display: none;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #fff;
+            font-size: 1.35rem;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .nav-toggle:hover {
+            border-color: rgba(0,240,255,0.4);
+            background: rgba(0,240,255,0.08);
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: clamp(0.25rem, 1.5vw, 0.5rem);
+            list-style: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: rgba(255,255,255,0.75);
+            text-decoration: none;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.45rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+            background: none;
+            cursor: pointer;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #fff;
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .nav-link.active {
+            border-color: rgba(0,240,255,0.35);
+            box-shadow: 0 0 16px rgba(0,240,255,0.12);
+        }
+
+        .nav-link--games .nav-chevron {
+            font-size: 0.65rem;
+            opacity: 0.6;
+            transition: transform 0.25s;
+        }
+
+        .nav-dropdown-wrap.open .nav-chevron,
+        .nav-dropdown-wrap:hover .nav-chevron {
+            transform: rotate(180deg);
+        }
+
+        .nav-cta {
+            margin-left: 0.35rem;
+            padding: 0.5rem 1.15rem !important;
+            background: linear-gradient(135deg, #ff2d6a, #a855f7) !important;
+            border-color: rgba(255,255,255,0.15) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 18px rgba(255,45,106,0.35);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(255,45,106,0.45) !important;
+            background: linear-gradient(135deg, #ff4080, #b86ef7) !important;
+        }
+
+        .nav-link--auth {
+            border-color: rgba(0,240,255,0.18);
+            color: rgba(255,255,255,0.85);
+        }
+
+        .nav-link--auth:hover {
+            border-color: rgba(0,240,255,0.35);
+            color: #fff;
+        }
+
+        .nav-link--signup {
+            background: rgba(168,85,247,0.15) !important;
+            border-color: rgba(168,85,247,0.35) !important;
+            color: #fff !important;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.75rem 0.35rem 0.45rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .nav-user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #fff;
+            background: linear-gradient(135deg, #00f0ff, #a855f7);
+        }
+
+        .nav-user-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            max-width: 110px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-logout-form {
+            margin: 0;
+        }
+
+        .nav-logout-btn {
+            padding: 0.45rem 0.85rem !important;
+            font-size: 0.95rem !important;
+        }
+
+        /* Notifications */
+        .nav-notify-btn {
+            position: relative;
+            font-size: 1.15rem;
+            padding: 0.45rem 0.75rem !important;
+        }
+
+        .nav-notify-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 800;
+            line-height: 18px;
+            text-align: center;
+            box-shadow: 0 0 12px rgba(239,68,68,0.6);
+            animation: notify-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes notify-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .nav-notify-dropdown {
+            min-width: min(320px, 92vw);
+            left: auto;
+            right: 0;
+            transform: none;
+        }
+
+        .nav-notify-panel {
+            padding: 0.75rem;
+        }
+
+        .nav-notify-empty {
+            padding: 1.25rem 0.75rem;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.95rem;
+        }
+
+        .nav-notify-list {
+            display: grid;
+            gap: 0.35rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .nav-notify-item {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.65rem 0.75rem;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .nav-notify-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #fff;
+            background: linear-gradient(135deg, #ff2d6a, #a855f7);
+            flex-shrink: 0;
+        }
+
+        .nav-notify-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .nav-notify-name {
+            font-weight: 700;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        .nav-notify-msg {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.45);
+        }
+
+        .nav-notify-viewall {
+            display: block;
+            text-align: center;
+            padding: 0.65rem;
+            border-radius: 10px;
+            background: rgba(0,240,255,0.08);
+            border: 1px solid rgba(0,240,255,0.22);
+            color: #67e8f9;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .nav-notify-viewall:hover {
+            background: rgba(0,240,255,0.14);
+            color: #fff;
+        }
+
+        #notificationsDropdown.open .nav-dropdown,
+        #notificationsDropdown:hover .nav-dropdown {
+            display: block;
+        }
+
+        /* Friend request toast */
+        .friend-toast {
+            position: fixed;
+            top: calc(var(--nav-h, 76px) + 12px);
+            right: clamp(0.75rem, 3vw, 1.5rem);
+            z-index: 2500;
+            max-width: min(420px, calc(100vw - 1.5rem));
+            animation: toast-in 0.35s ease;
+        }
+
+        @keyframes toast-in {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .friend-toast-inner {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            border-radius: 16px;
+            background: rgba(8, 12, 28, 0.96);
+            border: 1px solid rgba(255,45,106,0.35);
+            box-shadow: 0 16px 50px rgba(0,0,0,0.45), 0 0 30px rgba(255,45,106,0.15);
+            backdrop-filter: blur(14px);
+        }
+
+        .friend-toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .friend-toast-text {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .friend-toast-text strong {
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        .friend-toast-text span {
+            color: rgba(255,255,255,0.55);
+            font-size: 0.88rem;
+        }
+
+        .friend-toast-btn {
+            padding: 0.45rem 0.85rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ff2d6a, #a855f7);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-decoration: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .friend-toast-close {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.45);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            flex-shrink: 0;
+        }
+
+        .friend-toast-close:hover {
+            color: #fff;
+        }
+
+        .friend-toast.hidden {
+            display: none;
+        }
+
+        /* Online / offline status */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+
+        .status-pill-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-pill--online {
+            color: #bbf7d0;
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.35);
+        }
+
+        .status-pill--online .status-pill-dot {
+            background: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+        }
+
+        .status-pill--offline {
+            color: #fecaca;
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        .status-pill--offline .status-pill-dot {
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+        }
+
+        .status-pill--self {
+            font-size: 0.78rem;
+        }
+
+        .nav-status-wrap {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-dropdown-wrap {
+            position: relative;
+        }
+
+        .nav-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            min-width: min(520px, 92vw);
+            padding-top: 8px;
+            z-index: 2100;
+        }
+
+        .nav-dropdown-panel {
+            padding: 0.85rem;
+            border-radius: 18px;
+            background: rgba(8, 12, 28, 0.96);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 40px rgba(0,240,255,0.06);
+            animation: drop-in 0.22s ease;
+        }
+
+        @keyframes drop-in {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-dropdown-wrap:hover .nav-dropdown,
+        .nav-dropdown-wrap.open .nav-dropdown {
+            display: block;
+        }
+
+        .nav-dropdown-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            padding: 0.15rem 0.5rem 0.65rem;
+        }
+
+        .nav-games-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.4rem;
+        }
+
+        .nav-game-link {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 12px;
+            text-decoration: none;
+            color: rgba(255,255,255,0.85);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-game-link:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.1);
+            transform: translateX(3px);
+        }
+
+        .nav-game-link.active {
+            background: rgba(0,240,255,0.08);
+            border-color: rgba(0,240,255,0.25);
+        }
+
+        .nav-game-icon {
+            font-size: 1.4rem;
+            width: 2rem;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .nav-game-info {
+            min-width: 0;
+        }
+
+        .nav-game-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        .nav-game-tag {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .nav-game-link--bowling:hover .nav-game-name { color: #f472b6; }
+        .nav-game-link--runner:hover .nav-game-name { color: #67e8f9; }
+        .nav-game-link--neon:hover .nav-game-name { color: #ff2d6a; }
+        .nav-game-link--snl:hover .nav-game-name { color: #4ade80; }
+        .nav-game-link--chess:hover .nav-game-name { color: #d4a853; }
+        .nav-game-link--mole:hover .nav-game-name { color: #fbbf24; }
+    .nav-game-link--uno:hover .nav-game-name { color: #ef4444; }
+    .nav-game-link--400:hover .nav-game-name { color: #22c55e; }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Mobile nav */
+        @media (max-width: 860px) {
+            .nav-toggle {
+                display: flex;
+            }
+
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: var(--nav-h);
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.35rem;
+                padding: 1rem;
+                background: rgba(5, 8, 20, 0.97);
+                backdrop-filter: blur(16px);
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            }
+
+            .nav-menu.open {
+                display: flex;
+            }
+
+            .nav-link {
+                justify-content: center;
+                padding: 0.65rem 1rem;
+            }
+
+            .nav-cta {
+                margin-left: 0;
+                text-align: center;
+                justify-content: center;
+            }
+
+            .nav-dropdown-wrap {
+                width: 100%;
+            }
+
+            .nav-dropdown {
+                position: static;
+                transform: none;
+                display: none;
+                min-width: 0;
+                width: 100%;
+                margin-top: 0;
+                padding-top: 0;
+            }
+
+            .nav-dropdown-wrap.open .nav-dropdown {
+                display: block;
+            }
+
+            .nav-games-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    @php
+        $games = [
+            ['url' => '/galaxy-bowling', 'icon' => '🎳', 'name' => 'Galaxy Bowling', 'tag' => 'Sports', 'class' => 'bowling', 'path' => 'galaxy-bowling'],
+            ['url' => '/platformer', 'icon' => '🎮', 'name' => 'Sky Runner', 'tag' => 'Action', 'class' => 'runner', 'path' => 'platformer'],
+            ['url' => '/tic-tac-toe', 'icon' => '✕○', 'name' => 'Neon Grid', 'tag' => 'Puzzle', 'class' => 'neon', 'path' => 'tic-tac-toe'],
+            ['url' => '/board-game', 'icon' => '🎲', 'name' => 'Snakes & Ladders', 'tag' => 'Board', 'class' => 'snl', 'path' => 'board-game'],
+            ['url' => '/chess', 'icon' => '♟️', 'name' => 'Royal Chess', 'tag' => 'Strategy', 'class' => 'chess', 'path' => 'chess'],
+            ['url' => '/whack-a-mole', 'icon' => '🔨', 'name' => 'Mole Mayhem', 'tag' => 'Arcade', 'class' => 'mole', 'path' => 'whack-a-mole'],
+            ['url' => '/four-hundred', 'icon' => '♥400', 'name' => 'Lebanese 400', 'tag' => 'Cards', 'class' => '400', 'path' => 'four-hundred'],
+            ['url' => '/uno', 'icon' => '🃏', 'name' => 'Cosmic UNO', 'tag' => 'Cards', 'class' => 'uno', 'path' => 'uno'],
+        ];
+    @endphp
+
+    <nav class="nav-bar">
+        <div class="nav-inner">
+            <a href="{{ url('/') }}" class="nav-logo">
+                <span class="nav-logo-icon">🎮</span>
+                <span class="nav-logo-text">{{ config('app.name') }}<small style="display:block;font-size:0.55em;letter-spacing:0.12em;opacity:0.65;font-weight:600;">themaniak.online</small></span>
+            </a>
+
+            <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle menu">☰</button>
+
+            <ul class="nav-menu" id="navMenu">
+                <li>
+                    <a href="{{ url('/') }}" class="nav-link {{ request()->is('/') ? 'active' : '' }}">🏠 Home</a>
+                </li>
+                <li class="nav-dropdown-wrap" id="gamesDropdown">
+                    <button type="button" class="nav-link nav-link--games" id="gamesToggle">
+                        🕹️ Games <span class="nav-chevron">▼</span>
+                    </button>
+                    <div class="nav-dropdown">
+                        <div class="nav-dropdown-panel">
+                            <p class="nav-dropdown-title">Pick a game</p>
+                            <div class="nav-games-grid">
+                                @foreach ($games as $game)
+                                <a href="{{ url($game['url']) }}"
+                                   class="nav-game-link nav-game-link--{{ $game['class'] }} {{ request()->is($game['path']) ? 'active' : '' }}">
+                                    <span class="nav-game-icon">{{ $game['icon'] }}</span>
+                                    <span class="nav-game-info">
+                                        <span class="nav-game-name">{{ $game['name'] }}</span>
+                                        <span class="nav-game-tag">{{ $game['tag'] }}</span>
+                                    </span>
+                                </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <a href="{{ url('/') }}#games" class="nav-link">ℹ️ About</a>
+                </li>
+                @auth
+                @include('layouts.partials.friend-notifications')
+                <li>
+                    <a href="{{ route('friends.index') }}" class="nav-link {{ request()->routeIs('friends.*') ? 'active' : '' }}">👥 Friends</a>
+                </li>
+                <li class="nav-status-wrap">
+                    @include('layouts.partials.status-pill', ['user' => auth()->user(), 'self' => true])
+                </li>
+                <li>
+                    <div class="nav-user" title="{{ auth()->user()->email }}">
+                        <span class="nav-user-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                        <span class="nav-user-name">{{ auth()->user()->name }}</span>
+                    </div>
+                </li>
+                <li>
+                    <form class="nav-logout-form" method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="nav-link nav-logout-btn">Logout</button>
+                    </form>
+                </li>
+                @else
+                <li>
+                    <a href="{{ route('login') }}" class="nav-link nav-link--auth {{ request()->routeIs('login') ? 'active' : '' }}">Login</a>
+                </li>
+                <li>
+                    <a href="{{ route('register') }}" class="nav-link nav-link--signup {{ request()->routeIs('register') ? 'active' : '' }}">Sign Up</a>
+                </li>
+                @endauth
+                <li>
+                    <a href="{{ url('/galaxy-bowling') }}" class="nav-link nav-cta">▶ Play Now</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    @auth
+        @include('layouts.partials.friend-request-toast')
+    @endauth
+
+    <main class="main-content">
+        @yield('content')
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navToggle = document.getElementById('navToggle');
+            const navMenu = document.getElementById('navMenu');
+            const gamesToggle = document.getElementById('gamesToggle');
+            const gamesDropdown = document.getElementById('gamesDropdown');
+            const notificationsToggle = document.getElementById('notificationsToggle');
+            const notificationsDropdown = document.getElementById('notificationsDropdown');
+            const friendRequestToast = document.getElementById('friendRequestToast');
+            const friendRequestToastClose = document.getElementById('friendRequestToastClose');
+            const friendRequestCount = {{ $friendRequestCount ?? 0 }};
+
+            navToggle?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                navMenu.classList.toggle('open');
+                navToggle.textContent = navMenu.classList.contains('open') ? '✕' : '☰';
+            });
+
+            gamesToggle?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                gamesDropdown.classList.toggle('open');
+                notificationsDropdown?.classList.remove('open');
+            });
+
+            notificationsToggle?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                notificationsDropdown?.classList.toggle('open');
+                gamesDropdown?.classList.remove('open');
+            });
+
+            if (friendRequestToast && friendRequestCount > 0) {
+                const storageKey = 'friendNotifyDismissedCount';
+                const dismissed = sessionStorage.getItem(storageKey);
+                if (dismissed === String(friendRequestCount)) {
+                    friendRequestToast.classList.add('hidden');
+                }
+                friendRequestToastClose?.addEventListener('click', () => {
+                    friendRequestToast.classList.add('hidden');
+                    sessionStorage.setItem(storageKey, String(friendRequestCount));
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (gamesDropdown && !gamesDropdown.contains(e.target)) {
+                    gamesDropdown.classList.remove('open');
+                }
+                if (notificationsDropdown && !notificationsDropdown.contains(e.target)) {
+                    notificationsDropdown.classList.remove('open');
+                }
+                if (navMenu && navToggle && !navMenu.contains(e.target) && !navToggle.contains(e.target)) {
+                    navMenu.classList.remove('open');
+                    navToggle.textContent = '☰';
+                }
+            });
+
+            @auth
+            const statusPills = document.querySelectorAll('.status-pill--self');
+            const pingUrl = @json(route('presence.ping'));
+            const csrf = @json(csrf_token());
+
+            function setSelfStatus(online) {
+                statusPills.forEach(pill => {
+                    pill.classList.toggle('status-pill--online', online);
+                    pill.classList.toggle('status-pill--offline', !online);
+                    const label = pill.querySelector('.status-pill-label');
+                    if (label) {
+                        label.textContent = online ? 'You are online' : 'You are offline';
+                    }
+                });
+            }
+
+            function updateSelfStatusFromNetwork() {
+                setSelfStatus(navigator.onLine);
+            }
+
+            window.addEventListener('online', updateSelfStatusFromNetwork);
+            window.addEventListener('offline', updateSelfStatusFromNetwork);
+
+            async function pingPresence() {
+                if (!navigator.onLine) return;
+                try {
+                    await fetch(pingUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrf,
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                    });
+                    setSelfStatus(true);
+                } catch {
+                    /* keep last known state */
+                }
+            }
+
+            updateSelfStatusFromNetwork();
+            pingPresence();
+            setInterval(pingPresence, 45000);
+            @endauth
+        });
+    </script>
+</body>
+</html>

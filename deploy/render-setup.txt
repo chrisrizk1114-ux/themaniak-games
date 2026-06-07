@@ -1,0 +1,101 @@
+OPTION 2 — Render (free) + GoDaddy DNS for themaniak.online
+============================================================
+
+You keep the domain on GoDaddy. The Laravel app runs on Render.
+Database stays on Aiven (already set up).
+
+
+PART 1 — PUT CODE ON GITHUB (one time)
+--------------------------------------
+1. Create account: https://github.com
+2. New repository → name: themaniak-games → Private or Public → Create
+3. On your PC (PowerShell):
+
+   cd C:\Users\Admin\Desktop\game\my-laravel-app
+   git init
+   git add .
+   git commit -m "The Maniak games - Laravel"
+   git branch -M main
+   git remote add origin https://github.com/YOUR_USERNAME/themaniak-games.git
+   git push -u origin main
+
+   (.env is NOT uploaded — gitignore blocks it)
+
+
+PART 2 — DEPLOY ON RENDER
+-------------------------
+1. Sign up: https://render.com (use GitHub login)
+2. Dashboard → New + → Web Service
+3. Connect repo: themaniak-games
+4. Settings:
+   - Name: themaniak-games
+   - Region: Frankfurt (near India/Bangalore Aiven) or closest to you
+   - Branch: main
+   - Runtime: Docker
+   - Plan: Free
+5. Add Environment Variables (Environment tab):
+
+   APP_NAME          = The Maniak
+   APP_ENV           = production
+   APP_DEBUG         = false
+   APP_URL           = https://themaniak.online
+   APP_KEY           = (run locally: php artisan key:generate --show — paste result)
+
+   DB_CONNECTION     = mysql
+   DB_HOST           = mysql-863301e-chrisrizk1114-c850.g.aivencloud.com
+   DB_PORT           = 16123
+   DB_DATABASE       = defaultdb
+   DB_USERNAME       = avnadmin
+   DB_PASSWORD       = (your Aiven password)
+
+   SESSION_DRIVER    = database
+   SESSION_DOMAIN    = .themaniak.online
+   SESSION_SECURE_COOKIE = true
+   CACHE_STORE       = database
+   QUEUE_CONNECTION  = sync
+   LOG_CHANNEL       = stderr
+
+6. Create Web Service → wait for deploy (5–10 min)
+7. Test Render URL: https://themaniak-games.onrender.com/up  → should say ok
+
+
+PART 3 — CUSTOM DOMAIN ON RENDER
+--------------------------------
+1. Render → your service → Settings → Custom Domains
+2. Add: themaniak.online
+3. Add: www.themaniak.online
+4. Render shows DNS records to add — copy them
+
+
+PART 4 — GODADDY DNS
+--------------------
+1. GoDaddy → The Maniak → Domain → DNS (or Manage DNS)
+2. Remove or edit old records pointing to Website Builder if needed
+3. Add what Render tells you, usually:
+
+   Type    Name    Value
+   ------  ------  ---------------------------------
+   CNAME   www     themaniak-games.onrender.com
+   A       @       (IP address Render gives for root domain)
+
+   OR Render may give ALIAS/ANAME instructions for @ root
+
+4. Save — DNS can take 5 minutes to 48 hours (often under 1 hour)
+5. Render auto-enables HTTPS (SSL)
+
+
+PART 5 — TURN OFF WEBSITE BUILDER (optional)
+--------------------------------------------
+After DNS works and https://themaniak.online shows games:
+- GoDaddy Website builder site is replaced by your Laravel app
+- You can unpublish the builder site in GoDaddy → Website
+
+
+NOTES
+-----
+- Free Render sleeps after ~15 min idle — first visit may take 30–60 sec to wake
+- Same Aiven DB = same login accounts as on your PC
+- To redeploy after code changes: git push → Render auto-rebuilds
+- Upgrade Render plan later to avoid sleep ($7/mo)
+
+Need help? Send screenshot of Render deploy log or GoDaddy DNS page.
