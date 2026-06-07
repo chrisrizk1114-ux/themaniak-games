@@ -1,0 +1,42 @@
+Owner account — The Maniak
+==========================
+
+## Login credentials (default)
+
+After running the owner seeder:
+
+  Email:    themaniak.owner@gmail.com
+  Password: ManiakOwner#2026
+
+Change these in production via environment variables:
+
+  OWNER_EMAIL=your@gmail.com
+  OWNER_PASSWORD=your-secure-password
+  OWNER_NAME=Site Owner
+
+## Create / update owner account
+
+  php artisan migrate
+  php artisan db:seed --class=OwnerSeeder
+
+On Render, the Docker start script runs OwnerSeeder automatically after migrations.
+
+## Owner panel URL
+
+  /owner
+
+Only accounts with role "owner" can access this area. The navbar shows a "Owner" link when logged in as owner.
+
+## Owner capabilities
+
+- Dashboard with live stats (users, online, friendships)
+- Manage all users (search, promote, demote, delete)
+- View and remove any friendship
+- Full player access (games, friends, online status)
+
+## Security notes
+
+- Regular sign-up always creates a "user" role, never owner
+- You cannot delete your own account from the owner panel
+- At least one owner must always remain on the site
+- Change the default password immediately after first login

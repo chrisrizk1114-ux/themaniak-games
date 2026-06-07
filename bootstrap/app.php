@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->alias([
+            'owner' => \App\Http\Middleware\EnsureOwner::class,
+        ]);
         $middleware->web(append: [
             \App\Http\Middleware\UpdateLastSeen::class,
         ]);

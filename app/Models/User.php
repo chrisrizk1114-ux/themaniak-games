@@ -12,6 +12,10 @@ use Illuminate\Support\Collection;
 
 class User extends Authenticatable
 {
+    public const ROLE_USER = 'user';
+
+    public const ROLE_OWNER = 'owner';
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -25,6 +29,7 @@ class User extends Authenticatable
         'email',
         'google_id',
         'password',
+        'role',
         'last_seen_at',
     ];
 
@@ -50,6 +55,11 @@ class User extends Authenticatable
             'last_seen_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->role === self::ROLE_OWNER;
     }
 
     public function isOnline(int $minutes = 5): bool

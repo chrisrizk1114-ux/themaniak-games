@@ -1,14 +1,19 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\PresenceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/feedback', [FeedbackController::class, 'create'])->name('feedback.create');
+Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store')->middleware('throttle:6,1');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -30,6 +35,20 @@ Route::middleware('auth')->group(function () {
     Route::patch('/friends/{friendship}', [FriendController::class, 'accept'])->name('friends.accept');
     Route::delete('/friends/{friendship}', [FriendController::class, 'destroy'])->name('friends.destroy');
     Route::post('/presence/ping', [PresenceController::class, 'ping'])->name('presence.ping');
+});
+
+Route::middleware(['auth', 'owner'])->prefix('owner')->name('owner.')->group(function () {
+    Route::get('/', [OwnerController::class, 'index'])->name('index');
+    Route::get('/users', [OwnerController::class, 'users'])->name('users');
+    Route::patch('/users/{user}/role', [OwnerController::class, 'updateUserRole'])->name('users.role');
+    Route::delete('/users/{user}', [OwnerController::class, 'deleteUser'])->name('users.destroy');
+    Route::get('/friendships', [OwnerController::class, 'friendships'])->name('friendships');
+    Route::delete('/friendships/{friendship}', [OwnerController::class, 'deleteFriendship'])->name('friendships.destroy');
+    Route::get('/feedback/check', [OwnerController::class, 'checkFeedback'])->name('feedback.check');
+    Route::get('/feedback', [OwnerController::class, 'feedbacks'])->name('feedback');
+    Route::patch('/feedback/read-all', [OwnerController::class, 'markAllFeedbackRead'])->name('feedback.read-all');
+    Route::patch('/feedback/{feedback}/read', [OwnerController::class, 'markFeedbackRead'])->name('feedback.read');
+    Route::delete('/feedback/{feedback}', [OwnerController::class, 'deleteFeedback'])->name('feedback.destroy');
 });
 
 Route::get('/four-hundred', function () {
