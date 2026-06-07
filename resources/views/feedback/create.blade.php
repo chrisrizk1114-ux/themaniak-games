@@ -12,7 +12,7 @@
         --pink: #ff2d6a;
         --purple: #a855f7;
         --gold: #ffd54a;
-        max-width: 640px;
+        max-width: 680px;
         margin: 0 auto;
         position: relative;
     }
@@ -74,6 +74,22 @@
         backdrop-filter: blur(14px);
     }
 
+    .feedback-player-card {
+        display: grid;
+        gap: 0.35rem;
+        padding: 0.85rem 1rem;
+        margin-bottom: 1.25rem;
+        border-radius: 14px;
+        background: rgba(0,240,255,0.06);
+        border: 1px solid rgba(0,240,255,0.18);
+        font-size: 0.92rem;
+        color: rgba(255,255,255,0.65);
+    }
+
+    .feedback-player-card strong {
+        color: #fff;
+    }
+
     .feedback-alert {
         padding: 0.85rem 1rem;
         border-radius: 12px;
@@ -93,6 +109,18 @@
         color: #fecaca;
     }
 
+    .feedback-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    @media (max-width: 560px) {
+        .feedback-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .feedback-field {
         margin-bottom: 1rem;
     }
@@ -106,7 +134,8 @@
     }
 
     .feedback-field input,
-    .feedback-field textarea {
+    .feedback-field textarea,
+    .feedback-field select {
         width: 100%;
         padding: 0.75rem 1rem;
         border-radius: 12px;
@@ -117,13 +146,19 @@
         font-size: 1rem;
     }
 
+    .feedback-field select option {
+        background: #0c0c22;
+        color: #fff;
+    }
+
     .feedback-field textarea {
-        min-height: 140px;
+        min-height: 120px;
         resize: vertical;
     }
 
     .feedback-field input:focus,
-    .feedback-field textarea:focus {
+    .feedback-field textarea:focus,
+    .feedback-field select:focus {
         outline: none;
         border-color: rgba(168,85,247,0.45);
         box-shadow: 0 0 0 3px rgba(168,85,247,0.12);
@@ -160,7 +195,7 @@
     <header class="feedback-header">
         <div class="feedback-badge">💬 Feedback</div>
         <h1 class="feedback-title">Tell us what you think</h1>
-        <p class="feedback-subtitle">Bug reports, game ideas, or anything about The Maniak — we read every message.</p>
+        <p class="feedback-subtitle">Logged-in players only — bug reports, game ideas, and special details for the owner.</p>
     </header>
 
     <div class="feedback-card">
@@ -172,38 +207,55 @@
             <div class="feedback-alert feedback-alert--error">{{ $errors->first() }}</div>
         @endif
 
+        <div class="feedback-player-card">
+            <div>Sending as <strong>{{ auth()->user()->name }}</strong></div>
+            <div>{{ auth()->user()->email }} · Player #{{ $playerInfo['user_id'] ?? auth()->id() }}</div>
+            <div>Member since {{ auth()->user()->created_at->format('M j, Y') }} · {{ $playerInfo['friends_count'] ?? 0 }} friends</div>
+        </div>
+
         <form method="POST" action="{{ route('feedback.store') }}">
             @csrf
 
-            @guest
-            <div class="feedback-field">
-                <label for="name">Your name</label>
-                <input type="text" id="name" name="name" value="{{ old('name', $name) }}" required>
+            <div class="feedback-grid">
+                <div class="feedback-field">
+                    <label for="category">Feedback type</label>
+                    <select id="category" name="category" required>
+                        <option value="">Choose type…</option>
+                        @foreach ($categories as $value => $label)
+                            <option value="{{ $value }}" @selected(old('category') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="feedback-field">
+                    <label for="game">Related game</label>
+                    <select id="game" name="game">
+                        <option value="">Not game-specific</option>
+                        @foreach ($games as $value => $label)
+                            <option value="{{ $value }}" @selected(old('game') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
-            <div class="feedback-field">
-                <label for="email">Your email</label>
-                <input type="email" id="email" name="email" value="{{ old('email', $email) }}" required>
-            </div>
-            @else
-            <p style="margin-bottom:1rem;color:rgba(255,255,255,0.55);">
-                Sending as <strong style="color:#fff;">{{ auth()->user()->name }}</strong> ({{ auth()->user()->email }})
-            </p>
-            @endguest
 
             <div class="feedback-field">
                 <label for="subject">Subject <span style="font-weight:500;color:rgba(255,255,255,0.35);">(optional)</span></label>
-                <input type="text" id="subject" name="subject" value="{{ old('subject') }}" maxlength="120" placeholder="e.g. Lebanese 400 bug, new game idea…">
+                <input type="text" id="subject" name="subject" value="{{ old('subject') }}" maxlength="120" placeholder="Short title for your feedback…">
             </div>
 
             <div class="feedback-field">
                 <label for="message">Message</label>
-                <textarea id="message" name="message" required minlength="10" maxlength="5000" placeholder="Describe your feedback in detail…">{{ old('message') }}</textarea>
+                <textarea id="message" name="message" required minlength="10" maxlength="5000" placeholder="Describe your feedback…">{{ old('message') }}</textarea>
             </div>
 
-            <button type="submit" class="feedback-submit">Send Feedback</button>
+            <div class="feedback-field">
+                <label for="special_details">Special details</label>
+                <textarea id="special_details" name="special_details" maxlength="3000" placeholder="Extra info for the owner: device (phone/PC), browser, steps to reproduce a bug, which level or game mode, screenshots links, etc.">{{ old('special_details') }}</textarea>
+            </div>
+
+            <button type="submit" class="feedback-submit">Send Feedback to Owner</button>
         </form>
 
-        <p class="feedback-hint">The site owner is notified when you submit.</p>
+        <p class="feedback-hint">The owner is notified instantly when you submit.</p>
     </div>
 </div>
 @endsection
