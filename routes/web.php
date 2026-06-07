@@ -21,7 +21,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 });
 
-Route::post('/logout', [AuthController::class, 'logout'])
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 

@@ -7,6 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="description" content="The Maniak — free browser games at themaniak.online. Bowling, cards, chess, arcade & more.">
     <link rel="canonical" href="{{ url()->current() }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name')) — themaniak.online</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -757,10 +758,7 @@
                     </div>
                 </li>
                 <li>
-                    <form class="nav-logout-form" method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="nav-link nav-logout-btn">Logout</button>
-                    </form>
+                    <a href="{{ route('logout') }}" class="nav-link nav-logout-btn">Logout</a>
                 </li>
                 @else
                 <li>

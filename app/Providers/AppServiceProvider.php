@@ -27,6 +27,16 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        if ($this->app->environment('production') && ! $this->app->runningInConsole()) {
+            $host = request()->getHost();
+
+            if (str_ends_with($host, 'themaniak.online')) {
+                config(['session.domain' => '.themaniak.online']);
+            } else {
+                config(['session.domain' => null]);
+            }
+        }
+
         View::composer('layouts.app', function ($view) {
             if (! Auth::check()) {
                 return;
