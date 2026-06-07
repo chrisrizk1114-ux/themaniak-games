@@ -246,12 +246,6 @@
             </div>
         @endif
 
-        @if (str_contains(session('url.intended') ?? '', 'feedback'))
-            <div class="auth-alert" style="background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.35);color:#e9d5ff;">
-                Please log in to send feedback to the site owner.
-            </div>
-        @endif
-
         <form method="POST" action="{{ route('login') }}">
             @csrf
 

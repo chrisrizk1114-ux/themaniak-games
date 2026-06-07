@@ -730,9 +730,6 @@
                         </div>
                     </div>
                 </li>
-                <li>
-                    <a href="{{ route('feedback.create') }}" class="nav-link {{ request()->routeIs('feedback.*') ? 'active' : '' }}">💬 Feedback</a>
-                </li>
                 @auth
                 @include('layouts.partials.friend-notifications')
                 @if (auth()->user()->isOwner())

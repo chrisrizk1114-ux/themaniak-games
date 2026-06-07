@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OwnerController;
@@ -26,9 +25,6 @@ Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])
     ->name('logout');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/feedback', [FeedbackController::class, 'create'])->name('feedback.create');
-    Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store')->middleware('throttle:6,1');
-
     Route::get('/friends', [FriendController::class, 'index'])->name('friends.index');
     Route::post('/friends/search', [FriendController::class, 'search'])->name('friends.search');
     Route::post('/friends', [FriendController::class, 'store'])->name('friends.store');
