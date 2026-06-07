@@ -29,10 +29,6 @@
                     <div class="owner-stat-label">Joined today</div>
                 </div>
                 <div class="owner-stat">
-                    <div class="owner-stat-value">{{ $stats['unread_feedback'] }}</div>
-                    <div class="owner-stat-label">Unread feedback</div>
-                </div>
-                <div class="owner-stat">
                     <div class="owner-stat-value">{{ $stats['owners'] }}</div>
                     <div class="owner-stat-label">Owners</div>
                 </div>
@@ -79,13 +75,6 @@
                     <div>
                         <strong>Play all games</strong>
                         <span>Owner accounts are full player accounts — friends, online status, and every game work normally.</span>
-                    </div>
-                </div>
-                <div class="owner-capability">
-                    <span class="owner-capability-icon">💬</span>
-                    <div>
-                        <strong>Read player feedback</strong>
-                        <span>View messages from the feedback page, mark them read, or delete them. You get notified when new feedback arrives.</span>
                     </div>
                 </div>
                 <div class="owner-capability">

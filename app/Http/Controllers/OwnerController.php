@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Feedback;
 use App\Models\Friendship;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -25,8 +23,6 @@ class OwnerController extends Controller
             'friendships' => Friendship::query()->where('status', Friendship::STATUS_ACCEPTED)->count(),
             'pending_requests' => Friendship::query()->where('status', Friendship::STATUS_PENDING)->count(),
             'registered_today' => User::query()->whereDate('created_at', today())->count(),
-            'unread_feedback' => Feedback::query()->unread()->count(),
-            'total_feedback' => Feedback::query()->count(),
         ];
 
         $recentUsers = User::query()
@@ -122,50 +118,5 @@ class OwnerController extends Controller
         $friendship->delete();
 
         return back()->with('success', 'Friendship removed.');
-    }
-
-    public function feedbacks(): View
-    {
-        $feedbacks = Feedback::query()
-            ->with('user')
-            ->latest()
-            ->paginate(20);
-
-        return view('owner.feedbacks', [
-            'feedbacks' => $feedbacks,
-        ]);
-    }
-
-    public function markFeedbackRead(Feedback $feedback): RedirectResponse
-    {
-        $feedback->markAsRead();
-
-        return back()->with('success', 'Feedback marked as read.');
-    }
-
-    public function markAllFeedbackRead(): RedirectResponse
-    {
-        Feedback::query()->unread()->update(['read_at' => now()]);
-
-        return back()->with('success', 'All feedback marked as read.');
-    }
-
-    public function deleteFeedback(Feedback $feedback): RedirectResponse
-    {
-        $feedback->delete();
-
-        return back()->with('success', 'Feedback deleted.');
-    }
-
-    public function checkFeedback(): JsonResponse
-    {
-        $latest = Feedback::query()->unread()->latest()->first();
-
-        return response()->json([
-            'unread_count' => Feedback::query()->unread()->count(),
-            'latest_id' => $latest?->id,
-            'latest_name' => $latest?->name,
-            'latest_subject' => $latest?->subject,
-        ]);
     }
 }

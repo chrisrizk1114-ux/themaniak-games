@@ -44,11 +44,6 @@ Route::middleware(['auth', 'owner'])->prefix('owner')->name('owner.')->group(fun
     Route::delete('/users/{user}', [OwnerController::class, 'deleteUser'])->name('users.destroy');
     Route::get('/friendships', [OwnerController::class, 'friendships'])->name('friendships');
     Route::delete('/friendships/{friendship}', [OwnerController::class, 'deleteFriendship'])->name('friendships.destroy');
-    Route::get('/feedback/check', [OwnerController::class, 'checkFeedback'])->name('feedback.check');
-    Route::get('/feedback', [OwnerController::class, 'feedbacks'])->name('feedback');
-    Route::patch('/feedback/read-all', [OwnerController::class, 'markAllFeedbackRead'])->name('feedback.read-all');
-    Route::patch('/feedback/{feedback}/read', [OwnerController::class, 'markFeedbackRead'])->name('feedback.read');
-    Route::delete('/feedback/{feedback}', [OwnerController::class, 'deleteFeedback'])->name('feedback.destroy');
 });
 
 Route::get('/four-hundred', function () {

@@ -255,7 +255,7 @@
             <button type="submit" class="feedback-submit">Send Feedback to Owner</button>
         </form>
 
-        <p class="feedback-hint">The owner is notified instantly when you submit.</p>
+        <p class="feedback-hint">Thank you for helping improve The Maniak.</p>
     </div>
 </div>
 @endsection

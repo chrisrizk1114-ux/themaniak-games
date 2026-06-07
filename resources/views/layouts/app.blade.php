@@ -737,12 +737,7 @@
                 @include('layouts.partials.friend-notifications')
                 @if (auth()->user()->isOwner())
                 <li>
-                    <a href="{{ route('owner.index') }}" class="nav-link {{ request()->routeIs('owner.*') ? 'active' : '' }}">
-                        👑 Owner
-                        @if (($unreadFeedbackCount ?? 0) > 0)
-                            <span class="nav-notify-badge" style="position:static;display:inline-block;min-width:16px;height:16px;line-height:16px;font-size:0.58rem;margin-left:0.25rem;">{{ ($unreadFeedbackCount ?? 0) > 9 ? '9+' : ($unreadFeedbackCount ?? 0) }}</span>
-                        @endif
-                    </a>
+                    <a href="{{ route('owner.index') }}" class="nav-link {{ request()->routeIs('owner.*') ? 'active' : '' }}">👑 Owner</a>
                 </li>
                 @endif
                 <li>
@@ -777,9 +772,6 @@
 
     @auth
         @include('layouts.partials.friend-request-toast')
-        @if (auth()->user()->isOwner())
-            @include('layouts.partials.feedback-toast')
-        @endif
     @endauth
 
     <main class="main-content">
@@ -797,21 +789,6 @@
             const friendRequestToast = document.getElementById('friendRequestToast');
             const friendRequestToastClose = document.getElementById('friendRequestToastClose');
             const friendRequestCount = {{ $friendRequestCount ?? 0 }};
-            const feedbackToast = document.getElementById('feedbackToast');
-            const feedbackToastClose = document.getElementById('feedbackToastClose');
-            const unreadFeedbackCount = {{ $unreadFeedbackCount ?? 0 }};
-
-            if (feedbackToast && unreadFeedbackCount > 0) {
-                const fbStorageKey = 'feedbackNotifyDismissedCount';
-                const fbDismissed = sessionStorage.getItem(fbStorageKey);
-                if (fbDismissed === String(unreadFeedbackCount)) {
-                    feedbackToast.classList.add('hidden');
-                }
-                feedbackToastClose?.addEventListener('click', () => {
-                    feedbackToast.classList.add('hidden');
-                    sessionStorage.setItem(fbStorageKey, String(unreadFeedbackCount));
-                });
-            }
 
             navToggle?.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -901,73 +878,6 @@
             updateSelfStatusFromNetwork();
             pingPresence();
             setInterval(pingPresence, 45000);
-
-            @if (auth()->user()->isOwner())
-            const feedbackCheckUrl = @json(route('owner.feedback.check'));
-            const feedbackPageUrl = @json(route('owner.feedback'));
-            let lastKnownFeedbackId = {{ ($feedbackNotifications ?? collect())->first()?->id ?? 0 }};
-
-            function showLiveFeedbackToast(name, subject) {
-                let toast = document.getElementById('feedbackLiveToast');
-                if (!toast) {
-                    toast = document.createElement('div');
-                    toast.id = 'feedbackLiveToast';
-                    toast.className = 'friend-toast';
-                    toast.innerHTML = `
-                        <div class="friend-toast-inner" style="border-color:rgba(255,213,74,0.35);">
-                            <span class="friend-toast-icon">💬</span>
-                            <div class="friend-toast-text">
-                                <strong>New feedback!</strong>
-                                <span id="feedbackLiveToastMsg"></span>
-                            </div>
-                            <a href="${feedbackPageUrl}" class="friend-toast-btn">View</a>
-                            <button type="button" class="friend-toast-close" id="feedbackLiveToastClose" aria-label="Dismiss">✕</button>
-                        </div>`;
-                    document.body.appendChild(toast);
-                    toast.querySelector('#feedbackLiveToastClose')?.addEventListener('click', () => toast.remove());
-                }
-                const msg = toast.querySelector('#feedbackLiveToastMsg');
-                if (msg) {
-                    msg.textContent = subject
-                        ? `${name}: ${subject}`
-                        : `${name} sent new feedback.`;
-                }
-                toast.classList.remove('hidden');
-            }
-
-            function updateNotifyBadge(total) {
-                const badge = document.getElementById('navNotifyBadge');
-                if (!badge) return;
-                if (total > 0) {
-                    badge.textContent = total > 9 ? '9+' : String(total);
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
-                }
-            }
-
-            async function pollFeedback() {
-                if (!navigator.onLine) return;
-                try {
-                    const res = await fetch(feedbackCheckUrl, {
-                        headers: { 'Accept': 'application/json' },
-                        credentials: 'same-origin',
-                    });
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    if (data.latest_id && data.latest_id > lastKnownFeedbackId) {
-                        showLiveFeedbackToast(data.latest_name || 'Someone', data.latest_subject);
-                        lastKnownFeedbackId = data.latest_id;
-                    }
-                    const friendCount = {{ $friendRequestCount ?? 0 }};
-                    updateNotifyBadge(friendCount + (data.unread_count || 0));
-                } catch {
-                    /* ignore */
-                }
-            }
-
-            setInterval(pollFeedback, 30000);
-            @endif
             @endauth
         });
     </script>

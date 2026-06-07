@@ -66,7 +66,7 @@ class FeedbackController extends Controller
 
         return redirect()
             ->route('feedback.create')
-            ->with('success', 'Thanks! Your feedback was sent to the site owner.');
+            ->with('success', 'Thanks! Your feedback was submitted.');
     }
 
     private function playerInfo($user): array
