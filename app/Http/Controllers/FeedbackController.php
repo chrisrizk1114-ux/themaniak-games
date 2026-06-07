@@ -29,8 +29,12 @@ class FeedbackController extends Controller
         'other' => 'Other',
     ];
 
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        if (auth()->user()->isOwner()) {
+            return redirect()->route('owner.feedback');
+        }
+
         $user = auth()->user();
 
         return view('feedback.create', [
@@ -42,6 +46,10 @@ class FeedbackController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if (auth()->user()->isOwner()) {
+            return redirect()->route('owner.feedback');
+        }
+
         $user = auth()->user();
 
         $data = $request->validate([
