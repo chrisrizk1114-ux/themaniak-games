@@ -14,7 +14,6 @@ body:has(.snl-page),
 body:has(.ttt-page),
 body:has(.bowling-page),
 body:has(.sky-runner-page),
-body:has(.chess-page),
 body:has(.whack-page) {
     overflow: hidden;
     overscroll-behavior: none;

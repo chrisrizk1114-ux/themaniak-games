@@ -4,6 +4,12 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap');
 
+    body:has(.chess-page) {
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: auto;
+    }
+
     .main-content:has(.chess-page) {
         max-width: none;
         padding: 0;
@@ -25,15 +31,14 @@
         --leather: #2a1810;
         --nav-h: 76px;
         font-family: 'Source Sans 3', sans-serif;
-        min-height: calc(100svh - var(--nav-h));
         width: 100%;
         background:
             radial-gradient(ellipse at 20% 0%, rgba(212,168,83,0.12) 0%, transparent 50%),
             radial-gradient(ellipse at 80% 100%, rgba(74,21,40,0.35) 0%, transparent 55%),
             linear-gradient(165deg, #0a0f1a 0%, #14101c 40%, #0c1222 100%);
         position: relative;
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: visible;
+        padding-bottom: 2rem;
     }
     .chess-page::before {
         content: '♔ ♕ ♖ ♗ ♘ ♙';
@@ -63,7 +68,7 @@
     }
     .game-container:has(#gameArea.active) {
         max-width: none;
-        padding: 0.4rem clamp(0.5rem, 2vw, 2rem) 1.5rem;
+        padding: 0.4rem clamp(0.5rem, 2vw, 2rem) 2.5rem;
         justify-content: flex-start;
         min-height: auto;
     }
@@ -265,7 +270,6 @@
         width: 100%;
     }
     #gameArea.active .chess-arena {
-        flex: 1;
         width: 100%;
         max-width: 100%;
         align-items: center;
@@ -274,9 +278,10 @@
         gap: 1.15rem;
         padding: 0 clamp(0.5rem, 2vw, 2rem);
         --sq: min(
-            calc((100vh - 210px) / 8),
             calc((100vw - 540px) / 8),
-            12vmin
+            calc((100svh - 320px) / 8),
+            68px,
+            11vmin
         );
     }
     @media (max-width: 720px) {
@@ -636,8 +641,6 @@
     #gameArea.active {
         display: flex;
         flex-direction: column;
-        flex: 1;
-        min-height: 0;
         width: 100%;
         justify-content: flex-start;
     }
