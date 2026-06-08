@@ -30,11 +30,8 @@ COPY --from=assets /app/public/build ./public/build
 
 ENV APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 RUN composer dump-autoload --optimize --classmap-authoritative \
-    && php artisan route:cache \
-    && php artisan view:cache \
-    && php artisan event:cache \
-    && mkdir -p storage/framework/sessions storage/framework/cache/data storage/framework/views storage/logs bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache \
+    && mkdir -p storage/framework/sessions storage/framework/cache/data storage/framework/views storage/logs bootstrap/cache database/ssl \
+    && chmod -R 777 storage bootstrap/cache \
     && chmod +x deploy/docker-start.sh
 ENV APP_KEY=
 

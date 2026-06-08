@@ -5,8 +5,9 @@ cd /var/www/html
 export PORT="${PORT:-8000}"
 
 mkdir -p storage/framework/sessions storage/framework/cache/data storage/framework/views storage/logs bootstrap/cache
-chmod -R 775 storage bootstrap/cache
+chmod -R 777 storage bootstrap/cache
 
+php artisan optimize:clear
 php artisan config:cache
 php artisan storage:link 2>/dev/null || true
 

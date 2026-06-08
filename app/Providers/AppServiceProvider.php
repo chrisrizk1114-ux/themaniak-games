@@ -45,55 +45,68 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            $userId = Auth::id();
-            $cacheKey = 'nav_notifications_'.$userId;
+            try {
+                $userId = Auth::id();
+                $cacheKey = 'nav_notifications_'.$userId;
 
-            $data = Cache::remember($cacheKey, 60, function () use ($userId) {
-                $user = Auth::user();
-                $incoming = $user->pendingIncoming();
+                $data = Cache::remember($cacheKey, 60, function () use ($userId) {
+                    $user = Auth::user();
+                    $incoming = $user->pendingIncoming();
 
-                $chessInvites = ChessGame::query()
-                    ->where('status', ChessGame::STATUS_PENDING)
-                    ->where('black_user_id', $userId)
-                    ->with('whitePlayer')
-                    ->latest()
-                    ->take(5)
-                    ->get();
+                    $chessInvites = ChessGame::query()
+                        ->where('status', ChessGame::STATUS_PENDING)
+                        ->where('black_user_id', $userId)
+                        ->with('whitePlayer')
+                        ->latest()
+                        ->take(5)
+                        ->get();
 
-                $chessInviteCount = ChessGame::query()
-                    ->where('status', ChessGame::STATUS_PENDING)
-                    ->where('black_user_id', $userId)
-                    ->count();
+                    $chessInviteCount = ChessGame::query()
+                        ->where('status', ChessGame::STATUS_PENDING)
+                        ->where('black_user_id', $userId)
+                        ->count();
 
-                $chatUnreadCount = FriendMessage::query()
-                    ->where('recipient_id', $userId)
-                    ->whereNull('read_at')
-                    ->count();
+                    $chatUnreadCount = FriendMessage::query()
+                        ->where('recipient_id', $userId)
+                        ->whereNull('read_at')
+                        ->count();
 
-                $payload = [
-                    'friendRequestCount' => $incoming->count(),
-                    'friendRequestNotifications' => $incoming->take(5),
+                    $payload = [
+                        'friendRequestCount' => $incoming->count(),
+                        'friendRequestNotifications' => $incoming->take(5),
+                        'unreadFeedbackCount' => 0,
+                        'feedbackNotifications' => collect(),
+                        'chessInviteCount' => $chessInviteCount,
+                        'chessInviteNotifications' => $chessInvites,
+                        'chatUnreadCount' => $chatUnreadCount,
+                        'notificationCount' => $incoming->count() + $chessInviteCount + $chatUnreadCount,
+                    ];
+
+                    if ($user->isOwner()) {
+                        $feedback = Feedback::query()->unread()->latest()->take(5)->get();
+                        $unreadFeedbackCount = Feedback::query()->unread()->count();
+
+                        $payload['unreadFeedbackCount'] = $unreadFeedbackCount;
+                        $payload['feedbackNotifications'] = $feedback;
+                        $payload['notificationCount'] = $incoming->count() + $unreadFeedbackCount + $chessInviteCount + $chatUnreadCount;
+                    }
+
+                    return $payload;
+                });
+
+                $view->with($data);
+            } catch (\Throwable) {
+                $view->with([
+                    'friendRequestCount' => 0,
+                    'friendRequestNotifications' => collect(),
                     'unreadFeedbackCount' => 0,
                     'feedbackNotifications' => collect(),
-                    'chessInviteCount' => $chessInviteCount,
-                    'chessInviteNotifications' => $chessInvites,
-                    'chatUnreadCount' => $chatUnreadCount,
-                    'notificationCount' => $incoming->count() + $chessInviteCount + $chatUnreadCount,
-                ];
-
-                if ($user->isOwner()) {
-                    $feedback = Feedback::query()->unread()->latest()->take(5)->get();
-                    $unreadFeedbackCount = Feedback::query()->unread()->count();
-
-                    $payload['unreadFeedbackCount'] = $unreadFeedbackCount;
-                    $payload['feedbackNotifications'] = $feedback;
-                    $payload['notificationCount'] = $incoming->count() + $unreadFeedbackCount + $chessInviteCount + $chatUnreadCount;
-                }
-
-                return $payload;
-            });
-
-            $view->with($data);
+                    'chessInviteCount' => 0,
+                    'chessInviteNotifications' => collect(),
+                    'chatUnreadCount' => 0,
+                    'notificationCount' => 0,
+                ]);
+            }
         });
     }
 }
