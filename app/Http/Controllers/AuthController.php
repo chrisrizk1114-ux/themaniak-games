@@ -39,7 +39,7 @@ class AuthController extends Controller
 
             return back()
                 ->withInput($request->only('email', 'remember'))
-                ->withErrors(['email' => 'Database connection failed. Please try again in a minute.']);
+                ->withErrors(['email' => 'Cannot reach the database. In Aiven: power ON mysql-863301e, then update DB_HOST/DB_PASSWORD on Render.']);
         }
 
         return back()

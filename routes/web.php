@@ -10,10 +10,22 @@ use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\PresenceController;
 use App\Models\ChessGame;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Throwable;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+Route::get('/db-ping', function () {
+    try {
+        DB::select('SELECT 1 AS ok');
+
+        return response()->json(['database' => 'connected']);
+    } catch (Throwable $e) {
+        return response()->json(['database' => 'unavailable'], 503);
+    }
 });
 
 Route::get('/reset-session', function (Request $request) {

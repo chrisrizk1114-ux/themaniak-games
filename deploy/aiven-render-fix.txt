@@ -1,0 +1,80 @@
+FIX "Database connection failed" — Aiven + Render
+================================================
+
+Your login error means Render CANNOT connect to Aiven MySQL.
+The site works for guests, but login/register need the database.
+
+
+STEP 1 — POWER ON MYSQL IN AIVEN
+--------------------------------
+1. Go to https://console.aiven.io
+2. Open project: chrisrizk1114-c850
+3. Click service: mysql-863301e
+4. If it says "Powered off" → click POWER ON
+5. Wait until status is RUNNING (green, 2–5 minutes)
+
+
+STEP 2 — COPY FRESH CONNECTION INFO
+-----------------------------------
+On the mysql-863301e Overview page → "Connection information":
+
+  Service URI / Host  →  DB_HOST on Render
+  Port                →  DB_PORT on Render
+  User                →  avnadmin  (DB_USERNAME)
+  Password            →  DB_PASSWORD on Render (click show / reset if needed)
+  Database            →  defaultdb (DB_DATABASE)
+
+IMPORTANT: If you powered the service off/on, copy the values again —
+host or password may have changed.
+
+
+STEP 3 — ALLOW RENDER TO CONNECT (IP allowlist)
+-----------------------------------------------
+In Aiven → mysql-863301e → sidebar or Overview:
+
+  "Allowed IP addresses" or "Public access"
+
+  Add:  0.0.0.0/0     (allow all — required for Render free tier)
+
+  Save changes.
+
+
+STEP 4 — UPDATE RENDER ENVIRONMENT
+----------------------------------
+Render.com → themaniak-games → Environment:
+
+  DB_CONNECTION     = mysql
+  DB_HOST           = (paste from Aiven — e.g. mysql-863301e-....aivencloud.com)
+  DB_PORT           = (paste from Aiven — e.g. 16123)
+  DB_DATABASE       = defaultdb
+  DB_USERNAME       = avnadmin
+  DB_PASSWORD       = (paste current Aiven password — no spaces)
+
+  DB_SSL_RELAXED    = true
+  SESSION_DRIVER    = database
+  SESSION_ENCRYPT   = false
+  CACHE_STORE       = database
+
+  DELETE these if present (they break the connection):
+  - MYSQL_ATTR_SSL_CA
+
+  Click Save Changes → wait for redeploy (~5 min).
+
+
+STEP 5 — TEST
+-------------
+1. Open: https://themaniak.online/db-ping
+   - {"database":"connected"}  = OK
+   - {"database":"unavailable"} = still wrong — recheck steps 1–4
+
+2. Open: https://themaniak.online/reset-session
+
+3. Log in at https://themaniak.online/login
+
+
+KEEP MYSQL RUNNING
+------------------
+Aiven FREE MySQL may auto power-off when idle.
+If login stops working again → check Aiven → Power ON mysql-863301e.
+
+Optional: upgrade Aiven plan so MySQL stays on 24/7.

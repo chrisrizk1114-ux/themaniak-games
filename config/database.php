@@ -61,24 +61,26 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? (static function (): array {
                 $options = [];
-                $sslCaAttr = PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA;
+                $host = (string) env('DB_HOST', '');
+                $isAiven = str_contains($host, 'aivencloud.com');
+                $relaxed = filter_var(
+                    env('DB_SSL_RELAXED', ($isAiven || env('RENDER')) ? 'true' : 'false'),
+                    FILTER_VALIDATE_BOOLEAN
+                );
 
-                $ca = env('MYSQL_ATTR_SSL_CA');
-                $caPath = null;
-                if ($ca) {
-                    $caPath = is_file($ca) ? $ca : (is_file(base_path($ca)) ? base_path($ca) : null);
-                }
-                if (! $caPath && is_file('/etc/ssl/certs/ca-certificates.crt')) {
-                    $caPath = '/etc/ssl/certs/ca-certificates.crt';
-                }
-                if ($caPath) {
-                    $options[$sslCaAttr] = $caPath;
-                }
-
-                // Aiven on Render: TLS required; project CA file often missing from container.
-                $relaxed = filter_var(env('DB_SSL_RELAXED', env('RENDER') ? 'true' : 'false'), FILTER_VALIDATE_BOOLEAN);
-                if ($relaxed) {
+                if ($relaxed || $isAiven) {
+                    // Aiven requires TLS; skip cert verification when project CA file is absent.
                     $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+                } else {
+                    $sslCaAttr = PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA;
+                    $ca = env('MYSQL_ATTR_SSL_CA');
+                    $caPath = null;
+                    if ($ca) {
+                        $caPath = is_file($ca) ? $ca : (is_file(base_path($ca)) ? base_path($ca) : null);
+                    }
+                    if ($caPath) {
+                        $options[$sslCaAttr] = $caPath;
+                    }
                 }
 
                 return $options;
