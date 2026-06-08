@@ -11,7 +11,7 @@ RUN npm run build
 FROM php:8.2-cli-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git unzip libzip-dev libonig-dev \
+    git unzip libzip-dev libonig-dev ca-certificates \
     && docker-php-ext-install pdo_mysql zip opcache mbstring \
     && rm -rf /var/lib/apt/lists/*
 

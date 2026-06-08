@@ -8,7 +8,6 @@ services:
     plan: free
     region: frankfurt
     healthCheckPath: /up
-    preDeployCommand: php artisan migrate --force --no-interaction
     envVars:
       - key: APP_NAME
         value: The Maniak

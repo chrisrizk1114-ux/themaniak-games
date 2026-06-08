@@ -18,7 +18,25 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if ($this->app->environment('production')) {
+            $sessionPath = '/tmp/themaniak-sessions';
+            $cachePath = '/tmp/themaniak-cache/data';
+
+            if (! is_dir($sessionPath)) {
+                @mkdir($sessionPath, 0777, true);
+            }
+            if (! is_dir($cachePath)) {
+                @mkdir($cachePath, 0777, true);
+            }
+
+            config([
+                'session.driver' => 'file',
+                'session.files' => $sessionPath,
+                'session.encrypt' => false,
+                'cache.default' => 'file',
+                'cache.stores.file.path' => $cachePath,
+            ]);
+        }
     }
 
     /**
