@@ -785,6 +785,7 @@
 
     @auth
         @include('layouts.partials.friend-request-toast')
+        @include('layouts.partials.chess-invite-toast')
         @if (auth()->user()->isOwner())
             @include('layouts.partials.feedback-toast')
         @endif
@@ -805,6 +806,9 @@
             const friendRequestToast = document.getElementById('friendRequestToast');
             const friendRequestToastClose = document.getElementById('friendRequestToastClose');
             const friendRequestCount = {{ $friendRequestCount ?? 0 }};
+            const chessInviteToast = document.getElementById('chessInviteToast');
+            const chessInviteToastClose = document.getElementById('chessInviteToastClose');
+            const chessInviteCount = {{ $chessInviteCount ?? 0 }};
             const feedbackToast = document.getElementById('feedbackToast');
             const feedbackToastClose = document.getElementById('feedbackToastClose');
             const unreadFeedbackCount = {{ $unreadFeedbackCount ?? 0 }};
@@ -850,6 +854,18 @@
                 friendRequestToastClose?.addEventListener('click', () => {
                     friendRequestToast.classList.add('hidden');
                     sessionStorage.setItem(storageKey, String(friendRequestCount));
+                });
+            }
+
+            if (chessInviteToast && chessInviteCount > 0) {
+                const chessStorageKey = 'chessNotifyDismissedCount';
+                const chessDismissed = sessionStorage.getItem(chessStorageKey);
+                if (chessDismissed === String(chessInviteCount)) {
+                    chessInviteToast.classList.add('hidden');
+                }
+                chessInviteToastClose?.addEventListener('click', () => {
+                    chessInviteToast.classList.add('hidden');
+                    sessionStorage.setItem(chessStorageKey, String(chessInviteCount));
                 });
             }
 

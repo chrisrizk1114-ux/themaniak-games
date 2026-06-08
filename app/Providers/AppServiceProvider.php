@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\ChessGame;
 use App\Models\Feedback;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
@@ -44,12 +45,27 @@ class AppServiceProvider extends ServiceProvider
 
             $incoming = Auth::user()->pendingIncoming();
 
+            $chessInvites = ChessGame::query()
+                ->where('status', ChessGame::STATUS_PENDING)
+                ->where('black_user_id', Auth::id())
+                ->with('whitePlayer')
+                ->latest()
+                ->take(5)
+                ->get();
+
+            $chessInviteCount = ChessGame::query()
+                ->where('status', ChessGame::STATUS_PENDING)
+                ->where('black_user_id', Auth::id())
+                ->count();
+
             $data = [
                 'friendRequestCount' => $incoming->count(),
                 'friendRequestNotifications' => $incoming->take(5),
                 'unreadFeedbackCount' => 0,
                 'feedbackNotifications' => collect(),
-                'notificationCount' => $incoming->count(),
+                'chessInviteCount' => $chessInviteCount,
+                'chessInviteNotifications' => $chessInvites,
+                'notificationCount' => $incoming->count() + $chessInviteCount,
             ];
 
             if (Auth::user()->isOwner()) {
@@ -58,7 +74,7 @@ class AppServiceProvider extends ServiceProvider
 
                 $data['unreadFeedbackCount'] = $unreadFeedbackCount;
                 $data['feedbackNotifications'] = $feedback;
-                $data['notificationCount'] = $incoming->count() + $unreadFeedbackCount;
+                $data['notificationCount'] = $incoming->count() + $unreadFeedbackCount + $chessInviteCount;
             }
 
             $view->with($data);

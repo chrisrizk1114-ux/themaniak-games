@@ -314,6 +314,42 @@
         color: var(--royal-ivory);
     }
 
+    .chess-invite-alerts {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        margin-bottom: 1.25rem;
+        text-align: left;
+    }
+    .chess-invite-alert {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
+        padding: 0.85rem 1rem;
+        border-radius: 3px;
+        border: 1px solid rgba(212,168,83,0.45);
+        background: rgba(212,168,83,0.12);
+        color: var(--royal-ivory);
+        font-size: 0.92rem;
+    }
+    .chess-invite-alert strong {
+        color: var(--royal-gold-light);
+    }
+    .chess-invite-alert .mode-btn {
+        width: auto;
+        margin: 0;
+        padding: 0.55rem 1rem;
+        font-size: 0.85rem;
+    }
+    .friend-card {
+        width: 100%;
+        padding: 0.65rem 0;
+        border-bottom: 1px solid rgba(212,168,83,0.12);
+    }
+    .friend-card:last-child { border-bottom: none; }
+
     .chess-chat-panel {
         display: none;
         flex-direction: column;
@@ -931,6 +967,30 @@
     
     <div class="player-select" id="playerSelect">
         <h2>Choose Your Match</h2>
+
+        @auth
+            @if(($incomingChessInvites ?? collect())->isNotEmpty())
+            <div class="chess-invite-alerts">
+                @foreach($incomingChessInvites as $invite)
+                <div class="chess-invite-alert">
+                    <span>♟ <strong>{{ $invite->whitePlayer->name }}</strong> invited you — you play <strong>Black</strong></span>
+                    <a href="{{ url('/chess?game='.$invite->token) }}" class="mode-btn">Join match</a>
+                </div>
+                @endforeach
+            </div>
+            @endif
+            @if(($outgoingChessInvites ?? collect())->isNotEmpty())
+            <div class="chess-invite-alerts">
+                @foreach($outgoingChessInvites as $invite)
+                <div class="chess-invite-alert">
+                    <span>Waiting for <strong>{{ $invite->blackPlayer->name }}</strong> to join your match</span>
+                    <a href="{{ url('/chess?game='.$invite->token) }}" class="mode-btn">Open match</a>
+                </div>
+                @endforeach
+            </div>
+            @endif
+        @endauth
+
         <div class="match-modes">
             <div class="mode-card">
                 <h3>Solo vs AI</h3>
@@ -950,7 +1010,30 @@
             <div class="mode-card">
                 <h3>Play with Friends</h3>
                 <p class="mode-desc">Invite a friend — you play on the same live board (White vs Black) with chat.</p>
-                <div class="friends-list" id="friendsList"></div>
+                <div class="friends-list" id="friendsList">
+                    @auth
+                        @forelse($friends as $friend)
+                        <div class="friend-card" data-friend-id="{{ $friend['id'] }}">
+                            <div class="friend-pick-btn" style="cursor:default;border:none;background:transparent;padding:0;">
+                                <span class="{{ ($friend['online'] ?? false) ? 'friend-online-dot' : 'friend-offline-dot' }}"></span>
+                                <span class="friend-pick-avatar">{{ strtoupper(substr($friend['name'], 0, 1)) }}</span>
+                                <span class="friend-pick-meta">
+                                    <span>{{ $friend['name'] }}</span>
+                                    <small>{{ ($friend['online'] ?? false) ? 'Online' : 'Offline' }}</small>
+                                </span>
+                            </div>
+                            <button type="button" class="mode-btn" style="margin-top:0.45rem;font-size:0.85rem;padding:0.6rem 1rem;"
+                                onclick="inviteFriendOnline({{ $friend['id'] }}, @json($friend['name']))">
+                                ♟ Invite to play online
+                            </button>
+                        </div>
+                        @empty
+                        <p class="friends-empty">No friends yet — add friends from the Friends page first.</p>
+                        @endforelse
+                    @else
+                        <p class="friends-login-hint">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
+                    @endauth
+                </div>
                 <p class="friends-empty" id="friendsEmpty" style="display:none;">No friends yet — add friends from the Friends page first.</p>
                 <p class="friends-login-hint" id="friendsLoginHint" style="display:none;">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
             </div>
@@ -2134,66 +2217,8 @@
     }
 
     async function initFriendsList() {
-        const listEl = document.getElementById('friendsList');
-        const emptyEl = document.getElementById('friendsEmpty');
-        const loginEl = document.getElementById('friendsLoginHint');
-        if (!listEl) return;
-
-        listEl.innerHTML = '';
+        if (!chessLoggedIn) return;
         await loadPendingInvites();
-
-        if (!chessLoggedIn) {
-            loginEl.style.display = 'block';
-            emptyEl.style.display = 'none';
-            return;
-        }
-
-        loginEl.style.display = 'none';
-
-        if (!chessFriends.length) {
-            emptyEl.style.display = 'block';
-            return;
-        }
-
-        emptyEl.style.display = 'none';
-        chessFriends.forEach(friend => {
-            const invite = findInviteForFriend(friend.id);
-            const wrap = document.createElement('div');
-            wrap.className = 'friend-pick-btn';
-            wrap.style.cursor = 'default';
-            wrap.innerHTML = `
-                <span class="${friend.online ? 'friend-online-dot' : 'friend-offline-dot'}"></span>
-                <span class="friend-pick-avatar">${friend.name.charAt(0).toUpperCase()}</span>
-                <span class="friend-pick-meta">
-                    <span>${friend.name}</span>
-                    <small>${friend.online ? 'Online' : 'Offline'} · ${invite ? (invite.status === 'active' ? 'In match' : 'Invite pending') : 'Ready to play'}</small>
-                </span>`;
-
-            const actions = document.createElement('div');
-            actions.className = 'friend-action-row';
-
-            if (invite?.status === 'active' || invite?.status === 'pending') {
-                const joinBtn = document.createElement('button');
-                joinBtn.type = 'button';
-                joinBtn.className = 'friend-action-btn primary';
-                joinBtn.textContent = invite.status === 'pending' && invite.my_color === 'black' ? 'Join match' : 'Open match';
-                joinBtn.onclick = () => openOnlineGame(invite.token);
-                actions.appendChild(joinBtn);
-            } else {
-                const inviteBtn = document.createElement('button');
-                inviteBtn.type = 'button';
-                inviteBtn.className = 'friend-action-btn primary';
-                inviteBtn.textContent = 'Invite';
-                inviteBtn.onclick = () => inviteFriendOnline(friend.id, friend.name);
-                actions.appendChild(inviteBtn);
-            }
-
-            const card = document.createElement('div');
-            card.style.width = '100%';
-            card.appendChild(wrap);
-            card.appendChild(actions);
-            listEl.appendChild(card);
-        });
     }
 
     async function inviteFriendOnline(friendId, friendName) {
@@ -2206,16 +2231,17 @@
                 method: 'POST',
                 body: JSON.stringify({ friend_id: friendId }),
             });
-            const data = await res.json();
+            let data = {};
+            try { data = await res.json(); } catch (e) { /* ignore */ }
             if (!res.ok) {
-                alert(data.message || 'Could not send invite.');
+                alert(data.message || `Could not send invite (error ${res.status}). Try refreshing the page.`);
                 return;
             }
             friendOpponentName = friendName;
             history.replaceState({}, '', data.play_url || ('/chess?game=' + data.token));
             enterOnlineGameUI(data);
         } catch (e) {
-            alert('Could not invite friend. Try again.');
+            alert('Could not invite friend. Check your connection and refresh the page.');
         }
     }
 

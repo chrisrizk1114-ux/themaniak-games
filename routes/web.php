@@ -7,6 +7,7 @@ use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\PresenceController;
+use App\Models\ChessGame;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -104,10 +105,29 @@ Route::get('/chess', function () {
         ])->values()
         : collect();
 
+    $incomingChessInvites = collect();
+    $outgoingChessInvites = collect();
+    if ($user) {
+        $incomingChessInvites = ChessGame::query()
+            ->where('status', ChessGame::STATUS_PENDING)
+            ->where('black_user_id', $user->id)
+            ->with('whitePlayer')
+            ->latest()
+            ->get();
+        $outgoingChessInvites = ChessGame::query()
+            ->where('status', ChessGame::STATUS_PENDING)
+            ->where('invited_by_user_id', $user->id)
+            ->with('blackPlayer')
+            ->latest()
+            ->get();
+    }
+
     return view('chess', [
         'friends' => $friends,
         'chessUserId' => $user?->id,
         'chessUserName' => $user?->name,
+        'incomingChessInvites' => $incomingChessInvites,
+        'outgoingChessInvites' => $outgoingChessInvites,
     ]);
 });
 

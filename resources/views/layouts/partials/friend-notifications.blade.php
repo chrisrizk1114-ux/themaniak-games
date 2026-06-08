@@ -28,6 +28,16 @@
                 </div>
                 @endforeach
 
+                @foreach ($chessInviteNotifications ?? [] as $invite)
+                <a href="{{ url('/chess?game='.$invite->token) }}" class="nav-notify-item" style="text-decoration:none;">
+                    <span class="nav-notify-avatar">♟</span>
+                    <div class="nav-notify-info">
+                        <span class="nav-notify-name">{{ $invite->whitePlayer->name }}</span>
+                        <span class="nav-notify-msg">invited you to Royal Chess</span>
+                    </div>
+                </a>
+                @endforeach
+
                 @if (auth()->user()->isOwner())
                     @foreach ($feedbackNotifications ?? [] as $feedback)
                     <a href="{{ route('owner.feedback') }}" class="nav-notify-item" style="text-decoration:none;">
@@ -46,6 +56,12 @@
             @if (($friendRequestCount ?? 0) > 0)
                 <a href="{{ route('friends.index') }}" class="nav-notify-viewall">
                     View friend requests ({{ $friendRequestCount }})
+                </a>
+            @endif
+
+            @if (($chessInviteCount ?? 0) > 0)
+                <a href="{{ url('/chess') }}" class="nav-notify-viewall" style="margin-top:0.35rem;">
+                    View chess invites ({{ $chessInviteCount }})
                 </a>
             @endif
 
