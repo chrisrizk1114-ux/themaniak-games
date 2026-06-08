@@ -4,10 +4,12 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap');
 
+    html:has(.chess-page),
     body:has(.chess-page) {
-        overflow-x: hidden;
-        overflow-y: auto;
-        overscroll-behavior: auto;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        overscroll-behavior: auto !important;
     }
 
     .main-content:has(.chess-page) {
@@ -68,9 +70,11 @@
     }
     .game-container:has(#gameArea.active) {
         max-width: none;
-        padding: 0.4rem clamp(0.5rem, 2vw, 2rem) 2.5rem;
+        padding: 0.4rem clamp(0.5rem, 2vw, 2rem) 0;
         justify-content: flex-start;
         min-height: auto;
+        /* room for fixed footer bar */
+        padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
     }
     .game-container:has(#gameArea.active) .chess-title {
         margin: 0 0 0.25rem;
@@ -274,14 +278,14 @@
         max-width: 100%;
         align-items: center;
         justify-content: center;
-        grid-template-columns: minmax(175px, 240px) auto minmax(175px, 240px);
-        gap: 1.15rem;
+        grid-template-columns: minmax(155px, 220px) auto minmax(155px, 220px);
+        gap: 1rem;
         padding: 0 clamp(0.5rem, 2vw, 2rem);
+        /* footer + title + status reserved — board never eats the whole screen */
         --sq: min(
-            calc((100vw - 540px) / 8),
-            calc((100svh - 320px) / 8),
-            68px,
-            11vmin
+            calc((100vw - 520px) / 8),
+            calc((100svh - var(--nav-h) - 360px) / 8),
+            62px
         );
     }
     @media (max-width: 720px) {
@@ -291,7 +295,7 @@
             max-width: 400px;
         }
         #gameArea.active .chess-arena {
-            --sq: min(calc((100vw - 24px) / 8), calc((100svh - 320px) / 8), 48px);
+            --sq: min(calc((100vw - 24px) / 8), calc((100svh - var(--nav-h) - 420px) / 8), 44px);
             padding: 0 0.25rem;
         }
         .chess-panel--left { order: 1; }
@@ -659,6 +663,26 @@
         background: rgba(42,24,16,0.55);
         border: 1px solid rgba(212,168,83,0.15);
         border-radius: 3px;
+    }
+    /* Always-visible controls while playing */
+    #gameArea.active .chess-footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 900;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom, 0px));
+        background: rgba(26, 14, 10, 0.96);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 -6px 28px rgba(0,0,0,0.55);
     }
     .move-review-label {
         flex-basis: 100%;

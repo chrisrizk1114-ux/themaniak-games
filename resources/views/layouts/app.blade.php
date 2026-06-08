@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="{{ asset('js/game-sounds.js') }}"></script>
-    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260606">
     <style>
         * {
             margin: 0;
