@@ -49,14 +49,14 @@
     }
 
     .game-container {
-        padding: 1rem 0.75rem 1.5rem;
+        padding: 1rem 0.75rem 2rem;
         text-align: center;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         width: 100%;
-        min-height: calc(100svh - var(--nav-h));
+        min-height: auto;
         margin: 0 auto;
         position: relative;
         z-index: 1;
@@ -97,7 +97,8 @@
         border: 2px solid rgba(212,168,83,0.35);
         box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
         margin: 0.5rem auto;
-        max-width: 520px;
+        max-width: 960px;
+        width: 100%;
         position: relative;
     }
     .player-select::before,
@@ -117,25 +118,54 @@
         font-size: 1.35rem;
         letter-spacing: 0.08em;
     }
-    .mode-buttons {
+    .match-modes {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        text-align: left;
+    }
+    @media (max-width: 820px) {
+        .match-modes { grid-template-columns: 1fr; }
+    }
+    .mode-card {
+        background: rgba(0,0,0,0.22);
+        border: 1px solid rgba(212,168,83,0.28);
+        border-radius: 3px;
+        padding: 1.15rem 1rem 1.25rem;
         display: flex;
-        gap: 0.8rem;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-bottom: 1rem;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-height: 220px;
+    }
+    .mode-card h3 {
+        margin: 0;
+        color: var(--royal-gold);
+        font-family: 'Cinzel', serif;
+        font-size: 1.05rem;
+        letter-spacing: 0.06em;
+        text-align: center;
+    }
+    .mode-desc {
+        margin: 0;
+        color: rgba(245,240,230,0.55);
+        font-size: 0.88rem;
+        text-align: center;
+        line-height: 1.35;
     }
     .mode-btn {
         background: linear-gradient(180deg, #6b2038, var(--royal-burgundy));
         color: var(--royal-ivory);
         border: 1px solid rgba(212,168,83,0.4);
-        padding: 0.85rem 1.6rem;
-        font-size: 1rem;
+        padding: 0.75rem 1.2rem;
+        font-size: 0.95rem;
         font-weight: 600;
         border-radius: 2px;
         cursor: pointer;
         transition: all 0.25s;
         font-family: 'Cinzel', serif;
         letter-spacing: 0.04em;
+        width: 100%;
+        margin-top: auto;
     }
     .mode-btn:hover {
         border-color: var(--royal-gold);
@@ -143,12 +173,21 @@
         transform: translateY(-2px);
     }
     .difficulty-buttons {
-        display: none;
-        gap: 0.6rem;
+        display: flex;
+        gap: 0.45rem;
         justify-content: center;
         flex-wrap: wrap;
+        margin-top: auto;
     }
-    .difficulty-buttons.show { display: flex; }
+    .difficulty-buttons h4 {
+        width: 100%;
+        margin: 0 0 0.25rem;
+        color: rgba(212,168,83,0.75);
+        font-size: 0.8rem;
+        font-family: Cinzel, serif;
+        letter-spacing: 0.06em;
+        text-align: center;
+    }
     .diff-btn {
         background: linear-gradient(180deg, #3d5a3a, #2a3d28);
         color: var(--royal-ivory);
@@ -164,25 +203,13 @@
         box-shadow: 0 0 12px rgba(212,168,83,0.2);
     }
 
-    .friends-select {
-        display: none;
-        margin-top: 0.5rem;
-    }
-    .friends-select.show { display: block; }
-    .friends-select h3 {
-        color: rgba(212,168,83,0.85);
-        margin-bottom: 0.75rem;
-        font-size: 0.95rem;
-        font-family: Cinzel, serif;
-        letter-spacing: 0.06em;
-    }
     .friends-list {
         display: flex;
         flex-direction: column;
         gap: 0.45rem;
-        max-height: 220px;
+        max-height: 180px;
         overflow-y: auto;
-        margin-bottom: 0.75rem;
+        flex: 1;
     }
     .friend-pick-btn {
         display: flex;
@@ -630,6 +657,18 @@
         border: 1px solid rgba(212,168,83,0.15);
         border-radius: 3px;
     }
+    .move-review-label {
+        flex-basis: 100%;
+        text-align: center;
+        font-size: 0.82rem;
+        color: rgba(212,168,83,0.85);
+        font-family: Cinzel, serif;
+        letter-spacing: 0.05em;
+        margin: -0.25rem 0 0.15rem;
+    }
+    .move-review-label.reviewing {
+        color: var(--royal-gold-light);
+    }
     .control-btn {
         background: linear-gradient(180deg, #6b2038, var(--royal-burgundy));
         color: var(--royal-ivory);
@@ -706,25 +745,29 @@
     
     <div class="player-select" id="playerSelect">
         <h2>Choose Your Match</h2>
-        <div class="mode-buttons">
-            <button class="mode-btn" onclick="selectMode('1p')">Solo vs AI</button>
-            <button class="mode-btn" onclick="selectMode('2p')">Two Players</button>
-            <button class="mode-btn" onclick="selectMode('friends')">Play with Friends</button>
-        </div>
-        
-        <div class="difficulty-buttons" id="difficultyButtons">
-            <h3 style="color: rgba(212,168,83,0.8); margin-bottom: 0.6rem; width: 100%; font-size: 0.95rem; font-family: Cinzel, serif; letter-spacing: 0.06em;">Select Difficulty</h3>
-            <button class="diff-btn" onclick="startGame('easy')">Easy</button>
-            <button class="diff-btn" onclick="startGame('medium')">Medium</button>
-            <button class="diff-btn" onclick="startGame('hard')">Hard</button>
-        </div>
-
-        <div class="friends-select" id="friendsSelect">
-            <h3>Choose a friend to play</h3>
-            <div class="friends-list" id="friendsList"></div>
-            <p class="friends-empty" id="friendsEmpty" style="display:none;">No friends yet — add friends from the Friends page first.</p>
-            <p class="friends-login-hint" id="friendsLoginHint" style="display:none;">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
-            <button class="diff-btn" type="button" onclick="cancelFriendsSelect()">← Back</button>
+        <div class="match-modes">
+            <div class="mode-card">
+                <h3>Solo vs AI</h3>
+                <p class="mode-desc">Pick a difficulty and play against the computer.</p>
+                <div class="difficulty-buttons">
+                    <h4>Difficulty</h4>
+                    <button class="diff-btn" type="button" onclick="startSoloGame('easy')">Easy</button>
+                    <button class="diff-btn" type="button" onclick="startSoloGame('medium')">Medium</button>
+                    <button class="diff-btn" type="button" onclick="startSoloGame('hard')">Hard</button>
+                </div>
+            </div>
+            <div class="mode-card">
+                <h3>Two Players</h3>
+                <p class="mode-desc">Pass the device and take turns on the same board.</p>
+                <button class="mode-btn" type="button" onclick="startTwoPlayerGame()">Start Game</button>
+            </div>
+            <div class="mode-card">
+                <h3>Play with Friends</h3>
+                <p class="mode-desc">Choose a friend for a shared-screen match.</p>
+                <div class="friends-list" id="friendsList"></div>
+                <p class="friends-empty" id="friendsEmpty" style="display:none;">No friends yet — add friends from the Friends page first.</p>
+                <p class="friends-login-hint" id="friendsLoginHint" style="display:none;">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
+            </div>
         </div>
     </div>
     
@@ -774,6 +817,7 @@
         </div>
         
         <div class="chess-footer">
+            <div class="move-review-label" id="moveReviewLabel"></div>
             <button class="control-btn secondary icon-side" type="button" onclick="showSelect()" title="Back to menu">☰ Menu</button>
             <button class="control-btn secondary icon-side" type="button" id="moveBackBtn" onclick="goMoveBack()" title="Previous move" disabled>◀ Back</button>
             <button class="control-btn secondary icon-side" type="button" id="moveForwardBtn" onclick="goMoveForward()" title="Next move" disabled>Forward ▶</button>
@@ -830,6 +874,8 @@
     let historyIndex = -1;
     let friendOpponentName = null;
     let gameOver = false;
+    let lastGameOverInfo = null;
+    let reviewingHistory = false;
     let pendingPromotion = null;
     let lastMovedPieceType = null;
     let lastMove = null;
@@ -881,6 +927,8 @@
         positionHistory = [];
         historyIndex = -1;
         gameOver = false;
+        lastGameOverInfo = null;
+        reviewingHistory = false;
         pendingPromotion = null;
         lastMove = null;
         capturedByWhite = [];
@@ -912,6 +960,7 @@
     }
 
     function showGameOver(title, msg) {
+        lastGameOverInfo = { title, msg };
         document.getElementById('gameOverTitle').textContent = title;
         document.getElementById('gameOverMsg').textContent = msg;
         document.getElementById('gameOverModal').classList.add('show');
@@ -944,8 +993,27 @@
             whiteTime,
             blackTime,
             gameOver,
+            gameOverInfo: gameOver && lastGameOverInfo ? { ...lastGameOverInfo } : null,
             statusText: document.getElementById('status').textContent,
         };
+    }
+
+    function updateReviewLabel() {
+        const label = document.getElementById('moveReviewLabel');
+        if (!label) return;
+        const totalMoves = Math.max(0, positionHistory.length - 1);
+        if (totalMoves === 0) {
+            label.textContent = '';
+            label.classList.remove('reviewing');
+            return;
+        }
+        if (!isAtLatestPosition()) {
+            label.textContent = `Reviewing move ${historyIndex} of ${totalMoves} — go Forward to continue playing`;
+            label.classList.add('reviewing');
+        } else {
+            label.textContent = totalMoves > 0 ? `Move ${totalMoves} — use Back to review previous moves` : '';
+            label.classList.remove('reviewing');
+        }
     }
 
     function applySnapshot(snap) {
@@ -964,9 +1032,23 @@
         pendingPromotion = null;
         updateCapturedDisplay();
         updateTimerDisplay();
-        document.getElementById('status').textContent = snap.statusText || `${cap(currentPlayer)}'s turn`;
-        renderBoard();
+        closeGameOver();
+
+        if (isAtLatestPosition()) {
+            lastGameOverInfo = snap.gameOverInfo;
+            renderBoard();
+            if (snap.gameOver && snap.gameOverInfo) {
+                showGameOver(snap.gameOverInfo.title, snap.gameOverInfo.msg);
+            }
+        } else {
+            reviewingHistory = true;
+            document.getElementById('status').textContent = snap.statusText || `${cap(currentPlayer)}'s turn`;
+            renderBoard(true);
+            reviewingHistory = false;
+        }
+
         updateHistoryButtons();
+        updateReviewLabel();
     }
 
     function isAtLatestPosition() {
@@ -989,6 +1071,7 @@
         positionHistory.push(snap);
         historyIndex = positionHistory.length - 1;
         updateHistoryButtons();
+        updateReviewLabel();
     }
 
     function resetHistory() {
@@ -1031,7 +1114,7 @@
         return b.map(row => row.slice());
     }
 
-    function makeMoveNoCheck(fromRow, fromCol, toRow, toCol, promotionPiece = null) {
+    function makeMoveNoCheck(fromRow, fromCol, toRow, toCol, promotionPiece = null, epTarget = enPassantTarget) {
         const newBoard = cloneBoard(board);
         const piece = newBoard[fromRow][fromCol];
         
@@ -1053,18 +1136,12 @@
             }
         }
         
-        if (type === 'p' && enPassantTarget && toRow === enPassantTarget.row && toCol === enPassantTarget.col) {
+        if (type === 'p' && epTarget && toRow === epTarget.row && toCol === epTarget.col) {
             if (color === 'white') {
                 newBoard[toRow + 1][toCol] = '';
             } else {
                 newBoard[toRow - 1][toCol] = '';
             }
-        }
-        
-        if (type === 'p' && Math.abs(toRow - fromRow) === 2) {
-            enPassantTarget = { row: (fromRow + toRow) / 2, col: fromCol };
-        } else {
-            enPassantTarget = null;
         }
         
         if (type === 'p' && (toRow === 0 || toRow === 7)) {
@@ -1474,6 +1551,8 @@
     }
 
     function updateStatus() {
+        if (reviewingHistory) return;
+
         const statusEl = document.getElementById('status');
         if (gameOver) return;
 
@@ -1503,7 +1582,7 @@
 
     function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
-    function renderBoard() {
+    function renderBoard(skipStatusUpdate = false) {
         const boardEl = document.getElementById('board');
         boardEl.innerHTML = '';
 
@@ -1554,7 +1633,7 @@
                 boardEl.appendChild(square);
             }
         }
-        updateStatus();
+        if (!skipStatusUpdate) updateStatus();
     }
 
     function showPromotionModal(color) {
@@ -1576,15 +1655,16 @@
 
     function completePromotion(pieceType) {
         if (!pendingPromotion) return;
-        
-        lastMovedPieceType = 'p'; // Mark pawn moved even when promoting
+
         const { fromRow, fromCol, toRow, toCol } = pendingPromotion;
+        lastMovedPieceType = 'p';
+        lastMove = { from: { row: fromRow, col: fromCol }, to: { row: toRow, col: toCol } };
         board[toRow][toCol] = currentPlayer === 'white' ? pieceType.toUpperCase() : pieceType.toLowerCase();
         board[fromRow][fromCol] = '';
-        
+
         document.getElementById('promotionModal').classList.remove('show');
         pendingPromotion = null;
-        
+
         finishMove();
     }
 
@@ -1784,61 +1864,54 @@
         if (!gameOver && isInCheck(board, currentPlayer)) GameSounds.play('check');
     }
 
-    function selectMode(mode) {
-        gameMode = mode;
-        document.getElementById('friendsSelect').classList.remove('show');
-        if (mode === '1p') {
-            document.getElementById('difficultyButtons').classList.add('show');
-        } else if (mode === 'friends') {
-            document.getElementById('difficultyButtons').classList.remove('show');
-            showFriendsSelect();
-        } else {
-            document.getElementById('difficultyButtons').classList.remove('show');
-            friendOpponentName = null;
-            startGame();
-        }
+    function startSoloGame(diff) {
+        gameMode = '1p';
+        friendOpponentName = null;
+        startGame(diff);
     }
 
-    function showFriendsSelect() {
-        if (!chessLoggedIn) {
-            document.getElementById('friendsLoginHint').style.display = 'block';
-            document.getElementById('friendsEmpty').style.display = 'none';
-            document.getElementById('friendsList').innerHTML = '';
-            document.getElementById('friendsSelect').classList.add('show');
-            return;
-        }
-
-        document.getElementById('friendsLoginHint').style.display = 'none';
-        const listEl = document.getElementById('friendsList');
-        listEl.innerHTML = '';
-
-        if (!chessFriends.length) {
-            document.getElementById('friendsEmpty').style.display = 'block';
-        } else {
-            document.getElementById('friendsEmpty').style.display = 'none';
-            chessFriends.forEach(friend => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'friend-pick-btn';
-                btn.innerHTML = `<span class="friend-pick-avatar">${friend.name.charAt(0).toUpperCase()}</span><span>${friend.name}</span>`;
-                btn.onclick = () => startFriendGame(friend.name);
-                listEl.appendChild(btn);
-            });
-        }
-
-        document.getElementById('friendsSelect').classList.add('show');
-    }
-
-    function cancelFriendsSelect() {
-        document.getElementById('friendsSelect').classList.remove('show');
-        document.getElementById('friendsLoginHint').style.display = 'none';
+    function startTwoPlayerGame() {
+        gameMode = '2p';
+        friendOpponentName = null;
+        startGame();
     }
 
     function startFriendGame(name) {
         friendOpponentName = name;
         gameMode = 'friends';
-        cancelFriendsSelect();
         startGame();
+    }
+
+    function initFriendsList() {
+        const listEl = document.getElementById('friendsList');
+        const emptyEl = document.getElementById('friendsEmpty');
+        const loginEl = document.getElementById('friendsLoginHint');
+        if (!listEl) return;
+
+        listEl.innerHTML = '';
+
+        if (!chessLoggedIn) {
+            loginEl.style.display = 'block';
+            emptyEl.style.display = 'none';
+            return;
+        }
+
+        loginEl.style.display = 'none';
+
+        if (!chessFriends.length) {
+            emptyEl.style.display = 'block';
+            return;
+        }
+
+        emptyEl.style.display = 'none';
+        chessFriends.forEach(friend => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'friend-pick-btn';
+            btn.innerHTML = `<span class="friend-pick-avatar">${friend.name.charAt(0).toUpperCase()}</span><span>${friend.name}</span>`;
+            btn.onclick = () => startFriendGame(friend.name);
+            listEl.appendChild(btn);
+        });
     }
 
     function formatTime(seconds) {
@@ -1912,7 +1985,7 @@
     function startGame(diff = null) {
         GameSounds.init();
         GameSounds.play('start');
-        difficulty = diff || 'easy';
+        if (diff !== null) difficulty = diff;
         whiteTime = 600;
         blackTime = 600;
         initBoard();
@@ -1924,6 +1997,7 @@
         updateTimerDisplay();
         startTimer();
         document.getElementById('hintBtn').style.display = gameMode === '1p' ? '' : 'none';
+        updateReviewLabel();
     }
 
     function showSelect() {
@@ -1931,10 +2005,14 @@
         closeGameOver();
         document.getElementById('promotionModal').classList.remove('show');
         pendingPromotion = null;
+        reviewingHistory = false;
         document.getElementById('playerSelect').style.display = 'block';
-        document.getElementById('difficultyButtons').classList.remove('show');
-        document.getElementById('friendsSelect').classList.remove('show');
         document.getElementById('gameArea').classList.remove('active');
+        const label = document.getElementById('moveReviewLabel');
+        if (label) {
+            label.textContent = '';
+            label.classList.remove('reviewing');
+        }
     }
 
     function rematchGame() {
@@ -1942,8 +2020,12 @@
         closeGameOver();
         document.getElementById('promotionModal').classList.remove('show');
         pendingPromotion = null;
+        reviewingHistory = false;
         if (timerInterval) clearInterval(timerInterval);
-        startGame(difficulty);
+        const diff = gameMode === '1p' ? difficulty : null;
+        startGame(diff);
     }
+
+    document.addEventListener('DOMContentLoaded', initFriendsList);
 </script>
 @endsection
