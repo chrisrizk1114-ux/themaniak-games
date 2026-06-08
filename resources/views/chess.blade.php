@@ -352,6 +352,81 @@
     }
     .friend-card:last-child { border-bottom: none; }
 
+    .chess-room-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        background: rgba(0,0,0,0.75);
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+    .chess-room-modal.show { display: flex; }
+    .chess-room-modal-box {
+        width: min(100%, 420px);
+        background: linear-gradient(145deg, rgba(42,24,16,0.98), rgba(20,16,28,0.98));
+        border: 2px solid rgba(212,168,83,0.4);
+        border-radius: 6px;
+        padding: 1.5rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    .chess-room-modal-box h3 {
+        font-family: 'Cinzel', serif;
+        color: var(--royal-gold-light);
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+    .chess-room-modal-box p {
+        color: var(--royal-ivory);
+        opacity: 0.85;
+        text-align: center;
+        margin-bottom: 1rem;
+        font-size: 0.92rem;
+    }
+    .chess-room-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+    .chess-room-code {
+        font-family: 'Orbitron', monospace;
+        font-size: 2rem;
+        letter-spacing: 0.35em;
+        text-align: center;
+        color: var(--royal-gold-light);
+        padding: 1rem;
+        margin: 0.5rem 0 1rem;
+        border: 2px dashed rgba(212,168,83,0.45);
+        border-radius: 4px;
+        background: rgba(0,0,0,0.25);
+    }
+    .chess-room-input {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        font-size: 1.4rem;
+        letter-spacing: 0.2em;
+        text-align: center;
+        text-transform: uppercase;
+        border-radius: 4px;
+        border: 1px solid rgba(212,168,83,0.35);
+        background: rgba(0,0,0,0.3);
+        color: var(--royal-gold-light);
+        margin-bottom: 0.75rem;
+    }
+    .chess-room-close {
+        margin-top: 1rem;
+        width: 100%;
+        background: transparent;
+        border: 1px solid rgba(212,168,83,0.25);
+        color: rgba(245,240,230,0.7);
+        padding: 0.55rem;
+        cursor: pointer;
+        border-radius: 3px;
+    }
+    .chess-room-view { display: none; }
+    .chess-room-view.active { display: block; }
+
     .chess-chat-panel {
         display: none;
         flex-direction: column;
@@ -1025,36 +1100,22 @@
             </div>
             <div class="mode-card">
                 <h3>Play with Friends</h3>
-                <p class="mode-desc">Invite a friend — you play on the same live board (White vs Black) with chat.</p>
-                <div class="friends-list" id="friendsList">
-                    @auth
-                        @forelse($friends as $friend)
-                        <div class="friend-card" data-friend-id="{{ $friend['id'] }}">
-                            <div class="friend-pick-btn" style="cursor:default;border:none;background:transparent;padding:0;">
-                                <span class="{{ ($friend['online'] ?? false) ? 'friend-online-dot' : 'friend-offline-dot' }}"></span>
-                                <span class="friend-pick-avatar">{{ strtoupper(substr($friend['name'], 0, 1)) }}</span>
-                                <span class="friend-pick-meta">
-                                    <span>{{ $friend['name'] }}</span>
-                                    <small>{{ ($friend['online'] ?? false) ? 'Online' : 'Offline' }}</small>
-                                </span>
-                            </div>
-                            <form method="POST" action="{{ route('chess.games.store') }}" class="chess-invite-form">
-                                @csrf
-                                <input type="hidden" name="friend_id" value="{{ $friend['id'] }}">
-                                <button type="submit" class="mode-btn chess-invite-btn" style="margin-top:0.45rem;font-size:0.85rem;padding:0.6rem 1rem;width:100%;">
-                                    ♟ Invite to play online
-                                </button>
-                            </form>
+                <p class="mode-desc">Create a room and share a code, or join with your friend's code. Same live board on mobile or desktop.</p>
+                @auth
+                    <button type="button" class="mode-btn" onclick="openChessRoomModal()">♟ Play with Friend</button>
+                    @if(($openChessRooms ?? collect())->isNotEmpty())
+                    <div style="margin-top:0.75rem;text-align:left;">
+                        @foreach($openChessRooms as $room)
+                        <div class="chess-invite-alert" style="margin-bottom:0.5rem;">
+                            <span>Your room code: <strong>{{ $room->room_code }}</strong></span>
+                            <a href="{{ url('/chess?game='.$room->token) }}" class="mode-btn">Open room</a>
                         </div>
-                        @empty
-                        <p class="friends-empty">No friends yet — add friends from the Friends page first.</p>
-                        @endforelse
-                    @else
-                        <p class="friends-login-hint">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
-                    @endauth
-                </div>
-                <p class="friends-empty" id="friendsEmpty" style="display:none;">No friends yet — add friends from the Friends page first.</p>
-                <p class="friends-login-hint" id="friendsLoginHint" style="display:none;">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
+                        @endforeach
+                    </div>
+                    @endif
+                @else
+                    <p class="friends-login-hint">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
+                @endauth
             </div>
         </div>
     </div>
@@ -1143,6 +1204,33 @@
     <div class="promotion-content">
         <h3>Promote Pawn</h3>
         <div class="promotion-pieces" id="promotionPieces"></div>
+    </div>
+</div>
+
+<div class="chess-room-modal" id="chessRoomModal">
+    <div class="chess-room-modal-box">
+        <h3>♟ Play with a Friend</h3>
+        <div class="chess-room-view active" id="roomChoiceView">
+            <p>Create a room and share the code, or enter a friend's code to join.</p>
+            <div class="chess-room-actions">
+                <button type="button" class="mode-btn" onclick="createChessRoom()">Create Room</button>
+                <button type="button" class="mode-btn" style="background:linear-gradient(180deg,#2a4a6b,#1a3050);" onclick="showEnterCodeView()">Enter Code</button>
+            </div>
+        </div>
+        <div class="chess-room-view" id="roomCreateView">
+            <p>Share this code with your friend:</p>
+            <div class="chess-room-code" id="roomCodeDisplay">------</div>
+            <div class="chess-room-actions">
+                <button type="button" class="mode-btn" onclick="copyRoomCode()">Copy Code</button>
+                <button type="button" class="mode-btn" onclick="enterCreatedRoom()">Enter Room (You = White)</button>
+            </div>
+        </div>
+        <div class="chess-room-view" id="roomJoinView">
+            <p>Enter the 6-character room code:</p>
+            <input type="text" class="chess-room-input" id="roomCodeInput" maxlength="6" placeholder="ABC123" autocomplete="off">
+            <button type="button" class="mode-btn" style="width:100%;" onclick="joinChessRoom()">Join as Black</button>
+        </div>
+        <button type="button" class="chess-room-close" onclick="closeChessRoomModal()">Close</button>
     </div>
 </div>
 
@@ -2272,37 +2360,104 @@
         await loadPendingInvites();
     }
 
-    async function inviteFriendOnline(friendId, friendName) {
+    async function createChessRoom() {
         if (!chessLoggedIn) {
             window.location.href = '{{ route('login') }}';
             return;
         }
         try {
-            const res = await chessFetch('{{ route('chess.games.store') }}', {
+            const res = await chessFetch('{{ route('chess.rooms.store') }}', { method: 'POST', body: '{}' });
+            let data = {};
+            try { data = await res.json(); } catch (e) { /* ignore */ }
+            if (!res.ok) {
+                showChessToast(data.message || 'Could not create room.', true);
+                return;
+            }
+            createdRoomData = data;
+            document.getElementById('roomCodeDisplay').textContent = data.room_code || '------';
+            showRoomView('roomCreateView');
+        } catch (e) {
+            showChessToast('Could not create room. Try again.', true);
+        }
+    }
+
+    async function joinChessRoom() {
+        if (!chessLoggedIn) {
+            window.location.href = '{{ route('login') }}';
+            return;
+        }
+        const code = (document.getElementById('roomCodeInput')?.value || '').trim().toUpperCase();
+        if (code.length !== 6) {
+            showChessToast('Enter a 6-character room code.', true);
+            return;
+        }
+        try {
+            const res = await chessFetch('{{ route('chess.rooms.join') }}', {
                 method: 'POST',
-                body: JSON.stringify({ friend_id: friendId }),
+                body: JSON.stringify({ room_code: code }),
             });
             let data = {};
             try { data = await res.json(); } catch (e) { /* ignore */ }
             if (!res.ok) {
-                showChessToast(data.message || `Could not send invite (error ${res.status}). Try refreshing the page.`, true);
+                showChessToast(data.message || 'Could not join room.', true);
                 return;
             }
-            friendOpponentName = friendName;
-            const playUrl = data.play_url || ('/chess?game=' + data.token);
-            history.replaceState({}, '', playUrl);
+            closeChessRoomModal();
+            friendOpponentName = data.white?.name || 'Friend';
+            history.replaceState({}, '', data.play_url || ('/chess?game=' + data.token));
             enterOnlineGameUI(data);
-            showChessToast(data.status === 'pending'
-                ? `Invite sent to ${friendName}! They will see it within a few seconds.`
-                : `Opening your match with ${friendName}.`);
+            showChessToast(`Joined ${friendOpponentName}'s room! You play as Black.`);
             document.getElementById('gameArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            if (typeof GameSounds !== 'undefined') {
-                try { GameSounds.init(); GameSounds.play('start'); } catch (e) { /* ignore */ }
-            }
         } catch (e) {
-            showChessToast('Could not invite friend. Check your connection and refresh the page.', true);
+            showChessToast('Could not join room. Check the code and try again.', true);
         }
     }
+
+    function enterCreatedRoom() {
+        if (!createdRoomData) return;
+        closeChessRoomModal();
+        friendOpponentName = 'Friend';
+        history.replaceState({}, '', createdRoomData.play_url || ('/chess?game=' + createdRoomData.token));
+            enterOnlineGameUI(createdRoomData);
+            showChessToast(`Room ready! Share code ${createdRoomData.room_code} with your friend.`);
+            document.getElementById('gameArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function copyRoomCode() {
+        const code = createdRoomData?.room_code || document.getElementById('roomCodeDisplay')?.textContent?.trim();
+        if (!code || code === '------') return;
+        navigator.clipboard?.writeText(code).then(() => {
+            showChessToast('Room code copied!');
+        }).catch(() => alert('Room code: ' + code));
+    }
+
+    function openChessRoomModal() {
+        if (!chessLoggedIn) {
+            window.location.href = '{{ route('login') }}';
+            return;
+        }
+        createdRoomData = null;
+        document.getElementById('roomCodeInput').value = '';
+        document.getElementById('roomCodeDisplay').textContent = '------';
+        showRoomView('roomChoiceView');
+        document.getElementById('chessRoomModal')?.classList.add('show');
+    }
+
+    function closeChessRoomModal() {
+        document.getElementById('chessRoomModal')?.classList.remove('show');
+    }
+
+    function showRoomView(viewId) {
+        document.querySelectorAll('.chess-room-view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId)?.classList.add('active');
+    }
+
+    function showEnterCodeView() {
+        showRoomView('roomJoinView');
+        document.getElementById('roomCodeInput')?.focus();
+    }
+
+    let createdRoomData = null;
 
     async function openOnlineGame(token) {
         if (!chessLoggedIn) {
@@ -2330,6 +2485,7 @@
         friendOpponentName = gameData.opponent?.name || 'Friend';
         onlineGame = {
             token: gameData.token,
+            roomCode: gameData.room_code || null,
             version: gameData.version || 0,
             status: gameData.status,
             lastMessageId: 0,
@@ -2354,7 +2510,11 @@
             renderBoard();
             resetHistory();
             document.getElementById('status').textContent = gameData.status === 'pending'
-                ? (myColor === 'white' ? `Waiting for ${friendOpponentName} to join…` : 'Accept the invite to start.')
+                ? (myColor === 'white'
+                    ? (gameData.room_code
+                        ? `Waiting for friend… Share code: ${gameData.room_code}`
+                        : `Waiting for ${friendOpponentName} to join…`)
+                    : 'Accept the invite to start.')
                 : "White's turn";
         }
 
@@ -2388,10 +2548,16 @@
                 text.textContent = `${gameData.white.name} invited you to play as Black.`;
                 acceptBtn.style.display = '';
                 copyBtn.style.display = 'none';
+            } else if (gameData.room_code) {
+                text.textContent = `Room code: ${gameData.room_code} — share with your friend`;
+                acceptBtn.style.display = 'none';
+                copyBtn.style.display = '';
+                copyBtn.textContent = 'Copy code';
             } else {
                 text.textContent = `Share this link with ${friendOpponentName}:`;
                 acceptBtn.style.display = 'none';
                 copyBtn.style.display = '';
+                copyBtn.textContent = 'Copy link';
             }
         } else {
             bar.classList.remove('show');
@@ -2399,6 +2565,14 @@
     }
 
     function copyOnlineGameLink() {
+        const code = onlineGame?.roomCode;
+        if (code) {
+            navigator.clipboard?.writeText(code).then(() => {
+                GameSounds.play('click');
+                document.getElementById('onlineInviteText').textContent = 'Code copied! Send it to your friend.';
+            }).catch(() => alert('Room code: ' + code));
+            return;
+        }
         const url = onlineGame?.playUrl || window.location.href;
         navigator.clipboard?.writeText(url).then(() => {
             GameSounds.play('click');
@@ -2697,25 +2871,6 @@
     document.addEventListener('DOMContentLoaded', async () => {
         updateRematchVisibility();
         await initFriendsList();
-
-        document.querySelectorAll('.chess-invite-form').forEach(form => {
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const card = form.closest('[data-friend-id]');
-                const friendId = parseInt(form.querySelector('input[name="friend_id"]')?.value || card?.dataset.friendId, 10);
-                const friendName = card?.querySelector('.friend-pick-meta span')?.textContent?.trim() || 'Friend';
-                const btn = form.querySelector('.chess-invite-btn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.textContent = 'Sending invite…';
-                }
-                await inviteFriendOnline(friendId, friendName);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = '♟ Invite to play online';
-                }
-            });
-        });
 
         const params = new URLSearchParams(window.location.search);
         const gameToken = params.get('game');

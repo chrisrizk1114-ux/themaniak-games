@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\ChessGame;
 use App\Models\Feedback;
+use App\Models\FriendMessage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
@@ -64,6 +65,11 @@ class AppServiceProvider extends ServiceProvider
                     ->where('black_user_id', $userId)
                     ->count();
 
+                $chatUnreadCount = FriendMessage::query()
+                    ->where('recipient_id', $userId)
+                    ->whereNull('read_at')
+                    ->count();
+
                 $payload = [
                     'friendRequestCount' => $incoming->count(),
                     'friendRequestNotifications' => $incoming->take(5),
@@ -71,7 +77,8 @@ class AppServiceProvider extends ServiceProvider
                     'feedbackNotifications' => collect(),
                     'chessInviteCount' => $chessInviteCount,
                     'chessInviteNotifications' => $chessInvites,
-                    'notificationCount' => $incoming->count() + $chessInviteCount,
+                    'chatUnreadCount' => $chatUnreadCount,
+                    'notificationCount' => $incoming->count() + $chessInviteCount + $chatUnreadCount,
                 ];
 
                 if ($user->isOwner()) {
@@ -80,7 +87,7 @@ class AppServiceProvider extends ServiceProvider
 
                     $payload['unreadFeedbackCount'] = $unreadFeedbackCount;
                     $payload['feedbackNotifications'] = $feedback;
-                    $payload['notificationCount'] = $incoming->count() + $unreadFeedbackCount + $chessInviteCount;
+                    $payload['notificationCount'] = $incoming->count() + $unreadFeedbackCount + $chessInviteCount + $chatUnreadCount;
                 }
 
                 return $payload;

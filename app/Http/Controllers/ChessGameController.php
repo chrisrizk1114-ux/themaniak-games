@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Support\NotificationCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ChessGameController extends Controller
@@ -51,58 +50,75 @@ class ChessGameController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse|RedirectResponse
+    public function createRoom(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'friend_id' => ['required', 'integer', 'exists:users,id'],
-        ]);
-
         $user = auth()->user();
-        $friend = User::findOrFail($data['friend_id']);
-
-        if ($friend->id === $user->id) {
-            return $this->inviteError($request, 'You cannot invite yourself.');
-        }
-
-        if (! $user->isFriendsWith($friend)) {
-            return $this->inviteError($request, 'You can only invite friends.');
-        }
 
         $existing = ChessGame::query()
-            ->whereIn('status', [ChessGame::STATUS_PENDING, ChessGame::STATUS_ACTIVE])
-            ->where(function ($query) use ($user, $friend) {
-                $query->where(function ($pair) use ($user, $friend) {
-                    $pair->where('white_user_id', $user->id)->where('black_user_id', $friend->id);
-                })->orWhere(function ($pair) use ($user, $friend) {
-                    $pair->where('white_user_id', $friend->id)->where('black_user_id', $user->id);
-                });
-            })
+            ->where('white_user_id', $user->id)
+            ->where('status', ChessGame::STATUS_PENDING)
+            ->whereNull('black_user_id')
+            ->whereNotNull('room_code')
             ->latest()
             ->first();
 
         if ($existing) {
-            return $this->inviteSuccess($request, $existing, $friend, false);
+            return response()->json($this->roomPayload($existing, $user));
         }
 
         $game = ChessGame::create([
+            'room_code' => ChessGame::generateRoomCode(),
             'white_user_id' => $user->id,
-            'black_user_id' => $friend->id,
+            'black_user_id' => null,
             'invited_by_user_id' => $user->id,
             'status' => ChessGame::STATUS_PENDING,
             'last_activity_at' => now(),
         ]);
 
-        NotificationCache::clearForUser($friend->id);
+        return response()->json($this->roomPayload($game->load('whitePlayer'), $user), 201);
+    }
 
-        Cache::forget('friends_presence_'.$user->id);
-        Cache::forget('friends_presence_'.$friend->id);
+    public function joinRoom(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'room_code' => ['required', 'string', 'size:6'],
+        ]);
 
-        return $this->inviteSuccess(
-            $request,
-            $game->load(['whitePlayer', 'blackPlayer']),
-            $friend,
-            true
-        );
+        $user = auth()->user();
+        $code = strtoupper(trim($data['room_code']));
+
+        $game = ChessGame::query()
+            ->where('room_code', $code)
+            ->where('status', ChessGame::STATUS_PENDING)
+            ->whereNull('black_user_id')
+            ->first();
+
+        if (! $game) {
+            return response()->json(['message' => 'Room not found or already full. Check the code and try again.'], 404);
+        }
+
+        if ($game->white_user_id === $user->id) {
+            return response()->json(['message' => 'You cannot join your own room.'], 422);
+        }
+
+        $game->update([
+            'black_user_id' => $user->id,
+            'status' => ChessGame::STATUS_ACTIVE,
+            'state' => ChessGame::initialState(),
+            'version' => 1,
+            'last_activity_at' => now(),
+        ]);
+
+        ChessGameMessage::create([
+            'chess_game_id' => $game->id,
+            'user_id' => $user->id,
+            'body' => $user->name.' joined the match.',
+            'created_at' => now(),
+        ]);
+
+        NotificationCache::clearForUser($game->white_user_id);
+
+        return response()->json($game->fresh(['whitePlayer', 'blackPlayer'])->toSyncPayload($user));
     }
 
     public function inviteCheck(): JsonResponse
@@ -305,31 +321,10 @@ class ChessGameController extends Controller
         ]);
     }
 
-    private function inviteSuccess(Request $request, ChessGame $game, User $friend, bool $created): JsonResponse|RedirectResponse
+    private function roomPayload(ChessGame $game, User $user): array
     {
-        $game->loadMissing(['whitePlayer', 'blackPlayer']);
-        $payload = array_merge(
-            $game->toSyncPayload($request->user()),
-            ['play_url' => url('/chess?game='.$game->token)]
-        );
-
-        if ($request->expectsJson()) {
-            return response()->json($payload, $created ? 201 : 200);
-        }
-
-        $message = $created
-            ? 'Invite sent to '.$friend->name.'! Waiting for them to join.'
-            : 'Opening your match with '.$friend->name.'.';
-
-        return redirect('/chess?game='.$game->token)->with('chess_invite_status', $message);
-    }
-
-    private function inviteError(Request $request, string $message): JsonResponse|RedirectResponse
-    {
-        if ($request->expectsJson()) {
-            return response()->json(['message' => $message], 422);
-        }
-
-        return redirect('/chess')->withErrors(['chess_invite' => $message]);
+        return array_merge($game->toSyncPayload($user), [
+            'play_url' => url('/chess?game='.$game->token),
+        ]);
     }
 }

@@ -34,7 +34,7 @@ class UpdateLastSeen
             return true;
         }
 
-        if ($request->is('up', 'health', 'presence/*', 'chess/games/pending', 'chess/games/invites/check')) {
+        if ($request->is('up', 'health', 'presence/*', 'chess/games/pending', 'chess/games/invites/check', 'chat/poll')) {
             return true;
         }
 

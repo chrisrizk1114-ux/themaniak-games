@@ -761,6 +761,14 @@
                 <li>
                     <a href="{{ route('friends.index') }}" class="nav-link {{ request()->routeIs('friends.*') ? 'active' : '' }}">👥 Friends</a>
                 </li>
+                <li>
+                    <a href="{{ route('chat.index') }}" class="nav-link {{ request()->routeIs('chat.*') ? 'active' : '' }}">
+                        💬 Chat
+                        @if (($chatUnreadCount ?? 0) > 0)
+                            <span class="nav-notify-badge" style="position:static;display:inline-block;min-width:16px;height:16px;line-height:16px;font-size:0.58rem;margin-left:0.25rem;">{{ ($chatUnreadCount ?? 0) > 9 ? '9+' : ($chatUnreadCount ?? 0) }}</span>
+                        @endif
+                    </a>
+                </li>
                 <li class="nav-status-wrap">
                     @include('layouts.partials.status-pill', ['user' => auth()->user(), 'self' => true])
                 </li>

@@ -19,6 +19,7 @@ class ChessGame extends Model
 
     protected $fillable = [
         'token',
+        'room_code',
         'white_user_id',
         'black_user_id',
         'invited_by_user_id',
@@ -77,7 +78,31 @@ class ChessGame extends Model
 
     public function involvesUser(User $user): bool
     {
-        return $this->white_user_id === $user->id || $this->black_user_id === $user->id;
+        if ($this->white_user_id === $user->id) {
+            return true;
+        }
+
+        return $this->black_user_id !== null && $this->black_user_id === $user->id;
+    }
+
+    public function isOpenRoom(): bool
+    {
+        return $this->room_code !== null
+            && $this->status === self::STATUS_PENDING
+            && $this->black_user_id === null;
+    }
+
+    public static function generateRoomCode(): string
+    {
+        $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        do {
+            $code = '';
+            for ($i = 0; $i < 6; $i++) {
+                $code .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+        } while (self::query()->where('room_code', $code)->where('status', self::STATUS_PENDING)->exists());
+
+        return $code;
     }
 
     public function colorForUser(User $user): ?string
@@ -139,6 +164,7 @@ class ChessGame extends Model
 
         return [
             'token' => $this->token,
+            'room_code' => $this->room_code,
             'status' => $this->status,
             'version' => $this->version,
             'state' => $this->state,
@@ -152,10 +178,14 @@ class ChessGame extends Model
                 'name' => $this->whitePlayer->name,
                 'online' => $this->whitePlayer->isOnline(),
             ],
-            'black' => [
+            'black' => $this->black_user_id ? [
                 'id' => $this->black_user_id,
                 'name' => $this->blackPlayer->name,
                 'online' => $this->blackPlayer->isOnline(),
+            ] : [
+                'id' => null,
+                'name' => 'Waiting for player…',
+                'online' => false,
             ],
             'opponent' => $opponent ? [
                 'id' => $opponent->id,

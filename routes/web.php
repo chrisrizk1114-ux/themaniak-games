@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChessGameController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\FriendChatController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OwnerController;
@@ -39,10 +40,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/presence/ping', [PresenceController::class, 'ping'])->name('presence.ping');
     Route::get('/presence/friends', [PresenceController::class, 'friends'])->name('presence.friends');
 
+    Route::get('/chat', [FriendChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/poll', [FriendChatController::class, 'poll'])->name('chat.poll');
+    Route::get('/chat/messages/{friend}', [FriendChatController::class, 'messages'])->name('chat.messages');
+    Route::post('/chat/messages/{friend}', [FriendChatController::class, 'store'])->name('chat.store');
+
     Route::prefix('chess')->name('chess.')->group(function () {
         Route::get('/games/pending', [ChessGameController::class, 'pending'])->name('games.pending');
         Route::get('/games/invites/check', [ChessGameController::class, 'inviteCheck'])->name('games.invites.check');
-        Route::post('/games', [ChessGameController::class, 'store'])->name('games.store');
+        Route::post('/rooms', [ChessGameController::class, 'createRoom'])->name('rooms.store');
+        Route::post('/rooms/join', [ChessGameController::class, 'joinRoom'])->name('rooms.join');
         Route::get('/games/{chessGame:token}', [ChessGameController::class, 'show'])->name('games.show');
         Route::get('/games/{chessGame:token}/sync', [ChessGameController::class, 'sync'])->name('games.sync');
         Route::post('/games/{chessGame:token}/accept', [ChessGameController::class, 'accept'])->name('games.accept');
@@ -109,6 +116,7 @@ Route::get('/chess', function () {
 
     $incomingChessInvites = collect();
     $outgoingChessInvites = collect();
+    $openChessRooms = collect();
     if ($user) {
         $incomingChessInvites = ChessGame::query()
             ->where('status', ChessGame::STATUS_PENDING)
@@ -119,7 +127,15 @@ Route::get('/chess', function () {
         $outgoingChessInvites = ChessGame::query()
             ->where('status', ChessGame::STATUS_PENDING)
             ->where('invited_by_user_id', $user->id)
+            ->whereNotNull('black_user_id')
             ->with('blackPlayer')
+            ->latest()
+            ->get();
+        $openChessRooms = ChessGame::query()
+            ->where('status', ChessGame::STATUS_PENDING)
+            ->where('white_user_id', $user->id)
+            ->whereNull('black_user_id')
+            ->whereNotNull('room_code')
             ->latest()
             ->get();
     }
@@ -130,6 +146,7 @@ Route::get('/chess', function () {
         'chessUserName' => $user?->name,
         'incomingChessInvites' => $incomingChessInvites,
         'outgoingChessInvites' => $outgoingChessInvites,
+        'openChessRooms' => $openChessRooms,
     ]);
 });
 
