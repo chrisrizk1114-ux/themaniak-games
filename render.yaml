@@ -37,12 +37,12 @@ services:
       - key: DB_PASSWORD
         sync: false
       - key: SESSION_DRIVER
-        value: database
+        value: file
       - key: SESSION_DOMAIN
         value: .themaniak.online
       - key: SESSION_SECURE_COOKIE
         value: true
       - key: CACHE_STORE
-        value: database
+        value: file
       - key: QUEUE_CONNECTION
         value: sync

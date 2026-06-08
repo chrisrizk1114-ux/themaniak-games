@@ -427,6 +427,52 @@
     .chess-room-view { display: none; }
     .chess-room-view.active { display: block; }
 
+    .chess-waiting-overlay {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        background: rgba(8, 6, 12, 0.88);
+        border-radius: 4px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    .chess-waiting-overlay.show { display: flex; }
+    .chess-waiting-overlay h4 {
+        font-family: 'Cinzel', serif;
+        color: var(--royal-gold-light);
+        font-size: 1.05rem;
+        margin: 0;
+    }
+    .chess-waiting-overlay p {
+        color: rgba(245,240,230,0.8);
+        font-size: 0.9rem;
+        margin: 0;
+        max-width: 280px;
+    }
+    .chess-waiting-code {
+        font-family: 'Orbitron', monospace;
+        font-size: clamp(1.6rem, 6vw, 2.2rem);
+        letter-spacing: 0.3em;
+        color: var(--royal-gold-light);
+        padding: 0.75rem 1rem;
+        border: 2px dashed rgba(212,168,83,0.5);
+        border-radius: 4px;
+        background: rgba(0,0,0,0.35);
+    }
+    .chess-waiting-overlay .mode-btn {
+        margin-top: 0.25rem;
+        min-width: 10rem;
+    }
+    .board-pedestal.waiting-for-opponent .board-frame {
+        filter: brightness(0.55);
+        pointer-events: none;
+    }
+
     .chess-chat-panel {
         display: none;
         flex-direction: column;
@@ -1145,11 +1191,17 @@
                     <button type="button" class="friend-action-btn" id="copyGameLinkBtn" onclick="copyOnlineGameLink()">Copy link</button>
                     <button type="button" class="friend-action-btn primary" id="acceptOnlineBtn" style="display:none" onclick="acceptOnlineInvite()">Join match</button>
                 </div>
-                <div class="board-pedestal">
+                <div class="board-pedestal" id="boardPedestal">
                     <div class="board-frame">
                         <div class="board-inner-border">
                             <div class="board" id="board"></div>
                         </div>
+                    </div>
+                    <div class="chess-waiting-overlay" id="chessWaitingOverlay">
+                        <h4>Waiting for your friend</h4>
+                        <p>Share this room code. The game starts when they join.</p>
+                        <div class="chess-waiting-code" id="chessWaitingCode">------</div>
+                        <button type="button" class="mode-btn" onclick="copyOnlineGameLink()">Copy Code</button>
                     </div>
                 </div>
             </div>
@@ -1213,7 +1265,7 @@
         <div class="chess-room-view active" id="roomChoiceView">
             <p>Create a room and share the code, or enter a friend's code to join.</p>
             <div class="chess-room-actions">
-                <button type="button" class="mode-btn" onclick="createChessRoom()">Create Room</button>
+                <button type="button" class="mode-btn" id="createRoomBtn" onclick="createChessRoom()">Create Room</button>
                 <button type="button" class="mode-btn" style="background:linear-gradient(180deg,#2a4a6b,#1a3050);" onclick="showEnterCodeView()">Enter Code</button>
             </div>
         </div>
@@ -2365,19 +2417,30 @@
             window.location.href = '{{ route('login') }}';
             return;
         }
+        const btn = document.getElementById('createRoomBtn');
+        if (btn?.disabled) return;
+        const prevLabel = btn?.textContent || 'Create Room';
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Creating room…';
+        }
         try {
             const res = await chessFetch('{{ route('chess.rooms.store') }}', { method: 'POST', body: '{}' });
             let data = {};
             try { data = await res.json(); } catch (e) { /* ignore */ }
             if (!res.ok) {
-                showChessToast(data.message || 'Could not create room.', true);
+                showChessToast(data.message || `Could not create room (${res.status}).`, true);
                 return;
             }
             createdRoomData = data;
-            document.getElementById('roomCodeDisplay').textContent = data.room_code || '------';
-            showRoomView('roomCreateView');
+            enterCreatedRoom();
         } catch (e) {
-            showChessToast('Could not create room. Try again.', true);
+            showChessToast('Could not create room. Check your connection and try again.', true);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = prevLabel;
+            }
         }
     }
 
@@ -2418,9 +2481,29 @@
         closeChessRoomModal();
         friendOpponentName = 'Friend';
         history.replaceState({}, '', createdRoomData.play_url || ('/chess?game=' + createdRoomData.token));
-            enterOnlineGameUI(createdRoomData);
-            showChessToast(`Room ready! Share code ${createdRoomData.room_code} with your friend.`);
-            document.getElementById('gameArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        enterOnlineGameUI(createdRoomData);
+        showChessToast(`Room ready! Share code ${createdRoomData.room_code} with your friend.`);
+        document.getElementById('gameArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function updateWaitingOverlay(gameData = null) {
+        const overlay = document.getElementById('chessWaitingOverlay');
+        const codeEl = document.getElementById('chessWaitingCode');
+        const pedestal = document.getElementById('boardPedestal');
+        if (!overlay || !pedestal) return;
+
+        const status = gameData?.status ?? onlineGame?.status;
+        const roomCode = gameData?.room_code ?? onlineGame?.roomCode;
+        const waiting = gameMode === 'online' && status === 'pending' && myColor === 'white' && roomCode;
+
+        if (waiting) {
+            if (codeEl) codeEl.textContent = roomCode;
+            overlay.classList.add('show');
+            pedestal.classList.add('waiting-for-opponent');
+        } else {
+            overlay.classList.remove('show');
+            pedestal.classList.remove('waiting-for-opponent');
+        }
     }
 
     function copyRoomCode() {
@@ -2518,6 +2601,7 @@
                 : "White's turn";
         }
 
+        updateWaitingOverlay(gameData);
         startOnlinePolling();
     }
 
@@ -2639,6 +2723,8 @@
             const data = await res.json();
             const game = data.game;
 
+            const wasPending = onlineGame.status === 'pending';
+
             if (game.version > onlineGame.version || game.status !== onlineGame.status) {
                 if (game.status === 'active' && game.state) {
                     applyingRemote = true;
@@ -2646,11 +2732,21 @@
                     applyingRemote = false;
                     if (positionHistory.length <= 1) resetHistory();
                     else recordPosition();
+                    if (wasPending) {
+                        const joinedName = game.black?.name || 'Your friend';
+                        showChessToast(`${joinedName} joined! Game started.`);
+                        GameSounds.play('start');
+                        document.getElementById('status').textContent = game.state?.statusText || "White's turn";
+                    }
                 } else if (game.status === 'pending') {
                     onlineGame.status = 'pending';
                     updateOnlineInviteBar(game);
                 }
             }
+
+            onlineGame.status = game.status;
+            if (game.room_code) onlineGame.roomCode = game.room_code;
+            updateWaitingOverlay(game);
 
             if (game.status === 'finished' && game.game_over && !gameOver) {
                 applyingRemote = true;
@@ -2745,6 +2841,7 @@
         document.getElementById('gameArea')?.classList.remove('online-friends');
         document.getElementById('onlineInviteBar')?.classList.remove('show');
         document.getElementById('chessChatList').innerHTML = '';
+        updateWaitingOverlay();
         document.querySelector('.board-frame')?.classList.remove('board-flipped');
         if (clearUrl && window.location.search.includes('game=')) {
             history.replaceState({}, '', '/chess');

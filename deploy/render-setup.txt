@@ -98,9 +98,11 @@ After DNS works and https://themaniak.online shows games:
 
 NOTES
 -----
-- Free Render sleeps after ~15 min idle — first visit may take 30–60 sec to wake.
-  This is normal on the free plan. Wait up to 90 seconds, then refresh once.
-  Upgrade to Render Starter ($7/mo) to avoid sleep and load in 1–3 seconds.
+- Free Render sleeps after ~15 min idle — first visit shows "Welcome to Render" for 30–90 sec.
+  FIX (free): GitHub Action `.github/workflows/keep-render-warm.yml` pings every 10 min after git push.
+  FIX (best): Render Starter plan ($7/mo) — no sleep, loads in 1–3 seconds always.
+  Manual keep-alive: https://cron-job.org → every 10 min GET https://themaniak.online/up
+- SESSION_DRIVER=file and CACHE_STORE=file (in render.yaml) — faster than database on every page.
 - Use https://themaniak.online (without www) if www is not set up yet.
 - Same Aiven DB = same login accounts as on your PC
 - To redeploy after code changes: git push → Render auto-rebuilds

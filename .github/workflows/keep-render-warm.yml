@@ -1,0 +1,18 @@
+name: Keep site awake
+
+on:
+  schedule:
+    # Render free tier sleeps after ~15 min idle — ping every 10 minutes.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Warm health check
+        run: curl -fsS --max-time 90 "https://themaniak.online/up" >/dev/null
+
+      - name: Warm home page
+        run: curl -fsS --max-time 90 "https://themaniak.online/" >/dev/null
