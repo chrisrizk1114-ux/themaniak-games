@@ -237,6 +237,28 @@
             background: linear-gradient(135deg, #00f0ff, #a855f7);
         }
 
+        .nav-user-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .nav-user-online-dot {
+            position: absolute;
+            bottom: -1px;
+            right: -1px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid rgba(8, 12, 28, 0.95);
+            background: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+        }
+
+        .nav-user-online-dot.is-offline {
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+        }
+
         .nav-user-name {
             font-size: 0.95rem;
             font-weight: 700;
@@ -809,12 +831,16 @@
                         @endif
                     </a>
                 </li>
-                <li class="nav-status-wrap">
-                    @include('layouts.partials.status-pill', ['user' => auth()->user(), 'self' => true])
-                </li>
                 <li>
                     <div class="nav-user" title="{{ auth()->user()->email }}">
-                        <span class="nav-user-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                        <span class="nav-user-avatar-wrap">
+                            <span class="nav-user-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                            <span
+                                class="nav-user-online-dot {{ auth()->user()->isOnline() ? 'is-online' : 'is-offline' }}"
+                                id="navUserOnlineDot"
+                                title="{{ auth()->user()->isOnline() ? 'Online' : 'Offline' }}"
+                            ></span>
+                        </span>
                         <span class="nav-user-name">{{ auth()->user()->name }}</span>
                     </div>
                 </li>
@@ -829,9 +855,6 @@
                     <a href="{{ route('register') }}" class="nav-link nav-link--signup {{ request()->routeIs('register') ? 'active' : '' }}">Sign Up</a>
                 </li>
                 @endauth
-                <li>
-                    <a href="{{ url('/galaxy-bowling') }}" class="nav-link nav-cta">▶ Play Now</a>
-                </li>
             </ul>
         </div>
     </nav>
@@ -936,7 +959,7 @@
             });
 
             @auth
-            const statusPills = document.querySelectorAll('.status-pill--self');
+            const navUserOnlineDot = document.getElementById('navUserOnlineDot');
             const pingUrl = @json(route('presence.ping'));
             const csrf = @json(csrf_token());
             const isMobileDevice = window.matchMedia('(max-width: 860px)').matches || window.matchMedia('(pointer: coarse)').matches;
@@ -973,14 +996,10 @@
             }
 
             function setSelfStatus(online) {
-                statusPills.forEach(pill => {
-                    pill.classList.toggle('status-pill--online', online);
-                    pill.classList.toggle('status-pill--offline', !online);
-                    const label = pill.querySelector('.status-pill-label');
-                    if (label) {
-                        label.textContent = online ? 'You are online' : 'You are offline';
-                    }
-                });
+                if (!navUserOnlineDot) return;
+                navUserOnlineDot.classList.toggle('is-online', online);
+                navUserOnlineDot.classList.toggle('is-offline', !online);
+                navUserOnlineDot.title = online ? 'Online' : 'Offline';
             }
 
             function updateSelfStatusFromNetwork() {
