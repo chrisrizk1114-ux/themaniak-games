@@ -4,10 +4,8 @@ cd /var/www/html
 export PORT="${PORT:-8000}"
 
 mkdir -p storage/framework/sessions storage/framework/cache/data storage/framework/views storage/logs bootstrap/cache
-mkdir -p /tmp/themaniak-sessions /tmp/themaniak-cache/data
-chmod -R 777 storage bootstrap/cache /tmp/themaniak-sessions /tmp/themaniak-cache
+chmod -R 777 storage bootstrap/cache
 
-# Never run optimize:clear here — with CACHE_STORE=database it crashes when Aiven is offline.
 php artisan config:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
 php artisan view:clear 2>/dev/null || true

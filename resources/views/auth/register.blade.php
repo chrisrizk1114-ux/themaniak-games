@@ -217,10 +217,6 @@
             </div>
         @endif
 
-        @include('auth.partials.google-button')
-
-        <div class="auth-divider">or sign up with email</div>
-
         <form method="POST" action="{{ route('register') }}">
             @csrf
 

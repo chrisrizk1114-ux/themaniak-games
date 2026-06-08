@@ -52,4 +52,4 @@ LOCAL vs CLOUD
 --------------
 Keep SQLite for offline dev, or switch .env fully to cloud so phone + themaniak.online share one database.
 
-Production (themaniak.online): use the SAME cloud DB credentials in deploy/env.production
+Production (themaniak.online): set the same DB_* values in Render → Environment (see render.yaml).

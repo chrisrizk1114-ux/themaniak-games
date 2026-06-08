@@ -5,7 +5,6 @@ use App\Http\Controllers\ChessGameController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FriendChatController;
 use App\Http\Controllers\FriendController;
-use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\PresenceController;
 use App\Models\ChessGame;
@@ -46,8 +45,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
-    Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 });
 
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])

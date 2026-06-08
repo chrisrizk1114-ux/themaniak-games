@@ -1,82 +1,22 @@
-DEPLOY TO themaniak.online (GoDaddy)
-====================================
+GODADDY DNS for themaniak.online (Render hosting)
+=================================================
 
-IMPORTANT — Your site today uses GoDaddy Website Builder (shop).
-Laravel needs GoDaddy LINUX WEB HOSTING with cPanel (PHP 8.2+).
+Your Laravel app runs on Render — GoDaddy only points the domain.
 
-If you only have Website Builder:
-  → GoDaddy → My Products → Web Hosting → Upgrade or add "Web Hosting Economy/Deluxe"
-  → OR host the app on Railway/Render/VPS and point DNS A record to that server
+Full deploy guide: deploy/render-setup.txt (Part 3 + Part 4)
 
-If you already have Linux cPanel hosting, continue below.
+Quick steps
+-----------
+1. Render → themaniak-games → Settings → Custom Domains
+2. Add themaniak.online and www.themaniak.online
+3. GoDaddy → Domain → DNS → add records Render shows, usually:
 
+   Type    Name    Value
+   A       @       (IP from Render)
+   CNAME   www     themaniak-games.onrender.com
 
-STEP 1 — BACK UP
-----------------
-Download current shop files from GoDaddy File Manager (or rename public_html → shop_backup).
+4. Wait up to 1 hour for DNS, then test https://themaniak.online/up
 
+Remove old Website Builder A/CNAME records if they conflict.
 
-STEP 2 — UPLOAD ZIP
--------------------
-On your PC, zip is at: deploy/themaniak-upload.zip
-Upload via GoDaddy File Manager or FTP (FileZilla) to:
-  /home/YOUR_CPANEL_USER/themaniak-app/
-Extract the zip there (should see app, bootstrap, public, vendor, etc.)
-
-
-STEP 3 — POINT DOMAIN TO LARAVEL public/
-----------------------------------------
-Option A (best): In cPanel → Domains → themaniak.online → Document Root:
-  /home/YOUR_CPANEL_USER/themaniak-app/public
-
-Option B: Keep public_html — copy deploy/public_html_index.php to public_html/index.php
-  and edit line with YOUR_CPANEL_USER to your username.
-
-
-STEP 4 — .env ON SERVER
------------------------
-Copy deploy/env.production → themaniak-app/.env
-Edit .env:
-  - APP_KEY=  → run: php artisan key:generate --force
-  - DB_PASSWORD=  → same Aiven password as local
-  - (Optional) download Aiven CA → database/ssl/ca.pem
-
-Same cloud DB as local — do NOT run migrate if tables already exist (already done).
-If fresh server DB only: php artisan migrate --force
-
-
-STEP 5 — cPanel TERMINAL (or SSH)
----------------------------------
-cd ~/themaniak-app
-php artisan key:generate --force
-php artisan storage:link
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-chmod -R 775 storage bootstrap/cache
-
-
-STEP 6 — PHP VERSION
---------------------
-cPanel → Select PHP Version → 8.2 or 8.3
-Enable extensions: pdo_mysql, mbstring, openssl, tokenizer, xml, ctype, json, fileinfo
-
-
-STEP 7 — SSL
-------------
-cPanel → SSL/TLS Status → Run AutoSSL for themaniak.online
-
-
-STEP 8 — TEST
--------------
-https://themaniak.online/up          → should show ok
-https://themaniak.online             → games home page
-Register/login uses Aiven cloud DB (same accounts as local if same DB)
-
-
-DNS (if domain not on this hosting yet)
----------------------------------------
-GoDaddy → DNS → A record @ → your cPanel server IP
-              → CNAME www → themaniak.online
-
-Need help? Tell your cPanel username or send a screenshot of GoDaddy "My Products" hosting section.
+Need help? Screenshot GoDaddy DNS + Render custom domain page.

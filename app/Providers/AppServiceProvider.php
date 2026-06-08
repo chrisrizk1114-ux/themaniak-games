@@ -22,35 +22,9 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        $sessionDriver = env('SESSION_DRIVER', 'database');
-        $cacheStore = env('CACHE_STORE', 'file');
-
-        if ($sessionDriver === 'database') {
-            config([
-                'session.driver' => 'database',
-                'session.encrypt' => false,
-                'cache.default' => $cacheStore,
-            ]);
-
-            return;
-        }
-
-        $sessionPath = '/tmp/themaniak-sessions';
-        $cachePath = '/tmp/themaniak-cache/data';
-
-        if (! is_dir($sessionPath)) {
-            @mkdir($sessionPath, 0777, true);
-        }
-        if (! is_dir($cachePath)) {
-            @mkdir($cachePath, 0777, true);
-        }
-
         config([
-            'session.driver' => 'file',
-            'session.files' => $sessionPath,
             'session.encrypt' => false,
-            'cache.default' => 'file',
-            'cache.stores.file.path' => $cachePath,
+            'cache.default' => env('CACHE_STORE', 'file'),
         ]);
     }
 

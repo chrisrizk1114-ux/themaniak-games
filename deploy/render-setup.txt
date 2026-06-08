@@ -51,7 +51,7 @@ PART 2 — DEPLOY ON RENDER
    SESSION_DRIVER    = database
    SESSION_DOMAIN    = .themaniak.online
    SESSION_SECURE_COOKIE = true
-   CACHE_STORE       = database
+   CACHE_STORE       = file
    QUEUE_CONNECTION  = sync
    LOG_CHANNEL       = stderr
 

@@ -303,10 +303,6 @@
             <button type="submit" class="auth-submit">Sign In</button>
         </form>
 
-        <div class="auth-divider">or</div>
-
-        @include('auth.partials.google-button')
-
         <a href="{{ url('/') }}" class="auth-guest-link" style="margin-top: 1rem;">Continue as guest</a>
 
         <p class="auth-footer">
