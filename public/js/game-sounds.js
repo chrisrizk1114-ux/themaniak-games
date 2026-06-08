@@ -148,30 +148,6 @@ const GameSounds = (() => {
             tone(300, 0.15, 'sawtooth', 0.1, 0, 100);
             noise(0.1, 0.08);
         },
-
-        cardSelect: () => tone(660, 0.05, 'sine', 0.07),
-        cardPlay: () => {
-            noise(0.035, 0.07);
-            tone(480, 0.07, 'sine', 0.09, 0, 720);
-        },
-        cardTrump: () => {
-            tone(440, 0.08, 'triangle', 0.11);
-            tone(554, 0.1, 'sine', 0.09, 0.04);
-            tone(659, 0.08, 'sine', 0.06, 0.08);
-        },
-        trickWin: () => chord([440, 554, 659], 0.2, 0.09),
-        trickLose: () => tone(220, 0.1, 'sine', 0.06, 0, 180),
-        bid: () => tone(392, 0.12, 'square', 0.09, 0, 523),
-        pass: () => tone(280, 0.1, 'sine', 0.07, 0, 220),
-        contractMade: () => chord([523, 659, 784], 0.35, 0.11),
-        contractFail: () => {
-            tone(220, 0.2, 'sawtooth', 0.09, 0, 120);
-            tone(180, 0.25, 'sine', 0.07, 0.12, 90);
-        },
-        gameWin400: () => {
-            chord([523, 659, 784, 1046], 0.45, 0.12);
-            chord([659, 784, 1046], 0.45, 0.1, 0.22);
-        },
     };
 
     return {

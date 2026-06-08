@@ -8,7 +8,6 @@ html {
     -webkit-text-size-adjust: 100%;
 }
 
-body:has(.f400-page),
 body:has(.uno-page),
 body:has(.snl-page),
 body:has(.ttt-page),
@@ -35,7 +34,6 @@ body:has(.chess-page) {
 
 button,
 [role="button"],
-.f400-btn,
 .uno-btn,
 .control-btn,
 .mode-btn,

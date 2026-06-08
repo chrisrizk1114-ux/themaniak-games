@@ -18,7 +18,7 @@
     @else
         <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" defer></script>
     @endif
-    @if (request()->is('chess', 'platformer', 'tic-tac-toe', 'whack-a-mole', 'board-game', 'uno', 'four-hundred'))
+    @if (request()->is('chess', 'platformer', 'tic-tac-toe', 'whack-a-mole', 'board-game', 'uno'))
         <script src="{{ asset('js/game-sounds.js') }}" defer></script>
     @endif
     <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260607">
@@ -618,7 +618,6 @@
         .nav-game-link--chess:hover .nav-game-name { color: #d4a853; }
         .nav-game-link--mole:hover .nav-game-name { color: #fbbf24; }
     .nav-game-link--uno:hover .nav-game-name { color: #ef4444; }
-    .nav-game-link--400:hover .nav-game-name { color: #22c55e; }
 
         .main-content {
             max-width: 1200px;
@@ -737,7 +736,6 @@
             ['url' => '/board-game', 'icon' => '🎲', 'name' => 'Snakes & Ladders', 'tag' => 'Board', 'class' => 'snl', 'path' => 'board-game'],
             ['url' => '/chess', 'icon' => '♟️', 'name' => 'Royal Chess', 'tag' => 'Strategy', 'class' => 'chess', 'path' => 'chess'],
             ['url' => '/whack-a-mole', 'icon' => '🔨', 'name' => 'Mole Mayhem', 'tag' => 'Arcade', 'class' => 'mole', 'path' => 'whack-a-mole'],
-            ['url' => '/four-hundred', 'icon' => '♥400', 'name' => 'Lebanese 400', 'tag' => 'Cards', 'class' => '400', 'path' => 'four-hundred'],
             ['url' => '/uno', 'icon' => '🃏', 'name' => 'Cosmic UNO', 'tag' => 'Cards', 'class' => 'uno', 'path' => 'uno'],
         ];
     @endphp

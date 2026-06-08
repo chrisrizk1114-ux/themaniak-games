@@ -78,7 +78,6 @@ class Feedback extends Model
             'board-game' => 'Snakes & Ladders',
             'chess' => 'Royal Chess',
             'whack-a-mole' => 'Mole Mayhem',
-            'four-hundred' => 'Lebanese 400',
             'uno' => 'Cosmic UNO',
             default => $this->game,
         };

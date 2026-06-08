@@ -382,11 +382,6 @@
     .game-card--bowling .game-name { color: #f472b6; }
     .game-card--bowling .game-tag { color: #f472b6; border-color: rgba(236,72,153,0.35); background: rgba(236,72,153,0.08); }
 
-    .game-card--400::before { background: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,0.18) 0%, transparent 70%); }
-    .game-card--400:hover { border-color: rgba(34,197,94,0.5); box-shadow: 0 0 40px rgba(34,197,94,0.15); }
-    .game-card--400 .game-name { color: #4ade80; }
-    .game-card--400 .game-tag { color: #22c55e; border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
-
     .game-card--uno::before { background: radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.15) 0%, transparent 70%); }
     .game-card--uno:hover { border-color: rgba(239,68,68,0.5); box-shadow: 0 0 40px rgba(239,68,68,0.15); }
     .game-card--uno .game-name { color: #f87171; }
@@ -438,7 +433,7 @@
     <div class="home-inner">
         <!-- Hero -->
         <section class="hero">
-            <div class="hero-badge">🎮 <span>7 Games</span> · Zero Downloads</div>
+            <div class="hero-badge">🎮 <span>6 Games</span> · Zero Downloads</div>
             <h1 class="hero-title">The Maniak</h1>
             <p class="hero-sub">
                 Free games at <strong>themaniak.online</strong> — bowling, cards, puzzles, strategy &amp; more in your browser.
@@ -510,13 +505,6 @@
                 <h3 class="game-name">Galaxy Bowling</h3>
                 <p class="game-desc">Cosmic 3D bowling with Stella Strike, ball picker, frame scoreboard &amp; fullscreen lanes.</p>
                 <span class="game-tag">Sports</span>
-            </a>
-
-            <a href="{{ url('/four-hundred') }}" class="game-card game-card--400">
-                <span class="game-icon">♥400</span>
-                <h3 class="game-name">Lebanese 400</h3>
-                <p class="game-desc">Classic 400 card game! Hearts always trump, J♥ &amp; 9♥ boss cards, bid tricks, play to 400 vs 3 bots.</p>
-                <span class="game-tag">Cards</span>
             </a>
 
             <a href="{{ url('/uno') }}" class="game-card game-card--uno">

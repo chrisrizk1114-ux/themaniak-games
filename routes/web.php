@@ -95,14 +95,6 @@ Route::middleware(['auth', 'owner'])->prefix('owner')->name('owner.')->group(fun
     Route::delete('/feedback/{feedback}', [OwnerController::class, 'deleteFeedback'])->name('feedback.destroy');
 });
 
-Route::get('/four-hundred', function () {
-    return view('four-hundred');
-});
-
-Route::get('/400', function () {
-    return redirect('/four-hundred');
-});
-
 Route::get('/galaxy-bowling', function () {
     return view('galaxy-bowling');
 });

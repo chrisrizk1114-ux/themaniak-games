@@ -208,7 +208,7 @@
         <div class="auth-perks">
             <div class="auth-perk"><span>🏆</span> Save high scores</div>
             <div class="auth-perk"><span>🪙</span> Track coins & progress</div>
-            <div class="auth-perk"><span>🕹️</span> Play all 7 games</div>
+            <div class="auth-perk"><span>🕹️</span> Play all 6 games</div>
         </div>
 
         @if ($errors->any())
