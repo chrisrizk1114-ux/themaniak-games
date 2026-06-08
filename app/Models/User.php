@@ -62,7 +62,7 @@ class User extends Authenticatable
         return $this->role === self::ROLE_OWNER;
     }
 
-    public function isOnline(int $minutes = 5): bool
+    public function isOnline(int $minutes = 2): bool
     {
         if (! $this->last_seen_at) {
             return false;

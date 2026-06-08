@@ -10,7 +10,7 @@
 
 <span
     class="status-pill {{ $online ? 'status-pill--online' : 'status-pill--offline' }}{{ $isSelf ? ' status-pill--self' : '' }}"
-    @if($isSelf) id="myStatusPill" @endif
+    @if($isSelf) id="myStatusPill" @else data-user-id="{{ $user->id }}" @endif
     title="{{ $isSelf ? ($online ? 'You are online' : 'You are offline') : ($user->name.' is '.($online ? 'online' : 'offline')) }}"
 >
     <span class="status-pill-dot"></span>

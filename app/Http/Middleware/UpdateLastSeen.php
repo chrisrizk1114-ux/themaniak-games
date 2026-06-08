@@ -11,9 +11,14 @@ class UpdateLastSeen
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->user()) {
-            $request->user()->forceFill([
-                'last_seen_at' => now(),
-            ])->saveQuietly();
+            $user = $request->user();
+            $lastSeen = $user->last_seen_at;
+
+            if (! $lastSeen || $lastSeen->diffInSeconds(now()) >= 15) {
+                $user->forceFill([
+                    'last_seen_at' => now(),
+                ])->saveQuietly();
+            }
         }
 
         return $next($request);

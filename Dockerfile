@@ -2,8 +2,10 @@ FROM php:8.2-cli-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git unzip libzip-dev \
-    && docker-php-ext-install pdo_mysql zip \
+    && docker-php-ext-install pdo_mysql zip opcache \
     && rm -rf /var/lib/apt/lists/*
+
+COPY deploy/php-opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -13,8 +15,12 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
 COPY . .
+ENV APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 RUN composer dump-autoload --optimize \
+    && php artisan route:cache \
+    && php artisan view:cache \
     && chmod +x deploy/docker-start.sh
+ENV APP_KEY=
 
 ENV PORT=8000
 EXPOSE 8000

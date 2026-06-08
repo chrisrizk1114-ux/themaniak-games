@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\ChessGame;
 use App\Models\Feedback;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -43,39 +44,47 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            $incoming = Auth::user()->pendingIncoming();
+            $userId = Auth::id();
+            $cacheKey = 'nav_notifications_'.$userId;
 
-            $chessInvites = ChessGame::query()
-                ->where('status', ChessGame::STATUS_PENDING)
-                ->where('black_user_id', Auth::id())
-                ->with('whitePlayer')
-                ->latest()
-                ->take(5)
-                ->get();
+            $data = Cache::remember($cacheKey, 5, function () use ($userId) {
+                $user = Auth::user();
+                $incoming = $user->pendingIncoming();
 
-            $chessInviteCount = ChessGame::query()
-                ->where('status', ChessGame::STATUS_PENDING)
-                ->where('black_user_id', Auth::id())
-                ->count();
+                $chessInvites = ChessGame::query()
+                    ->where('status', ChessGame::STATUS_PENDING)
+                    ->where('black_user_id', $userId)
+                    ->with('whitePlayer')
+                    ->latest()
+                    ->take(5)
+                    ->get();
 
-            $data = [
-                'friendRequestCount' => $incoming->count(),
-                'friendRequestNotifications' => $incoming->take(5),
-                'unreadFeedbackCount' => 0,
-                'feedbackNotifications' => collect(),
-                'chessInviteCount' => $chessInviteCount,
-                'chessInviteNotifications' => $chessInvites,
-                'notificationCount' => $incoming->count() + $chessInviteCount,
-            ];
+                $chessInviteCount = ChessGame::query()
+                    ->where('status', ChessGame::STATUS_PENDING)
+                    ->where('black_user_id', $userId)
+                    ->count();
 
-            if (Auth::user()->isOwner()) {
-                $feedback = Feedback::query()->unread()->latest()->take(5)->get();
-                $unreadFeedbackCount = Feedback::query()->unread()->count();
+                $payload = [
+                    'friendRequestCount' => $incoming->count(),
+                    'friendRequestNotifications' => $incoming->take(5),
+                    'unreadFeedbackCount' => 0,
+                    'feedbackNotifications' => collect(),
+                    'chessInviteCount' => $chessInviteCount,
+                    'chessInviteNotifications' => $chessInvites,
+                    'notificationCount' => $incoming->count() + $chessInviteCount,
+                ];
 
-                $data['unreadFeedbackCount'] = $unreadFeedbackCount;
-                $data['feedbackNotifications'] = $feedback;
-                $data['notificationCount'] = $incoming->count() + $unreadFeedbackCount + $chessInviteCount;
-            }
+                if ($user->isOwner()) {
+                    $feedback = Feedback::query()->unread()->latest()->take(5)->get();
+                    $unreadFeedbackCount = Feedback::query()->unread()->count();
+
+                    $payload['unreadFeedbackCount'] = $unreadFeedbackCount;
+                    $payload['feedbackNotifications'] = $feedback;
+                    $payload['notificationCount'] = $incoming->count() + $unreadFeedbackCount + $chessInviteCount;
+                }
+
+                return $payload;
+            });
 
             $view->with($data);
         });

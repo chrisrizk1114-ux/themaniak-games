@@ -16,4 +16,17 @@ class PresenceController extends Controller
             'last_seen_at' => $user->last_seen_at?->toIso8601String(),
         ]);
     }
+
+    public function friends(): JsonResponse
+    {
+        $user = auth()->user();
+
+        $friends = $user->friends()->map(fn ($friend) => [
+            'id' => $friend->id,
+            'name' => $friend->name,
+            'online' => $friend->isOnline(2),
+        ])->values();
+
+        return response()->json(['friends' => $friends]);
+    }
 }

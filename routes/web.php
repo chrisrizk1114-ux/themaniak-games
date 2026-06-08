@@ -37,9 +37,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/friends/{friendship}', [FriendController::class, 'accept'])->name('friends.accept');
     Route::delete('/friends/{friendship}', [FriendController::class, 'destroy'])->name('friends.destroy');
     Route::post('/presence/ping', [PresenceController::class, 'ping'])->name('presence.ping');
+    Route::get('/presence/friends', [PresenceController::class, 'friends'])->name('presence.friends');
 
     Route::prefix('chess')->name('chess.')->group(function () {
         Route::get('/games/pending', [ChessGameController::class, 'pending'])->name('games.pending');
+        Route::get('/games/invites/check', [ChessGameController::class, 'inviteCheck'])->name('games.invites.check');
         Route::post('/games', [ChessGameController::class, 'store'])->name('games.store');
         Route::get('/games/{chessGame:token}', [ChessGameController::class, 'show'])->name('games.show');
         Route::get('/games/{chessGame:token}/sync', [ChessGameController::class, 'sync'])->name('games.sync');

@@ -78,6 +78,11 @@ PART 4 — GODADDY DNS
    CNAME   www     themaniak-games.onrender.com
    A       @       (IP address Render gives for root domain)
 
+   IMPORTANT — You need BOTH records:
+   - themaniak.online      → works via A record
+   - www.themaniak.online  → needs CNAME to your Render service
+   If www is missing, visitors who type "www." will see a blank/error page.
+
    OR Render may give ALIAS/ANAME instructions for @ root
 
 4. Save — DNS can take 5 minutes to 48 hours (often under 1 hour)
@@ -93,9 +98,11 @@ After DNS works and https://themaniak.online shows games:
 
 NOTES
 -----
-- Free Render sleeps after ~15 min idle — first visit may take 30–60 sec to wake
+- Free Render sleeps after ~15 min idle — first visit may take 30–60 sec to wake.
+  This is normal on the free plan. Wait up to 90 seconds, then refresh once.
+  Upgrade to Render Starter ($7/mo) to avoid sleep and load in 1–3 seconds.
+- Use https://themaniak.online (without www) if www is not set up yet.
 - Same Aiven DB = same login accounts as on your PC
 - To redeploy after code changes: git push → Render auto-rebuilds
-- Upgrade Render plan later to avoid sleep ($7/mo)
 
 Need help? Send screenshot of Render deploy log or GoDaddy DNS page.

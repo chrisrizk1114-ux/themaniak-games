@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->web(prepend: [
+            \App\Http\Middleware\ForceCanonicalDomain::class,
+        ]);
         $middleware->alias([
             'owner' => \App\Http\Middleware\EnsureOwner::class,
         ]);

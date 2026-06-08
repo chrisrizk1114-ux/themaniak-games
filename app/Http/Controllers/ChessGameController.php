@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\ChessGame;
 use App\Models\ChessGameMessage;
 use App\Models\User;
+use App\Support\NotificationCache;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ChessGameController extends Controller
@@ -48,7 +50,7 @@ class ChessGameController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'friend_id' => ['required', 'integer', 'exists:users,id'],
@@ -58,11 +60,11 @@ class ChessGameController extends Controller
         $friend = User::findOrFail($data['friend_id']);
 
         if ($friend->id === $user->id) {
-            return response()->json(['message' => 'You cannot invite yourself.'], 422);
+            return $this->inviteError($request, 'You cannot invite yourself.');
         }
 
         if (! $user->isFriendsWith($friend)) {
-            return response()->json(['message' => 'You can only invite friends.'], 422);
+            return $this->inviteError($request, 'You can only invite friends.');
         }
 
         $existing = ChessGame::query()
@@ -78,10 +80,7 @@ class ChessGameController extends Controller
             ->first();
 
         if ($existing) {
-            return response()->json(array_merge(
-                $existing->toSyncPayload($user),
-                ['play_url' => url('/chess?game='.$existing->token)]
-            ));
+            return $this->inviteSuccess($request, $existing, $friend, false);
         }
 
         $game = ChessGame::create([
@@ -92,10 +91,43 @@ class ChessGameController extends Controller
             'last_activity_at' => now(),
         ]);
 
-        return response()->json(array_merge(
-            $game->load(['whitePlayer', 'blackPlayer'])->toSyncPayload($user),
-            ['play_url' => url('/chess?game='.$game->token)]
-        ), 201);
+        NotificationCache::clearForUser($friend->id);
+
+        return $this->inviteSuccess(
+            $request,
+            $game->load(['whitePlayer', 'blackPlayer']),
+            $friend,
+            true
+        );
+    }
+
+    public function inviteCheck(): JsonResponse
+    {
+        $user = auth()->user();
+
+        $incoming = ChessGame::query()
+            ->where('status', ChessGame::STATUS_PENDING)
+            ->where('black_user_id', $user->id)
+            ->with('whitePlayer')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn (ChessGame $game) => [
+                'token' => $game->token,
+                'from_name' => $game->whitePlayer->name,
+                'play_url' => url('/chess?game='.$game->token),
+            ]);
+
+        $latest = $incoming->first();
+
+        return response()->json([
+            'count' => ChessGame::query()
+                ->where('status', ChessGame::STATUS_PENDING)
+                ->where('black_user_id', $user->id)
+                ->count(),
+            'incoming' => $incoming,
+            'latest_token' => $latest['token'] ?? null,
+        ]);
     }
 
     public function show(ChessGame $chessGame): JsonResponse
@@ -267,5 +299,33 @@ class ChessGameController extends Controller
         return array_merge($game->toSyncPayload($user), [
             'play_url' => url('/chess?game='.$game->token),
         ]);
+    }
+
+    private function inviteSuccess(Request $request, ChessGame $game, User $friend, bool $created): JsonResponse|RedirectResponse
+    {
+        $game->loadMissing(['whitePlayer', 'blackPlayer']);
+        $payload = array_merge(
+            $game->toSyncPayload($request->user()),
+            ['play_url' => url('/chess?game='.$game->token)]
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json($payload, $created ? 201 : 200);
+        }
+
+        $message = $created
+            ? 'Invite sent to '.$friend->name.'! Waiting for them to join.'
+            : 'Opening your match with '.$friend->name.'.';
+
+        return redirect('/chess?game='.$game->token)->with('chess_invite_status', $message);
+    }
+
+    private function inviteError(Request $request, string $message): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message], 422);
+        }
+
+        return redirect('/chess')->withErrors(['chess_invite' => $message]);
     }
 }

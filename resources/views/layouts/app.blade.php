@@ -924,7 +924,128 @@
 
             updateSelfStatusFromNetwork();
             pingPresence();
-            setInterval(pingPresence, 45000);
+            setInterval(pingPresence, 15000);
+
+            const friendsPresenceUrl = @json(route('presence.friends'));
+            const chessInviteCheckUrl = @json(route('chess.games.invites.check'));
+            const friendRequestCountLive = {{ $friendRequestCount ?? 0 }};
+            let lastKnownChessInviteCount = {{ $chessInviteCount ?? 0 }};
+            let lastKnownChessInviteToken = @json(($chessInviteNotifications ?? collect())->first()?->token);
+            let liveFeedbackCount = {{ auth()->user()->isOwner() ? ($unreadFeedbackCount ?? 0) : 0 }};
+
+            function updateFriendPresenceOnPage(friends) {
+                (friends || []).forEach(f => {
+                    document.querySelectorAll(`[data-friend-id="${f.id}"]`).forEach(card => {
+                        const dot = card.querySelector('.friend-online-dot, .friend-offline-dot');
+                        const label = card.querySelector('.friend-pick-meta small');
+                        if (dot) {
+                            dot.classList.toggle('friend-online-dot', f.online);
+                            dot.classList.toggle('friend-offline-dot', !f.online);
+                        }
+                        if (label) label.textContent = f.online ? 'Online' : 'Offline';
+                    });
+                    document.querySelectorAll(`.status-pill[data-user-id="${f.id}"]`).forEach(pill => {
+                        pill.classList.toggle('status-pill--online', f.online);
+                        pill.classList.toggle('status-pill--offline', !f.online);
+                        const lbl = pill.querySelector('.status-pill-label');
+                        if (lbl) lbl.textContent = f.online ? 'Online' : 'Offline';
+                        pill.title = `${f.name} is ${f.online ? 'online' : 'offline'}`;
+                    });
+                });
+            }
+
+            async function pollFriendsPresence() {
+                if (!navigator.onLine) return;
+                try {
+                    const res = await fetch(friendsPresenceUrl, {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    updateFriendPresenceOnPage(data.friends || []);
+                } catch {
+                    /* ignore */
+                }
+            }
+
+            pollFriendsPresence();
+            setInterval(pollFriendsPresence, 3000);
+
+            function updateNavNotifyBadge(total) {
+                const badge = document.getElementById('navNotifyBadge');
+                if (!badge) return;
+                if (total > 0) {
+                    badge.textContent = total > 9 ? '9+' : String(total);
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+
+            function refreshNotifyBadge(chessCount = lastKnownChessInviteCount) {
+                updateNavNotifyBadge(friendRequestCountLive + chessCount + liveFeedbackCount);
+            }
+
+            function showLiveChessInviteToast(fromName, playUrl) {
+                let toast = document.getElementById('chessLiveToast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'chessLiveToast';
+                    toast.className = 'friend-toast chess-toast';
+                    toast.innerHTML = `
+                        <div class="friend-toast-inner">
+                            <span class="friend-toast-icon">♟</span>
+                            <div class="friend-toast-text">
+                                <strong>Chess invite!</strong>
+                                <span id="chessLiveToastMsg"></span>
+                            </div>
+                            <a href="#" class="friend-toast-btn" id="chessLiveToastLink">Join now</a>
+                            <button type="button" class="friend-toast-close" id="chessLiveToastClose" aria-label="Dismiss">✕</button>
+                        </div>`;
+                    document.body.appendChild(toast);
+                    toast.querySelector('#chessLiveToastClose')?.addEventListener('click', () => toast.classList.add('hidden'));
+                }
+                const msg = toast.querySelector('#chessLiveToastMsg');
+                if (msg) msg.textContent = `${fromName} invited you to Royal Chess.`;
+                const link = toast.querySelector('#chessLiveToastLink');
+                if (link) link.href = playUrl;
+                toast.classList.remove('hidden');
+                document.getElementById('chessInviteToast')?.classList.remove('hidden');
+                if (typeof GameSounds !== 'undefined') {
+                    try { GameSounds.init(); GameSounds.play('start'); } catch (e) { /* ignore */ }
+                }
+            }
+
+            async function pollChessInvites() {
+                if (!navigator.onLine) return;
+                try {
+                    const res = await fetch(chessInviteCheckUrl, {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const count = data.count || 0;
+                    const latest = (data.incoming || [])[0];
+                    const latestToken = latest?.token || data.latest_token || null;
+                    const isNewInvite = latestToken && latestToken !== lastKnownChessInviteToken;
+                    if (isNewInvite && latest) {
+                        showLiveChessInviteToast(latest.from_name, latest.play_url);
+                    } else if (count > lastKnownChessInviteCount && latest) {
+                        showLiveChessInviteToast(latest.from_name, latest.play_url);
+                    }
+                    lastKnownChessInviteCount = count;
+                    if (latestToken) lastKnownChessInviteToken = latestToken;
+                    refreshNotifyBadge(count);
+                } catch {
+                    /* ignore */
+                }
+            }
+
+            refreshNotifyBadge();
+            pollChessInvites();
+            setInterval(pollChessInvites, 3000);
 
             @if (auth()->user()->isOwner())
             const feedbackCheckUrl = @json(route('owner.feedback.check'));
@@ -957,17 +1078,6 @@
                 toast.classList.remove('hidden');
             }
 
-            function updateNotifyBadge(total) {
-                const badge = document.getElementById('navNotifyBadge');
-                if (!badge) return;
-                if (total > 0) {
-                    badge.textContent = total > 9 ? '9+' : String(total);
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
-                }
-            }
-
             async function pollFeedback() {
                 if (!navigator.onLine) return;
                 try {
@@ -981,8 +1091,8 @@
                         showLiveFeedbackToast(data.latest_name || 'Someone', data.latest_subject);
                         lastKnownFeedbackId = data.latest_id;
                     }
-                    const friendCount = {{ $friendRequestCount ?? 0 }};
-                    updateNotifyBadge(friendCount + (data.unread_count || 0));
+                    liveFeedbackCount = data.unread_count || 0;
+                    refreshNotifyBadge();
                 } catch {
                     /* ignore */
                 }

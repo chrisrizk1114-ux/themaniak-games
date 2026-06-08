@@ -969,6 +969,20 @@
         <h2>Choose Your Match</h2>
 
         @auth
+            @if ($errors->has('chess_invite'))
+            <div class="chess-invite-alerts">
+                <div class="chess-invite-alert" style="border-color:rgba(239,68,68,0.5);">
+                    <span>{{ $errors->first('chess_invite') }}</span>
+                </div>
+            </div>
+            @endif
+            @if (session('chess_invite_status'))
+            <div class="chess-invite-alerts">
+                <div class="chess-invite-alert" style="border-color:rgba(34,197,94,0.5);">
+                    <span>{{ session('chess_invite_status') }}</span>
+                </div>
+            </div>
+            @endif
             @if(($incomingChessInvites ?? collect())->isNotEmpty())
             <div class="chess-invite-alerts">
                 @foreach($incomingChessInvites as $invite)
@@ -1022,10 +1036,13 @@
                                     <small>{{ ($friend['online'] ?? false) ? 'Online' : 'Offline' }}</small>
                                 </span>
                             </div>
-                            <button type="button" class="mode-btn" style="margin-top:0.45rem;font-size:0.85rem;padding:0.6rem 1rem;"
-                                onclick="inviteFriendOnline({{ $friend['id'] }}, @json($friend['name']))">
-                                ♟ Invite to play online
-                            </button>
+                            <form method="POST" action="{{ route('chess.games.store') }}" class="chess-invite-form">
+                                @csrf
+                                <input type="hidden" name="friend_id" value="{{ $friend['id'] }}">
+                                <button type="submit" class="mode-btn chess-invite-btn" style="margin-top:0.45rem;font-size:0.85rem;padding:0.6rem 1rem;width:100%;">
+                                    ♟ Invite to play online
+                                </button>
+                            </form>
                         </div>
                         @empty
                         <p class="friends-empty">No friends yet — add friends from the Friends page first.</p>
@@ -1133,6 +1150,29 @@
     const chessUserId = @json($chessUserId ?? null);
     const chessUserName = @json($chessUserName ?? null);
     const chessCsrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    function getChessCsrf() {
+        const meta = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (meta) return meta;
+        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function showChessToast(message, isError = false) {
+        let toast = document.getElementById('chessActionToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'chessActionToast';
+            toast.className = 'chess-invite-alert';
+            toast.style.cssText = 'position:fixed;top:5rem;left:50%;transform:translateX(-50%);z-index:9999;max-width:min(92vw,480px);';
+            document.body.appendChild(toast);
+        }
+        toast.style.borderColor = isError ? 'rgba(239,68,68,0.5)' : 'rgba(34,197,94,0.5)';
+        toast.textContent = message;
+        toast.style.display = 'flex';
+        clearTimeout(toast._hideTimer);
+        toast._hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 5000);
+    }
 
     const PIECES = {
         'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙',
@@ -2179,17 +2219,26 @@
     }
 
     async function chessFetch(url, options = {}) {
-        return fetch(url, {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': getChessCsrf(),
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(options.headers || {}),
+        };
+
+        let res = await fetch(url, {
             ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': chessCsrf,
-                'X-Requested-With': 'XMLHttpRequest',
-                ...(options.headers || {}),
-            },
+            headers,
             credentials: 'same-origin',
         });
+
+        if (res.status === 419 && !options._retried) {
+            headers['X-CSRF-TOKEN'] = getChessCsrf();
+            res = await fetch(url, { ...options, headers, credentials: 'same-origin', _retried: true });
+        }
+
+        return res;
     }
 
     function updateRematchVisibility() {
@@ -2234,14 +2283,22 @@
             let data = {};
             try { data = await res.json(); } catch (e) { /* ignore */ }
             if (!res.ok) {
-                alert(data.message || `Could not send invite (error ${res.status}). Try refreshing the page.`);
+                showChessToast(data.message || `Could not send invite (error ${res.status}). Try refreshing the page.`, true);
                 return;
             }
             friendOpponentName = friendName;
-            history.replaceState({}, '', data.play_url || ('/chess?game=' + data.token));
+            const playUrl = data.play_url || ('/chess?game=' + data.token);
+            history.replaceState({}, '', playUrl);
             enterOnlineGameUI(data);
+            showChessToast(data.status === 'pending'
+                ? `Invite sent to ${friendName}! They will see it within a few seconds.`
+                : `Opening your match with ${friendName}.`);
+            document.getElementById('gameArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (typeof GameSounds !== 'undefined') {
+                try { GameSounds.init(); GameSounds.play('start'); } catch (e) { /* ignore */ }
+            }
         } catch (e) {
-            alert('Could not invite friend. Check your connection and refresh the page.');
+            showChessToast('Could not invite friend. Check your connection and refresh the page.', true);
         }
     }
 
@@ -2638,6 +2695,26 @@
     document.addEventListener('DOMContentLoaded', async () => {
         updateRematchVisibility();
         await initFriendsList();
+
+        document.querySelectorAll('.chess-invite-form').forEach(form => {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const card = form.closest('[data-friend-id]');
+                const friendId = parseInt(form.querySelector('input[name="friend_id"]')?.value || card?.dataset.friendId, 10);
+                const friendName = card?.querySelector('.friend-pick-meta span')?.textContent?.trim() || 'Friend';
+                const btn = form.querySelector('.chess-invite-btn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Sending invite…';
+                }
+                await inviteFriendOnline(friendId, friendName);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '♟ Invite to play online';
+                }
+            });
+        });
+
         const params = new URLSearchParams(window.location.search);
         const gameToken = params.get('game');
         if (gameToken && chessLoggedIn) {
