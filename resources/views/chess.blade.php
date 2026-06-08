@@ -264,6 +264,166 @@
         color: var(--royal-gold-light);
     }
 
+    .friend-pick-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        flex: 1;
+        min-width: 0;
+    }
+    .friend-pick-meta small {
+        color: rgba(212,168,83,0.65);
+        font-size: 0.75rem;
+    }
+    .friend-online-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4ade80;
+        box-shadow: 0 0 8px rgba(74,222,128,0.6);
+        flex-shrink: 0;
+    }
+    .friend-offline-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.25);
+        flex-shrink: 0;
+    }
+    .friend-action-row {
+        display: flex;
+        gap: 0.35rem;
+        margin-top: 0.35rem;
+    }
+    .friend-action-btn {
+        flex: 1;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.78rem;
+        border-radius: 2px;
+        border: 1px solid rgba(212,168,83,0.35);
+        background: rgba(212,168,83,0.12);
+        color: var(--royal-gold-light);
+        cursor: pointer;
+        font-family: 'Source Sans 3', sans-serif;
+    }
+    .friend-action-btn:hover {
+        background: rgba(212,168,83,0.22);
+    }
+    .friend-action-btn.primary {
+        background: linear-gradient(180deg, #6b2038, var(--royal-burgundy));
+        color: var(--royal-ivory);
+    }
+
+    .chess-chat-panel {
+        display: none;
+        flex-direction: column;
+        min-height: 260px;
+        max-height: min(420px, 42vh);
+    }
+    #gameArea.online-friends .chess-chat-panel {
+        display: flex;
+    }
+    #gameArea.online-friends #whitePanelCard h4,
+    #gameArea.online-friends #whitePanelCard .captured-row {
+        display: none;
+    }
+    .chess-chat-panel h4 {
+        margin-bottom: 0.5rem;
+    }
+    .chess-chat-list {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        padding: 0.35rem 0;
+        margin-bottom: 0.55rem;
+        min-height: 120px;
+        max-height: 280px;
+        text-align: left;
+    }
+    .chess-chat-msg {
+        padding: 0.45rem 0.6rem;
+        border-radius: 2px;
+        font-size: 0.82rem;
+        line-height: 1.35;
+        max-width: 100%;
+        word-break: break-word;
+    }
+    .chess-chat-msg.mine {
+        background: rgba(212,168,83,0.15);
+        border: 1px solid rgba(212,168,83,0.25);
+        align-self: flex-end;
+    }
+    .chess-chat-msg.theirs {
+        background: rgba(0,0,0,0.28);
+        border: 1px solid rgba(255,255,255,0.08);
+        align-self: flex-start;
+    }
+    .chess-chat-msg.system {
+        background: transparent;
+        color: rgba(212,168,83,0.7);
+        font-size: 0.75rem;
+        text-align: center;
+        align-self: center;
+        font-style: italic;
+    }
+    .chess-chat-msg strong {
+        color: var(--royal-gold);
+        font-weight: 600;
+        display: block;
+        font-size: 0.72rem;
+        margin-bottom: 0.1rem;
+    }
+    .chess-chat-form {
+        display: flex;
+        gap: 0.4rem;
+    }
+    .chess-chat-form input {
+        flex: 1;
+        min-width: 0;
+        padding: 0.5rem 0.65rem;
+        border-radius: 2px;
+        border: 1px solid rgba(212,168,83,0.25);
+        background: rgba(0,0,0,0.35);
+        color: var(--royal-ivory);
+        font-family: 'Source Sans 3', sans-serif;
+        font-size: 0.88rem;
+    }
+    .chess-chat-form button {
+        padding: 0.5rem 0.85rem;
+        border-radius: 2px;
+        border: 1px solid rgba(212,168,83,0.4);
+        background: linear-gradient(180deg, #6b2038, var(--royal-burgundy));
+        color: var(--royal-ivory);
+        cursor: pointer;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+    .online-invite-bar {
+        display: none;
+        margin-top: 0.35rem;
+        padding: 0.55rem 0.85rem;
+        background: rgba(212,168,83,0.1);
+        border: 1px solid rgba(212,168,83,0.25);
+        border-radius: 2px;
+        font-size: 0.85rem;
+        color: rgba(245,240,230,0.85);
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+    }
+    #gameArea.online-friends .online-invite-bar.show {
+        display: flex;
+    }
+    .board-frame.board-flipped {
+        transform: rotate(180deg);
+    }
+    .board-frame.board-flipped .square {
+        transform: rotate(180deg);
+    }
+
     /* ── Arena: board flanked by side panels ── */
     .chess-arena {
         display: grid;
@@ -789,7 +949,7 @@
             </div>
             <div class="mode-card">
                 <h3>Play with Friends</h3>
-                <p class="mode-desc">Choose a friend for a shared-screen match.</p>
+                <p class="mode-desc">Invite a friend — you play on the same live board (White vs Black) with chat.</p>
                 <div class="friends-list" id="friendsList"></div>
                 <p class="friends-empty" id="friendsEmpty" style="display:none;">No friends yet — add friends from the Friends page first.</p>
                 <p class="friends-login-hint" id="friendsLoginHint" style="display:none;">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
@@ -817,6 +977,11 @@
             <!-- CENTER: Board -->
             <div class="chess-board-col">
                 <div class="status" id="status">White's Turn</div>
+                <div class="online-invite-bar" id="onlineInviteBar">
+                    <span id="onlineInviteText"></span>
+                    <button type="button" class="friend-action-btn" id="copyGameLinkBtn" onclick="copyOnlineGameLink()">Copy link</button>
+                    <button type="button" class="friend-action-btn primary" id="acceptOnlineBtn" style="display:none" onclick="acceptOnlineInvite()">Join match</button>
+                </div>
                 <div class="board-pedestal">
                     <div class="board-frame">
                         <div class="board-inner-border">
@@ -826,18 +991,26 @@
                 </div>
             </div>
 
-            <!-- RIGHT: White player + pieces Black captured -->
+            <!-- RIGHT: White player + live chat (online friends) -->
             <aside class="chess-panel chess-panel--right">
-                <div class="panel-card">
+                <div class="panel-card" id="whitePanelCard">
                     <div class="player-strip">
                         <span class="player-icon player-icon--white">♔</span>
                         <div class="player-meta">
                             <div class="player-label">White <small id="white-role">You</small></div>
                         </div>
-                        <div class="timer active" id="white-timer">10:00</div>
+                        <div class="timer" id="white-timer">10:00</div>
                     </div>
                     <h4>Taken by Black</h4>
                     <div class="captured-row" id="captured-by-black">—</div>
+                </div>
+                <div class="panel-card chess-chat-panel" id="onlineChatPanel">
+                    <h4>Live Chat</h4>
+                    <div class="chess-chat-list" id="chessChatList"></div>
+                    <form class="chess-chat-form" id="chessChatForm" onsubmit="return sendChessChat(event)">
+                        <input type="text" id="chessChatInput" maxlength="500" placeholder="Message your opponent…" autocomplete="off">
+                        <button type="submit">Send</button>
+                    </form>
                 </div>
             </aside>
         </div>
@@ -849,7 +1022,7 @@
             <button class="control-btn secondary icon-side" type="button" id="moveForwardBtn" onclick="goMoveForward()" title="Next move" disabled>Forward ▶</button>
             <button class="control-btn secondary" id="hintBtn" onclick="showHint()">💡 Hint</button>
             <button class="control-btn" id="soundBtn" type="button" onclick="toggleChessSound()">🔊</button>
-            <button class="control-btn" type="button" onclick="rematchGame()" title="Rematch">↻ Rematch</button>
+            <button class="control-btn" type="button" id="rematchBtn" onclick="rematchGame()" title="Rematch">↻ Rematch</button>
         </div>
     </div>
 </div>
@@ -860,7 +1033,7 @@
         <h2 id="gameOverTitle">Game Over</h2>
         <p id="gameOverMsg" style="color:#cbd5e1; margin-bottom:1.2rem;"></p>
         <button class="control-btn" onclick="closeGameOver(); showSelect();">New Game</button>
-        <button class="control-btn secondary" onclick="closeGameOver(); rematchGame();">Rematch</button>
+        <button class="control-btn secondary" id="gameOverRematchBtn" onclick="closeGameOver(); rematchGame();">Rematch</button>
     </div>
 </div>
 
@@ -874,6 +1047,9 @@
 <script>
     const chessFriends = @json($friends ?? []);
     const chessLoggedIn = @json(auth()->check());
+    const chessUserId = @json($chessUserId ?? null);
+    const chessUserName = @json($chessUserName ?? null);
+    const chessCsrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     const PIECES = {
         'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙',
@@ -911,6 +1087,13 @@
     let whiteTime = 600;
     let blackTime = 600;
     let timerInterval = null;
+
+    let onlineGame = null;
+    let myColor = null;
+    let onlinePollTimer = null;
+    let applyingRemote = false;
+    let lastWinner = null;
+    let pendingInvites = { incoming: [], outgoing: [], active: [] };
 
     const FILES = 'abcdefgh';
     const PST_PAWN = [0,5,5,-10,-10,5,5,0, 2,2,2,2,2,2,2,2, 5,5,10,15,15,10,5,5, 10,10,15,20,20,15,10,10, 15,15,20,25,25,20,15,15, 20,25,25,30,30,25,25,20, 30,30,30,35,35,30,30,30, 0,0,0,0,0,0,0,0];
@@ -1456,7 +1639,7 @@
     }
 
     function showHint() {
-        if (gameOver || !isAtLatestPosition() || (gameMode === '1p' && currentPlayer === 'black')) return;
+        if (gameOver || !isAtLatestPosition() || (gameMode === '1p' && currentPlayer === 'black') || (gameMode === 'online' && currentPlayer !== myColor)) return;
         const moves = [];
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
@@ -1587,6 +1770,7 @@
                 gameOver = true;
                 clearInterval(timerInterval);
                 const winner = currentPlayer === 'white' ? 'Black' : 'White';
+                lastWinner = winner.toLowerCase();
                 statusEl.textContent = `Checkmate! ${winner} wins!`;
                 GameSounds.play('checkmate');
                 showGameOver('Checkmate!', `${winner} wins by checkmate.`);
@@ -1595,6 +1779,7 @@
             }
         } else if (!hasLegalMoves(currentPlayer)) {
             gameOver = true;
+            lastWinner = 'draw';
             clearInterval(timerInterval);
             statusEl.textContent = 'Stalemate — Draw!';
             GameSounds.play('draw');
@@ -1707,7 +1892,9 @@
 
         if (!gameOver && isInCheck(board, currentPlayer)) GameSounds.play('check');
 
-        if (gameMode === '1p' && currentPlayer === 'black' && !gameOver && isAtLatestPosition()) {
+        if (gameMode === 'online') {
+            syncMoveToServer();
+        } else if (gameMode === '1p' && currentPlayer === 'black' && !gameOver && isAtLatestPosition()) {
             setTimeout(makeAIMove, 450);
         }
     }
@@ -1715,6 +1902,10 @@
     function handleSquareClick(row, col) {
         if (gameOver) return;
         if (!isAtLatestPosition()) return;
+        if (gameMode === 'online') {
+            if (onlineGame?.status === 'pending') return;
+            if (currentPlayer !== myColor) return;
+        }
         if (gameMode === '1p' && currentPlayer === 'black') return;
         
         const piece = board[row][col];
@@ -1891,30 +2082,65 @@
     }
 
     function startSoloGame(diff) {
+        stopOnlineGame();
         gameMode = '1p';
         friendOpponentName = null;
         startGame(diff);
     }
 
     function startTwoPlayerGame() {
+        stopOnlineGame();
         gameMode = '2p';
         friendOpponentName = null;
         startGame();
     }
 
-    function startFriendGame(name) {
-        friendOpponentName = name;
-        gameMode = 'friends';
-        startGame();
+    async function chessFetch(url, options = {}) {
+        return fetch(url, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': chessCsrf,
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(options.headers || {}),
+            },
+            credentials: 'same-origin',
+        });
     }
 
-    function initFriendsList() {
+    function updateRematchVisibility() {
+        const show = gameMode !== 'online';
+        const rematchBtn = document.getElementById('rematchBtn');
+        const gameOverRematchBtn = document.getElementById('gameOverRematchBtn');
+        if (rematchBtn) rematchBtn.style.display = show ? '' : 'none';
+        if (gameOverRematchBtn) gameOverRematchBtn.style.display = show ? '' : 'none';
+        document.getElementById('hintBtn').style.display = gameMode === '1p' ? '' : 'none';
+    }
+
+    async function loadPendingInvites() {
+        if (!chessLoggedIn) return;
+        try {
+            const res = await chessFetch('{{ route('chess.games.pending') }}');
+            if (res.ok) pendingInvites = await res.json();
+        } catch (e) {
+            pendingInvites = { incoming: [], outgoing: [], active: [] };
+        }
+    }
+
+    function findInviteForFriend(friendId) {
+        const all = [...(pendingInvites.incoming || []), ...(pendingInvites.outgoing || []), ...(pendingInvites.active || [])];
+        return all.find(g => g.white.id === friendId || g.black.id === friendId);
+    }
+
+    async function initFriendsList() {
         const listEl = document.getElementById('friendsList');
         const emptyEl = document.getElementById('friendsEmpty');
         const loginEl = document.getElementById('friendsLoginHint');
         if (!listEl) return;
 
         listEl.innerHTML = '';
+        await loadPendingInvites();
 
         if (!chessLoggedIn) {
             loginEl.style.display = 'block';
@@ -1931,13 +2157,339 @@
 
         emptyEl.style.display = 'none';
         chessFriends.forEach(friend => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'friend-pick-btn';
-            btn.innerHTML = `<span class="friend-pick-avatar">${friend.name.charAt(0).toUpperCase()}</span><span>${friend.name}</span>`;
-            btn.onclick = () => startFriendGame(friend.name);
-            listEl.appendChild(btn);
+            const invite = findInviteForFriend(friend.id);
+            const wrap = document.createElement('div');
+            wrap.className = 'friend-pick-btn';
+            wrap.style.cursor = 'default';
+            wrap.innerHTML = `
+                <span class="${friend.online ? 'friend-online-dot' : 'friend-offline-dot'}"></span>
+                <span class="friend-pick-avatar">${friend.name.charAt(0).toUpperCase()}</span>
+                <span class="friend-pick-meta">
+                    <span>${friend.name}</span>
+                    <small>${friend.online ? 'Online' : 'Offline'} · ${invite ? (invite.status === 'active' ? 'In match' : 'Invite pending') : 'Ready to play'}</small>
+                </span>`;
+
+            const actions = document.createElement('div');
+            actions.className = 'friend-action-row';
+
+            if (invite?.status === 'active' || invite?.status === 'pending') {
+                const joinBtn = document.createElement('button');
+                joinBtn.type = 'button';
+                joinBtn.className = 'friend-action-btn primary';
+                joinBtn.textContent = invite.status === 'pending' && invite.my_color === 'black' ? 'Join match' : 'Open match';
+                joinBtn.onclick = () => openOnlineGame(invite.token);
+                actions.appendChild(joinBtn);
+            } else {
+                const inviteBtn = document.createElement('button');
+                inviteBtn.type = 'button';
+                inviteBtn.className = 'friend-action-btn primary';
+                inviteBtn.textContent = 'Invite';
+                inviteBtn.onclick = () => inviteFriendOnline(friend.id, friend.name);
+                actions.appendChild(inviteBtn);
+            }
+
+            const card = document.createElement('div');
+            card.style.width = '100%';
+            card.appendChild(wrap);
+            card.appendChild(actions);
+            listEl.appendChild(card);
         });
+    }
+
+    async function inviteFriendOnline(friendId, friendName) {
+        if (!chessLoggedIn) {
+            window.location.href = '{{ route('login') }}';
+            return;
+        }
+        try {
+            const res = await chessFetch('{{ route('chess.games.store') }}', {
+                method: 'POST',
+                body: JSON.stringify({ friend_id: friendId }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.message || 'Could not send invite.');
+                return;
+            }
+            friendOpponentName = friendName;
+            history.replaceState({}, '', data.play_url || ('/chess?game=' + data.token));
+            enterOnlineGameUI(data);
+        } catch (e) {
+            alert('Could not invite friend. Try again.');
+        }
+    }
+
+    async function openOnlineGame(token) {
+        if (!chessLoggedIn) {
+            window.location.href = '{{ route('login') }}?redirect=' + encodeURIComponent('/chess?game=' + token);
+            return;
+        }
+        try {
+            const res = await chessFetch(`/chess/games/${token}`);
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.message || 'Could not open game.');
+                return;
+            }
+            history.replaceState({}, '', '/chess?game=' + token);
+            enterOnlineGameUI(data);
+        } catch (e) {
+            alert('Could not open game.');
+        }
+    }
+
+    function enterOnlineGameUI(gameData) {
+        stopOnlineGame(false);
+        gameMode = 'online';
+        myColor = gameData.my_color;
+        friendOpponentName = gameData.opponent?.name || 'Friend';
+        onlineGame = {
+            token: gameData.token,
+            version: gameData.version || 0,
+            status: gameData.status,
+            lastMessageId: 0,
+            playUrl: gameData.play_url,
+        };
+
+        GameSounds.init();
+        document.getElementById('playerSelect').style.display = 'none';
+        document.getElementById('gameArea').classList.add('active', 'online-friends');
+        updateRematchVisibility();
+        updatePlayerLabelsOnline(gameData);
+        updateBoardOrientation();
+        updateOnlineInviteBar(gameData);
+
+        if (gameData.status === 'active' && gameData.state) {
+            applyingRemote = true;
+            applyOnlineState(gameData);
+            applyingRemote = false;
+            resetHistory();
+        } else {
+            initBoard();
+            renderBoard();
+            resetHistory();
+            document.getElementById('status').textContent = gameData.status === 'pending'
+                ? (myColor === 'white' ? `Waiting for ${friendOpponentName} to join…` : 'Accept the invite to start.')
+                : "White's turn";
+        }
+
+        startOnlinePolling();
+    }
+
+    function updatePlayerLabelsOnline(gameData) {
+        const whiteName = gameData.white?.name || 'White';
+        const blackName = gameData.black?.name || 'Black';
+        document.getElementById('white-role').textContent = whiteName + (myColor === 'white' ? ' (You)' : '');
+        document.getElementById('black-role').textContent = blackName + (myColor === 'black' ? ' (You)' : '');
+    }
+
+    function updateBoardOrientation() {
+        const frame = document.querySelector('.board-frame');
+        if (!frame) return;
+        if (myColor === 'black') frame.classList.add('board-flipped');
+        else frame.classList.remove('board-flipped');
+    }
+
+    function updateOnlineInviteBar(gameData) {
+        const bar = document.getElementById('onlineInviteBar');
+        const text = document.getElementById('onlineInviteText');
+        const acceptBtn = document.getElementById('acceptOnlineBtn');
+        const copyBtn = document.getElementById('copyGameLinkBtn');
+        if (!bar) return;
+
+        if (gameData.status === 'pending') {
+            bar.classList.add('show');
+            if (myColor === 'black') {
+                text.textContent = `${gameData.white.name} invited you to play as Black.`;
+                acceptBtn.style.display = '';
+                copyBtn.style.display = 'none';
+            } else {
+                text.textContent = `Share this link with ${friendOpponentName}:`;
+                acceptBtn.style.display = 'none';
+                copyBtn.style.display = '';
+            }
+        } else {
+            bar.classList.remove('show');
+        }
+    }
+
+    function copyOnlineGameLink() {
+        const url = onlineGame?.playUrl || window.location.href;
+        navigator.clipboard?.writeText(url).then(() => {
+            GameSounds.play('click');
+            document.getElementById('onlineInviteText').textContent = 'Link copied! Send it to your friend.';
+        }).catch(() => alert(url));
+    }
+
+    async function acceptOnlineInvite() {
+        if (!onlineGame?.token) return;
+        const res = await chessFetch(`/chess/games/${onlineGame.token}/accept`, { method: 'POST', body: '{}' });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.message || 'Could not join.');
+            return;
+        }
+        enterOnlineGameUI(data);
+    }
+
+    function applyOnlineState(gameData) {
+        if (!gameData.state) return;
+        const snap = {
+            ...gameData.state,
+            gameOver: gameData.game_over,
+            gameOverInfo: gameData.game_over && gameData.game_over_title ? {
+                title: gameData.game_over_title,
+                msg: gameData.game_over_msg,
+            } : null,
+        };
+        board = cloneBoard(snap.board);
+        currentPlayer = snap.currentPlayer;
+        castlingRights = JSON.parse(JSON.stringify(snap.castlingRights));
+        enPassantTarget = snap.enPassantTarget ? { ...snap.enPassantTarget } : null;
+        capturedByWhite = [...(snap.capturedByWhite || [])];
+        capturedByBlack = [...(snap.capturedByBlack || [])];
+        lastMove = snap.lastMove;
+        whiteTime = snap.whiteTime ?? 600;
+        blackTime = snap.blackTime ?? 600;
+        gameOver = snap.gameOver;
+        selectedSquare = null;
+        validMoves = [];
+        updateCapturedDisplay();
+        updateTimerDisplay();
+        closeGameOver();
+        renderBoard(true);
+        if (snap.statusText) document.getElementById('status').textContent = snap.statusText;
+        if (gameData.game_over && snap.gameOverInfo) {
+            showGameOver(snap.gameOverInfo.title, snap.gameOverInfo.msg);
+        }
+        onlineGame.version = gameData.version;
+        onlineGame.status = gameData.status;
+    }
+
+    function startOnlinePolling() {
+        if (onlinePollTimer) clearInterval(onlinePollTimer);
+        pollOnlineGame();
+        onlinePollTimer = setInterval(pollOnlineGame, 2000);
+    }
+
+    async function pollOnlineGame() {
+        if (!onlineGame?.token) return;
+        try {
+            const res = await chessFetch(`/chess/games/${onlineGame.token}/sync?since_message=${onlineGame.lastMessageId}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const game = data.game;
+
+            if (game.version > onlineGame.version || game.status !== onlineGame.status) {
+                if (game.status === 'active' && game.state) {
+                    applyingRemote = true;
+                    applyOnlineState(game);
+                    applyingRemote = false;
+                    if (positionHistory.length <= 1) resetHistory();
+                    else recordPosition();
+                } else if (game.status === 'pending') {
+                    onlineGame.status = 'pending';
+                    updateOnlineInviteBar(game);
+                }
+            }
+
+            if (game.status === 'finished' && game.game_over && !gameOver) {
+                applyingRemote = true;
+                applyOnlineState(game);
+                applyingRemote = false;
+            }
+
+            updatePlayerLabelsOnline(game);
+            updateOnlineInviteBar(game);
+
+            (data.messages || []).forEach(msg => appendChessChatMessage(msg));
+        } catch (e) { /* ignore poll errors */ }
+    }
+
+    function appendChessChatMessage(msg) {
+        const list = document.getElementById('chessChatList');
+        if (!list || !msg?.id) return;
+        if (msg.id <= (onlineGame?.lastMessageId || 0)) return;
+        onlineGame.lastMessageId = msg.id;
+
+        const el = document.createElement('div');
+        const isSystem = msg.body.includes(' joined the match');
+        el.className = 'chess-chat-msg ' + (isSystem ? 'system' : (msg.mine ? 'mine' : 'theirs'));
+        if (isSystem) {
+            el.textContent = msg.body;
+        } else {
+            el.innerHTML = `<strong>${msg.user_name}</strong>${escapeHtml(msg.body)}`;
+        }
+        list.appendChild(el);
+        list.scrollTop = list.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    async function sendChessChat(event) {
+        event.preventDefault();
+        if (!onlineGame?.token) return false;
+        const input = document.getElementById('chessChatInput');
+        const text = input.value.trim();
+        if (!text) return false;
+        input.value = '';
+        const res = await chessFetch(`/chess/games/${onlineGame.token}/chat`, {
+            method: 'POST',
+            body: JSON.stringify({ message: text }),
+        });
+        if (res.ok) {
+            const data = await res.json();
+            appendChessChatMessage(data.message);
+        }
+        return false;
+    }
+
+    async function syncMoveToServer() {
+        if (!onlineGame?.token || applyingRemote || onlineGame.status !== 'active') return;
+        const payload = {
+            version: onlineGame.version,
+            state: snapshotState(),
+            game_over: gameOver,
+            winner: lastWinner,
+            game_over_title: lastGameOverInfo?.title || null,
+            game_over_msg: lastGameOverInfo?.msg || null,
+        };
+        try {
+            const res = await chessFetch(`/chess/games/${onlineGame.token}/move`, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                onlineGame.version = data.version;
+                onlineGame.status = data.status;
+            } else if (res.status === 409 && data.game) {
+                applyingRemote = true;
+                applyOnlineState(data.game);
+                applyingRemote = false;
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function stopOnlineGame(clearUrl = true) {
+        if (onlinePollTimer) {
+            clearInterval(onlinePollTimer);
+            onlinePollTimer = null;
+        }
+        onlineGame = null;
+        myColor = null;
+        lastWinner = null;
+        document.getElementById('gameArea')?.classList.remove('online-friends');
+        document.getElementById('onlineInviteBar')?.classList.remove('show');
+        document.getElementById('chessChatList').innerHTML = '';
+        document.querySelector('.board-frame')?.classList.remove('board-flipped');
+        if (clearUrl && window.location.search.includes('game=')) {
+            history.replaceState({}, '', '/chess');
+        }
     }
 
     function formatTime(seconds) {
@@ -1962,6 +2514,7 @@
     }
 
     function startTimer() {
+        if (gameMode === 'online') return;
         if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             if (gameOver) {
@@ -1996,11 +2549,9 @@
     function updatePlayerLabels() {
         const blackRole = document.getElementById('black-role');
         const whiteRole = document.getElementById('white-role');
+        if (gameMode === 'online') return;
         if (gameMode === '1p') {
             blackRole.textContent = 'AI';
-            whiteRole.textContent = 'You';
-        } else if (gameMode === 'friends') {
-            blackRole.textContent = friendOpponentName || 'Friend';
             whiteRole.textContent = 'You';
         } else {
             blackRole.textContent = 'Player 2';
@@ -2018,11 +2569,12 @@
         updatePlayerLabels();
         document.getElementById('playerSelect').style.display = 'none';
         document.getElementById('gameArea').classList.add('active');
+        document.getElementById('gameArea').classList.remove('online-friends');
         renderBoard();
         resetHistory();
         updateTimerDisplay();
         startTimer();
-        document.getElementById('hintBtn').style.display = gameMode === '1p' ? '' : 'none';
+        updateRematchVisibility();
         updateReviewLabel();
     }
 
@@ -2032,16 +2584,21 @@
         document.getElementById('promotionModal').classList.remove('show');
         pendingPromotion = null;
         reviewingHistory = false;
+        stopOnlineGame();
+        gameMode = '2p';
         document.getElementById('playerSelect').style.display = 'block';
         document.getElementById('gameArea').classList.remove('active');
+        updateRematchVisibility();
         const label = document.getElementById('moveReviewLabel');
         if (label) {
             label.textContent = '';
             label.classList.remove('reviewing');
         }
+        initFriendsList();
     }
 
     function rematchGame() {
+        if (gameMode === 'online') return;
         GameSounds.play('click');
         closeGameOver();
         document.getElementById('promotionModal').classList.remove('show');
@@ -2052,6 +2609,14 @@
         startGame(diff);
     }
 
-    document.addEventListener('DOMContentLoaded', initFriendsList);
+    document.addEventListener('DOMContentLoaded', async () => {
+        updateRematchVisibility();
+        await initFriendsList();
+        const params = new URLSearchParams(window.location.search);
+        const gameToken = params.get('game');
+        if (gameToken && chessLoggedIn) {
+            openOnlineGame(gameToken);
+        }
+    });
 </script>
 @endsection

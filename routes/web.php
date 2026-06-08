@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChessGameController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GoogleAuthController;
@@ -35,6 +36,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/friends/{friendship}', [FriendController::class, 'accept'])->name('friends.accept');
     Route::delete('/friends/{friendship}', [FriendController::class, 'destroy'])->name('friends.destroy');
     Route::post('/presence/ping', [PresenceController::class, 'ping'])->name('presence.ping');
+
+    Route::prefix('chess')->name('chess.')->group(function () {
+        Route::get('/games/pending', [ChessGameController::class, 'pending'])->name('games.pending');
+        Route::post('/games', [ChessGameController::class, 'store'])->name('games.store');
+        Route::get('/games/{chessGame:token}', [ChessGameController::class, 'show'])->name('games.show');
+        Route::get('/games/{chessGame:token}/sync', [ChessGameController::class, 'sync'])->name('games.sync');
+        Route::post('/games/{chessGame:token}/accept', [ChessGameController::class, 'accept'])->name('games.accept');
+        Route::post('/games/{chessGame:token}/move', [ChessGameController::class, 'move'])->name('games.move');
+        Route::post('/games/{chessGame:token}/chat', [ChessGameController::class, 'chat'])->name('games.chat');
+    });
 });
 
 Route::middleware(['auth', 'owner'])->prefix('owner')->name('owner.')->group(function () {
@@ -84,14 +95,20 @@ Route::get('/whack-a-mole', function () {
 });
 
 Route::get('/chess', function () {
-    $friends = auth()->check()
-        ? auth()->user()->friends()->map(fn ($friend) => [
+    $user = auth()->user();
+    $friends = $user
+        ? $user->friends()->map(fn ($friend) => [
             'id' => $friend->id,
             'name' => $friend->name,
+            'online' => $friend->isOnline(),
         ])->values()
         : collect();
 
-    return view('chess', ['friends' => $friends]);
+    return view('chess', [
+        'friends' => $friends,
+        'chessUserId' => $user?->id,
+        'chessUserName' => $user?->name,
+    ]);
 });
 
 Route::get('/uno', function () {
