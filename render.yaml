@@ -46,6 +46,6 @@ services:
       - key: SESSION_ENCRYPT
         value: false
       - key: CACHE_STORE
-        value: database
+        value: file
       - key: QUEUE_CONNECTION
         value: sync

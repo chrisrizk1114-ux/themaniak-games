@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $sessionDriver = env('SESSION_DRIVER', 'database');
-        $cacheStore = env('CACHE_STORE', 'database');
+        $cacheStore = env('CACHE_STORE', 'file');
 
         if ($sessionDriver === 'database') {
             config([
