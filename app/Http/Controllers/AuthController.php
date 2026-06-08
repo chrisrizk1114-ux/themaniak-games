@@ -28,10 +28,18 @@ class AuthController extends Controller
 
         $remember = $request->boolean('remember');
 
-        if (Auth::attempt($credentials, $remember)) {
-            $request->session()->regenerate();
+        try {
+            if (Auth::attempt($credentials, $remember)) {
+                $request->session()->regenerate();
 
-            return redirect()->intended('/');
+                return redirect()->intended('/');
+            }
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+
+            return back()
+                ->withInput($request->only('email', 'remember'))
+                ->withErrors(['email' => 'Database connection failed. Please try again in a minute.']);
         }
 
         return back()

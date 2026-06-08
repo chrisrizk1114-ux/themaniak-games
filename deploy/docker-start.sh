@@ -13,4 +13,6 @@ php artisan storage:link 2>/dev/null || true
 
 php artisan migrate --force --no-interaction 2>/dev/null || true
 
+php database/test-db-connection.php 2>&1 || echo "WARN: database connection test failed" >&2
+
 exec php artisan serve --host=0.0.0.0 --port="${PORT}"

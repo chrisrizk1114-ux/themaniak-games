@@ -59,25 +59,30 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => value(function () {
-                    $ca = env('MYSQL_ATTR_SSL_CA');
-                    if ($ca) {
-                        if (is_file($ca)) {
-                            return $ca;
-                        }
-                        $resolved = base_path($ca);
-                        if (is_file($resolved)) {
-                            return $resolved;
-                        }
-                    }
+            'options' => extension_loaded('pdo_mysql') ? (static function (): array {
+                $options = [];
+                $sslCaAttr = PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA;
 
-                    // Cloud MySQL (Aiven) on Docker — use system CA bundle when no project CA file.
-                    return is_file('/etc/ssl/certs/ca-certificates.crt')
-                        ? '/etc/ssl/certs/ca-certificates.crt'
-                        : null;
-                }),
-            ]) : [],
+                $ca = env('MYSQL_ATTR_SSL_CA');
+                $caPath = null;
+                if ($ca) {
+                    $caPath = is_file($ca) ? $ca : (is_file(base_path($ca)) ? base_path($ca) : null);
+                }
+                if (! $caPath && is_file('/etc/ssl/certs/ca-certificates.crt')) {
+                    $caPath = '/etc/ssl/certs/ca-certificates.crt';
+                }
+                if ($caPath) {
+                    $options[$sslCaAttr] = $caPath;
+                }
+
+                // Aiven on Render: TLS required; project CA file often missing from container.
+                $relaxed = filter_var(env('DB_SSL_RELAXED', env('RENDER') ? 'true' : 'false'), FILTER_VALIDATE_BOOLEAN);
+                if ($relaxed) {
+                    $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+                }
+
+                return $options;
+            })() : [],
         ],
 
         'mariadb' => [

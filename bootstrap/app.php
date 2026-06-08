@@ -44,6 +44,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
+            if ($request->isMethod('POST') && $request->is('login', 'register')) {
+                return null;
+            }
+
             if ($request->hasSession()) {
                 try {
                     auth()->logout();
