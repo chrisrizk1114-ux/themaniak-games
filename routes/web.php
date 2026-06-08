@@ -9,11 +9,25 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\PresenceController;
 use App\Models\ChessGame;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/reset-session', function (Request $request) {
+    if ($request->hasSession()) {
+        $request->session()->flush();
+    }
+
+    $cookieName = config('session.cookie', 'laravel_session');
+    $domain = config('session.domain');
+
+    return redirect('/')
+        ->withCookie(cookie()->forget($cookieName, '/', $domain))
+        ->withCookie(cookie()->forget('XSRF-TOKEN', '/', $domain));
+})->name('reset-session');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

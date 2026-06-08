@@ -15,13 +15,17 @@ class UpdateLastSeen
         }
 
         if ($request->user()) {
-            $user = $request->user();
-            $lastSeen = $user->last_seen_at;
+            try {
+                $user = $request->user();
+                $lastSeen = $user->last_seen_at;
 
-            if (! $lastSeen || $lastSeen->diffInSeconds(now()) >= 15) {
-                $user->forceFill([
-                    'last_seen_at' => now(),
-                ])->saveQuietly();
+                if (! $lastSeen || $lastSeen->diffInSeconds(now()) >= 15) {
+                    $user->forceFill([
+                        'last_seen_at' => now(),
+                    ])->saveQuietly();
+                }
+            } catch (\Throwable) {
+                // DB unavailable — don't break the page for logged-in users.
             }
         }
 

@@ -18,7 +18,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        if ($this->app->environment('production')) {
+        if ($this->app->environment('production') || env('RENDER')) {
             $sessionPath = '/tmp/themaniak-sessions';
             $cachePath = '/tmp/themaniak-cache/data';
 

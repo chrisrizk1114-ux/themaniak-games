@@ -62,15 +62,20 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => value(function () {
                     $ca = env('MYSQL_ATTR_SSL_CA');
-                    if (! $ca) {
-                        return null;
+                    if ($ca) {
+                        if (is_file($ca)) {
+                            return $ca;
+                        }
+                        $resolved = base_path($ca);
+                        if (is_file($resolved)) {
+                            return $resolved;
+                        }
                     }
-                    if (is_file($ca)) {
-                        return $ca;
-                    }
-                    $resolved = base_path($ca);
 
-                    return is_file($resolved) ? $resolved : null;
+                    // Cloud MySQL (Aiven) on Docker — use system CA bundle when no project CA file.
+                    return is_file('/etc/ssl/certs/ca-certificates.crt')
+                        ? '/etc/ssl/certs/ca-certificates.crt'
+                        : null;
                 }),
             ]) : [],
         ],
