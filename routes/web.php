@@ -84,7 +84,14 @@ Route::get('/whack-a-mole', function () {
 });
 
 Route::get('/chess', function () {
-    return view('chess');
+    $friends = auth()->check()
+        ? auth()->user()->friends()->map(fn ($friend) => [
+            'id' => $friend->id,
+            'name' => $friend->name,
+        ])->values()
+        : collect();
+
+    return view('chess', ['friends' => $friends]);
 });
 
 Route::get('/uno', function () {

@@ -8,6 +8,8 @@
         max-width: none;
         padding: 0;
         width: 100%;
+        overflow: visible;
+        min-height: auto;
     }
 
     .chess-page {
@@ -31,6 +33,7 @@
             linear-gradient(165deg, #0a0f1a 0%, #14101c 40%, #0c1222 100%);
         position: relative;
         overflow-x: hidden;
+        overflow-y: auto;
     }
     .chess-page::before {
         content: '♔ ♕ ♖ ♗ ♘ ♙';
@@ -60,8 +63,9 @@
     }
     .game-container:has(#gameArea.active) {
         max-width: none;
-        padding: 0.4rem clamp(0.5rem, 2vw, 2rem) 0.75rem;
-        justify-content: space-between;
+        padding: 0.4rem clamp(0.5rem, 2vw, 2rem) 1.5rem;
+        justify-content: flex-start;
+        min-height: auto;
     }
     .game-container:has(#gameArea.active) .chess-title {
         margin: 0 0 0.25rem;
@@ -158,6 +162,70 @@
     .diff-btn:hover {
         border-color: var(--royal-gold);
         box-shadow: 0 0 12px rgba(212,168,83,0.2);
+    }
+
+    .friends-select {
+        display: none;
+        margin-top: 0.5rem;
+    }
+    .friends-select.show { display: block; }
+    .friends-select h3 {
+        color: rgba(212,168,83,0.85);
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+        font-family: Cinzel, serif;
+        letter-spacing: 0.06em;
+    }
+    .friends-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        max-height: 220px;
+        overflow-y: auto;
+        margin-bottom: 0.75rem;
+    }
+    .friend-pick-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        width: 100%;
+        padding: 0.65rem 0.85rem;
+        border-radius: 2px;
+        border: 1px solid rgba(212,168,83,0.25);
+        background: rgba(0,0,0,0.25);
+        color: var(--royal-ivory);
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+    }
+    .friend-pick-btn:hover {
+        border-color: var(--royal-gold);
+        background: rgba(212,168,83,0.1);
+    }
+    .friend-pick-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        background: linear-gradient(135deg, #00f0ff, #a855f7);
+        color: #fff;
+        flex-shrink: 0;
+    }
+    .friends-empty {
+        color: rgba(255,255,255,0.45);
+        font-size: 0.95rem;
+        padding: 0.5rem 0;
+    }
+    .friends-login-hint {
+        color: rgba(212,168,83,0.75);
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+    .friends-login-hint a {
+        color: var(--royal-gold-light);
     }
 
     /* ── Arena: board flanked by side panels ── */
@@ -540,10 +608,11 @@
     }
     #gameArea.active {
         display: flex;
+        flex-direction: column;
         flex: 1;
         min-height: 0;
         width: 100%;
-        justify-content: center;
+        justify-content: flex-start;
     }
 
     .chess-footer {
@@ -640,6 +709,7 @@
         <div class="mode-buttons">
             <button class="mode-btn" onclick="selectMode('1p')">Solo vs AI</button>
             <button class="mode-btn" onclick="selectMode('2p')">Two Players</button>
+            <button class="mode-btn" onclick="selectMode('friends')">Play with Friends</button>
         </div>
         
         <div class="difficulty-buttons" id="difficultyButtons">
@@ -647,6 +717,14 @@
             <button class="diff-btn" onclick="startGame('easy')">Easy</button>
             <button class="diff-btn" onclick="startGame('medium')">Medium</button>
             <button class="diff-btn" onclick="startGame('hard')">Hard</button>
+        </div>
+
+        <div class="friends-select" id="friendsSelect">
+            <h3>Choose a friend to play</h3>
+            <div class="friends-list" id="friendsList"></div>
+            <p class="friends-empty" id="friendsEmpty" style="display:none;">No friends yet — add friends from the Friends page first.</p>
+            <p class="friends-login-hint" id="friendsLoginHint" style="display:none;">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
+            <button class="diff-btn" type="button" onclick="cancelFriendsSelect()">← Back</button>
         </div>
     </div>
     
@@ -696,10 +774,12 @@
         </div>
         
         <div class="chess-footer">
-            <button class="control-btn secondary icon-side" type="button" onclick="goBack()" title="Back to menu">← Back</button>
+            <button class="control-btn secondary icon-side" type="button" onclick="showSelect()" title="Back to menu">☰ Menu</button>
+            <button class="control-btn secondary icon-side" type="button" id="moveBackBtn" onclick="goMoveBack()" title="Previous move" disabled>◀ Back</button>
+            <button class="control-btn secondary icon-side" type="button" id="moveForwardBtn" onclick="goMoveForward()" title="Next move" disabled>Forward ▶</button>
             <button class="control-btn secondary" id="hintBtn" onclick="showHint()">💡 Hint</button>
             <button class="control-btn" id="soundBtn" type="button" onclick="toggleChessSound()">🔊</button>
-            <button class="control-btn icon-side" type="button" onclick="restartGame()" title="Restart match">↻ Restart</button>
+            <button class="control-btn" type="button" onclick="rematchGame()" title="Rematch">↻ Rematch</button>
         </div>
     </div>
 </div>
@@ -710,7 +790,7 @@
         <h2 id="gameOverTitle">Game Over</h2>
         <p id="gameOverMsg" style="color:#cbd5e1; margin-bottom:1.2rem;"></p>
         <button class="control-btn" onclick="closeGameOver(); showSelect();">New Game</button>
-        <button class="control-btn secondary" onclick="closeGameOver(); startGame(difficulty);">Rematch</button>
+        <button class="control-btn secondary" onclick="closeGameOver(); rematchGame();">Rematch</button>
     </div>
 </div>
 
@@ -722,6 +802,9 @@
 </div>
 
 <script>
+    const chessFriends = @json($friends ?? []);
+    const chessLoggedIn = @json(auth()->check());
+
     const PIECES = {
         'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙',
         'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟'
@@ -743,6 +826,9 @@
     };
     let enPassantTarget = null;
     let moveHistory = [];
+    let positionHistory = [];
+    let historyIndex = -1;
+    let friendOpponentName = null;
     let gameOver = false;
     let pendingPromotion = null;
     let lastMovedPieceType = null;
@@ -792,6 +878,8 @@
         };
         enPassantTarget = null;
         moveHistory = [];
+        positionHistory = [];
+        historyIndex = -1;
         gameOver = false;
         pendingPromotion = null;
         lastMove = null;
@@ -842,6 +930,101 @@
 
     function isValidPosition(row, col) {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
+    }
+
+    function snapshotState() {
+        return {
+            board: cloneBoard(board),
+            currentPlayer,
+            castlingRights: JSON.parse(JSON.stringify(castlingRights)),
+            enPassantTarget: enPassantTarget ? { ...enPassantTarget } : null,
+            capturedByWhite: [...capturedByWhite],
+            capturedByBlack: [...capturedByBlack],
+            lastMove: lastMove ? { from: { ...lastMove.from }, to: { ...lastMove.to } } : null,
+            whiteTime,
+            blackTime,
+            gameOver,
+            statusText: document.getElementById('status').textContent,
+        };
+    }
+
+    function applySnapshot(snap) {
+        board = cloneBoard(snap.board);
+        currentPlayer = snap.currentPlayer;
+        castlingRights = JSON.parse(JSON.stringify(snap.castlingRights));
+        enPassantTarget = snap.enPassantTarget ? { ...snap.enPassantTarget } : null;
+        capturedByWhite = [...snap.capturedByWhite];
+        capturedByBlack = [...snap.capturedByBlack];
+        lastMove = snap.lastMove;
+        whiteTime = snap.whiteTime;
+        blackTime = snap.blackTime;
+        gameOver = snap.gameOver;
+        selectedSquare = null;
+        validMoves = [];
+        pendingPromotion = null;
+        updateCapturedDisplay();
+        updateTimerDisplay();
+        document.getElementById('status').textContent = snap.statusText || `${cap(currentPlayer)}'s turn`;
+        renderBoard();
+        updateHistoryButtons();
+    }
+
+    function isAtLatestPosition() {
+        return historyIndex === positionHistory.length - 1;
+    }
+
+    function updateHistoryButtons() {
+        const backBtn = document.getElementById('moveBackBtn');
+        const forwardBtn = document.getElementById('moveForwardBtn');
+        if (!backBtn || !forwardBtn) return;
+        backBtn.disabled = historyIndex <= 0;
+        forwardBtn.disabled = historyIndex >= positionHistory.length - 1;
+    }
+
+    function recordPosition() {
+        const snap = snapshotState();
+        if (historyIndex < positionHistory.length - 1) {
+            positionHistory = positionHistory.slice(0, historyIndex + 1);
+        }
+        positionHistory.push(snap);
+        historyIndex = positionHistory.length - 1;
+        updateHistoryButtons();
+    }
+
+    function resetHistory() {
+        positionHistory = [];
+        historyIndex = -1;
+        recordPosition();
+    }
+
+    function pauseTimerForReview() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function resumeTimerIfNeeded() {
+        if (isAtLatestPosition() && !gameOver && !timerInterval) {
+            startTimer();
+        }
+    }
+
+    function goMoveBack() {
+        if (historyIndex <= 0) return;
+        GameSounds.play('click');
+        historyIndex--;
+        applySnapshot(positionHistory[historyIndex]);
+        if (!isAtLatestPosition()) pauseTimerForReview();
+    }
+
+    function goMoveForward() {
+        if (historyIndex >= positionHistory.length - 1) return;
+        GameSounds.play('click');
+        historyIndex++;
+        applySnapshot(positionHistory[historyIndex]);
+        if (isAtLatestPosition()) resumeTimerIfNeeded();
+        else pauseTimerForReview();
     }
 
     function cloneBoard(b) {
@@ -1170,7 +1353,7 @@
     }
 
     function showHint() {
-        if (gameOver || (gameMode === '1p' && currentPlayer === 'black')) return;
+        if (gameOver || !isAtLatestPosition() || (gameMode === '1p' && currentPlayer === 'black')) return;
         const moves = [];
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
@@ -1414,16 +1597,18 @@
         lastMovedPieceType = null;
         updateTimerDisplay();
         renderBoard();
+        recordPosition();
 
         if (!gameOver && isInCheck(board, currentPlayer)) GameSounds.play('check');
 
-        if (gameMode === '1p' && currentPlayer === 'black' && !gameOver) {
+        if (gameMode === '1p' && currentPlayer === 'black' && !gameOver && isAtLatestPosition()) {
             setTimeout(makeAIMove, 450);
         }
     }
 
     function handleSquareClick(row, col) {
         if (gameOver) return;
+        if (!isAtLatestPosition()) return;
         if (gameMode === '1p' && currentPlayer === 'black') return;
         
         const piece = board[row][col];
@@ -1520,7 +1705,7 @@
     }
 
     function makeAIMove() {
-        if (gameOver) return;
+        if (gameOver || !isAtLatestPosition()) return;
         const move = getBestMove();
         if (!move) return;
 
@@ -1594,17 +1779,66 @@
         lastMovedPieceType = null;
         updateTimerDisplay();
         renderBoard();
+        recordPosition();
 
         if (!gameOver && isInCheck(board, currentPlayer)) GameSounds.play('check');
     }
 
     function selectMode(mode) {
         gameMode = mode;
+        document.getElementById('friendsSelect').classList.remove('show');
         if (mode === '1p') {
             document.getElementById('difficultyButtons').classList.add('show');
+        } else if (mode === 'friends') {
+            document.getElementById('difficultyButtons').classList.remove('show');
+            showFriendsSelect();
         } else {
+            document.getElementById('difficultyButtons').classList.remove('show');
+            friendOpponentName = null;
             startGame();
         }
+    }
+
+    function showFriendsSelect() {
+        if (!chessLoggedIn) {
+            document.getElementById('friendsLoginHint').style.display = 'block';
+            document.getElementById('friendsEmpty').style.display = 'none';
+            document.getElementById('friendsList').innerHTML = '';
+            document.getElementById('friendsSelect').classList.add('show');
+            return;
+        }
+
+        document.getElementById('friendsLoginHint').style.display = 'none';
+        const listEl = document.getElementById('friendsList');
+        listEl.innerHTML = '';
+
+        if (!chessFriends.length) {
+            document.getElementById('friendsEmpty').style.display = 'block';
+        } else {
+            document.getElementById('friendsEmpty').style.display = 'none';
+            chessFriends.forEach(friend => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'friend-pick-btn';
+                btn.innerHTML = `<span class="friend-pick-avatar">${friend.name.charAt(0).toUpperCase()}</span><span>${friend.name}</span>`;
+                btn.onclick = () => startFriendGame(friend.name);
+                listEl.appendChild(btn);
+            });
+        }
+
+        document.getElementById('friendsSelect').classList.add('show');
+    }
+
+    function cancelFriendsSelect() {
+        document.getElementById('friendsSelect').classList.remove('show');
+        document.getElementById('friendsLoginHint').style.display = 'none';
+    }
+
+    function startFriendGame(name) {
+        friendOpponentName = name;
+        gameMode = 'friends';
+        cancelFriendsSelect();
+        startGame();
     }
 
     function formatTime(seconds) {
@@ -1666,6 +1900,9 @@
         if (gameMode === '1p') {
             blackRole.textContent = 'AI';
             whiteRole.textContent = 'You';
+        } else if (gameMode === 'friends') {
+            blackRole.textContent = friendOpponentName || 'Friend';
+            whiteRole.textContent = 'You';
         } else {
             blackRole.textContent = 'Player 2';
             whiteRole.textContent = 'Player 1';
@@ -1683,8 +1920,10 @@
         document.getElementById('playerSelect').style.display = 'none';
         document.getElementById('gameArea').classList.add('active');
         renderBoard();
+        resetHistory();
         updateTimerDisplay();
         startTimer();
+        document.getElementById('hintBtn').style.display = gameMode === '1p' ? '' : 'none';
     }
 
     function showSelect() {
@@ -1694,15 +1933,11 @@
         pendingPromotion = null;
         document.getElementById('playerSelect').style.display = 'block';
         document.getElementById('difficultyButtons').classList.remove('show');
+        document.getElementById('friendsSelect').classList.remove('show');
         document.getElementById('gameArea').classList.remove('active');
     }
 
-    function goBack() {
-        GameSounds.play('click');
-        showSelect();
-    }
-
-    function restartGame() {
+    function rematchGame() {
         GameSounds.play('click');
         closeGameOver();
         document.getElementById('promotionModal').classList.remove('show');
