@@ -26,7 +26,8 @@ Route::get('/reset-session', function (Request $request) {
 
     return redirect('/')
         ->withCookie(cookie()->forget($cookieName, '/', $domain))
-        ->withCookie(cookie()->forget('XSRF-TOKEN', '/', $domain));
+        ->withCookie(cookie()->forget('XSRF-TOKEN', '/', $domain))
+        ->with('status', 'Session cleared. You can log in again.');
 })->name('reset-session');
 
 Route::middleware('guest')->group(function () {

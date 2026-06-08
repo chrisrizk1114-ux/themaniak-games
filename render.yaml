@@ -38,12 +38,14 @@ services:
       - key: DB_SSL_RELAXED
         value: true
       - key: SESSION_DRIVER
-        value: file
+        value: database
       - key: SESSION_DOMAIN
         value: .themaniak.online
       - key: SESSION_SECURE_COOKIE
         value: true
+      - key: SESSION_ENCRYPT
+        value: false
       - key: CACHE_STORE
-        value: file
+        value: database
       - key: QUEUE_CONNECTION
         value: sync

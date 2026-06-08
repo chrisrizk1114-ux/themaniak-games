@@ -246,6 +246,12 @@
             </div>
         @endif
 
+        @if (session('status'))
+            <div class="auth-alert" style="background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.35);color:#bbf7d0;">
+                {{ session('status') }}
+            </div>
+        @endif
+
         @if (str_contains(session('url.intended') ?? '', 'feedback'))
             <div class="auth-alert" style="background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.35);color:#e9d5ff;">
                 Please log in to send feedback to the site owner.

@@ -77,6 +77,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => 'Page expired. Please refresh and try again.'], 419);
             }
 
+            if ($request->is('login', 'register')) {
+                return redirect()
+                    ->route($request->is('register') ? 'register' : 'login')
+                    ->withInput($request->except('_token', 'password', 'password_confirmation'))
+                    ->withErrors(['email' => 'Session expired — please try again.']);
+            }
+
             return redirect()
                 ->back()
                 ->withInput($request->except('_token', 'password', 'password_confirmation'))

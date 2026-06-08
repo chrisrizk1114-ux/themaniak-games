@@ -18,25 +18,40 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        if ($this->app->environment('production') || env('RENDER')) {
-            $sessionPath = '/tmp/themaniak-sessions';
-            $cachePath = '/tmp/themaniak-cache/data';
-
-            if (! is_dir($sessionPath)) {
-                @mkdir($sessionPath, 0777, true);
-            }
-            if (! is_dir($cachePath)) {
-                @mkdir($cachePath, 0777, true);
-            }
-
-            config([
-                'session.driver' => 'file',
-                'session.files' => $sessionPath,
-                'session.encrypt' => false,
-                'cache.default' => 'file',
-                'cache.stores.file.path' => $cachePath,
-            ]);
+        if (! ($this->app->environment('production') || env('RENDER'))) {
+            return;
         }
+
+        $sessionDriver = env('SESSION_DRIVER', 'database');
+        $cacheStore = env('CACHE_STORE', 'database');
+
+        if ($sessionDriver === 'database') {
+            config([
+                'session.driver' => 'database',
+                'session.encrypt' => false,
+                'cache.default' => $cacheStore,
+            ]);
+
+            return;
+        }
+
+        $sessionPath = '/tmp/themaniak-sessions';
+        $cachePath = '/tmp/themaniak-cache/data';
+
+        if (! is_dir($sessionPath)) {
+            @mkdir($sessionPath, 0777, true);
+        }
+        if (! is_dir($cachePath)) {
+            @mkdir($cachePath, 0777, true);
+        }
+
+        config([
+            'session.driver' => 'file',
+            'session.files' => $sessionPath,
+            'session.encrypt' => false,
+            'cache.default' => 'file',
+            'cache.stores.file.path' => $cachePath,
+        ]);
     }
 
     /**
