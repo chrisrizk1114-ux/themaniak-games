@@ -355,8 +355,17 @@
     });
 
     loadChatMessages();
-    setInterval(pollChat, 3000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) pollChat(); });
+    const chatPollMs = (window.matchMedia('(max-width: 860px)').matches || window.matchMedia('(pointer: coarse)').matches) ? 6000 : 3000;
+    let chatPollTimer = setInterval(pollChat, chatPollMs);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            clearInterval(chatPollTimer);
+            chatPollTimer = null;
+        } else {
+            pollChat();
+            if (!chatPollTimer) chatPollTimer = setInterval(pollChat, chatPollMs);
+        }
+    });
 </script>
 @endif
 @endsection

@@ -420,6 +420,16 @@
             text-align: center;
         }
     }
+
+    @media (max-width: 860px), (pointer: coarse) {
+        .home-stars,
+        .hero-title,
+        .featured-card,
+        .featured-card .game-icon,
+        .game-card:hover .game-icon {
+            animation: none !important;
+        }
+    }
 </style>
 
 <div class="home-page">

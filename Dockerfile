@@ -11,8 +11,8 @@ RUN npm run build
 FROM php:8.2-fpm-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx gettext-base git unzip libzip-dev \
-    && docker-php-ext-install pdo_mysql zip opcache \
+    nginx gettext-base git unzip libzip-dev libonig-dev \
+    && docker-php-ext-install pdo_mysql zip opcache mbstring \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/nginx/sites-enabled/default
 
@@ -41,6 +41,7 @@ RUN composer dump-autoload --optimize --classmap-authoritative \
     && php artisan view:cache \
     && php artisan event:cache \
     && mkdir -p storage/framework/sessions storage/framework/cache/data storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && chmod +x deploy/docker-start.sh
 ENV APP_KEY=

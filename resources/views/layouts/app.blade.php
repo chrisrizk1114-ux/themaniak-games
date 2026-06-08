@@ -11,15 +11,16 @@
     <title>@yield('title', config('app.name')) — themaniak.online</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet"></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" media="(min-width: 861px)">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet" media="(min-width: 861px)">
     @if (file_exists(public_path('build/manifest.json')))
         @vite(['resources/css/app.css'])
     @else
         <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" defer></script>
     @endif
-    <script src="{{ asset('js/game-sounds.js') }}" defer></script>
+    @if (request()->is('chess', 'platformer', 'tic-tac-toe', 'whack-a-mole', 'board-game', 'uno', 'four-hundred'))
+        <script src="{{ asset('js/game-sounds.js') }}" defer></script>
+    @endif
     <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260607">
     @stack('head')
     <style>
@@ -686,6 +687,45 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Mobile performance — blur/animations/fonts are costly on phones */
+        @media (max-width: 860px), (pointer: coarse) {
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+
+            .nav-bar,
+            .nav-menu,
+            .friend-toast,
+            .chess-toast {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+
+            .nav-bar {
+                background: rgba(5, 8, 20, 0.98);
+            }
+
+            .nav-logo-icon {
+                animation: none;
+            }
+
+            .nav-logo-text {
+                animation: none;
+            }
+
+            .nav-notify-badge {
+                animation: none;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -901,6 +941,38 @@
             const statusPills = document.querySelectorAll('.status-pill--self');
             const pingUrl = @json(route('presence.ping'));
             const csrf = @json(csrf_token());
+            const isMobileDevice = window.matchMedia('(max-width: 860px)').matches || window.matchMedia('(pointer: coarse)').matches;
+            const netInfo = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const isSlowNetwork = !!(netInfo && (netInfo.saveData || ['slow-2g', '2g', '3g'].includes(netInfo.effectiveType)));
+
+            function pollMs(desktopMs, mobileMs) {
+                const base = isMobileDevice ? mobileMs : desktopMs;
+                return Math.round(isSlowNetwork ? base * 1.5 : base);
+            }
+
+            function startPoll(fn, desktopMs, mobileMs) {
+                let timer = null;
+                const tick = () => {
+                    if (!document.hidden && navigator.onLine) fn();
+                };
+                const arm = () => {
+                    if (timer) clearInterval(timer);
+                    timer = setInterval(tick, pollMs(desktopMs, mobileMs));
+                };
+                tick();
+                arm();
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        if (timer) {
+                            clearInterval(timer);
+                            timer = null;
+                        }
+                    } else {
+                        tick();
+                        if (!timer) arm();
+                    }
+                });
+            }
 
             function setSelfStatus(online) {
                 statusPills.forEach(pill => {
@@ -939,7 +1011,7 @@
 
             updateSelfStatusFromNetwork();
             pingPresence();
-            setInterval(pingPresence, 15000);
+            startPoll(pingPresence, 15000, 45000);
 
             const friendsPresenceUrl = @json(route('presence.friends'));
             const chessInviteCheckUrl = @json(route('chess.games.invites.check'));
@@ -984,8 +1056,7 @@
                 }
             }
 
-            pollFriendsPresence();
-            setInterval(pollFriendsPresence, 5000);
+            startPoll(pollFriendsPresence, 8000, 30000);
 
             function updateNavNotifyBadge(total) {
                 const badge = document.getElementById('navNotifyBadge');
@@ -1060,7 +1131,7 @@
 
             refreshNotifyBadge();
             pollChessInvites();
-            setInterval(pollChessInvites, 5000);
+            startPoll(pollChessInvites, 8000, 30000);
 
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) {
@@ -1121,7 +1192,8 @@
                 }
             }
 
-            setInterval(pollFeedback, 30000);
+            pollFeedback();
+            startPoll(pollFeedback, 30000, 90000);
             @endif
             @endauth
         });

@@ -125,29 +125,33 @@ class ChessGameController extends Controller
     {
         $user = auth()->user();
 
-        $incoming = ChessGame::query()
-            ->where('status', ChessGame::STATUS_PENDING)
-            ->where('black_user_id', $user->id)
-            ->with('whitePlayer')
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(fn (ChessGame $game) => [
-                'token' => $game->token,
-                'from_name' => $game->whitePlayer->name,
-                'play_url' => url('/chess?game='.$game->token),
-            ]);
-
-        $latest = $incoming->first();
-
-        return response()->json([
-            'count' => ChessGame::query()
+        $payload = Cache::remember('chess_invite_check_'.$user->id, 8, function () use ($user) {
+            $incoming = ChessGame::query()
                 ->where('status', ChessGame::STATUS_PENDING)
                 ->where('black_user_id', $user->id)
-                ->count(),
-            'incoming' => $incoming,
-            'latest_token' => $latest['token'] ?? null,
-        ]);
+                ->with('whitePlayer')
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(fn (ChessGame $game) => [
+                    'token' => $game->token,
+                    'from_name' => $game->whitePlayer->name,
+                    'play_url' => url('/chess?game='.$game->token),
+                ]);
+
+            $latest = $incoming->first();
+
+            return [
+                'count' => ChessGame::query()
+                    ->where('status', ChessGame::STATUS_PENDING)
+                    ->where('black_user_id', $user->id)
+                    ->count(),
+                'incoming' => $incoming->values()->all(),
+                'latest_token' => $latest['token'] ?? null,
+            ];
+        });
+
+        return response()->json($payload);
     }
 
     public function show(ChessGame $chessGame): JsonResponse

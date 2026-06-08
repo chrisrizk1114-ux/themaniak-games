@@ -2711,12 +2711,15 @@
 
     function startOnlinePolling() {
         if (onlinePollTimer) clearInterval(onlinePollTimer);
+        const pollMs = (window.matchMedia('(max-width: 860px)').matches || window.matchMedia('(pointer: coarse)').matches) ? 4000 : 2000;
         pollOnlineGame();
-        onlinePollTimer = setInterval(pollOnlineGame, 2000);
+        onlinePollTimer = setInterval(() => {
+            if (!document.hidden) pollOnlineGame();
+        }, pollMs);
     }
 
     async function pollOnlineGame() {
-        if (!onlineGame?.token) return;
+        if (!onlineGame?.token || document.hidden) return;
         try {
             const res = await chessFetch(`/chess/games/${onlineGame.token}/sync?since_message=${onlineGame.lastMessageId}`);
             if (!res.ok) return;
