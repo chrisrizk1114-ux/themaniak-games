@@ -278,14 +278,13 @@
         max-width: 100%;
         align-items: center;
         justify-content: center;
-        grid-template-columns: minmax(155px, 220px) auto minmax(155px, 220px);
-        gap: 1rem;
+        grid-template-columns: minmax(175px, 240px) auto minmax(175px, 240px);
+        gap: 1.15rem;
         padding: 0 clamp(0.5rem, 2vw, 2rem);
-        /* footer + title + status reserved — board never eats the whole screen */
         --sq: min(
-            calc((100vw - 520px) / 8),
-            calc((100svh - var(--nav-h) - 360px) / 8),
-            62px
+            calc((100vh - 210px) / 8),
+            calc((100vw - 540px) / 8),
+            12vmin
         );
     }
     @media (max-width: 720px) {
@@ -295,7 +294,7 @@
             max-width: 400px;
         }
         #gameArea.active .chess-arena {
-            --sq: min(calc((100vw - 24px) / 8), calc((100svh - var(--nav-h) - 420px) / 8), 44px);
+            --sq: min(calc((100vw - 24px) / 8), calc((100svh - 320px) / 8), 48px);
             padding: 0 0.25rem;
         }
         .chess-panel--left { order: 1; }
