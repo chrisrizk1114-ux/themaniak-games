@@ -1,9 +1,11 @@
 @extends('layouts.app')
 
+@push('head')
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+@endpush
+
 @section('content')
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap');
-
     html:has(.chess-page),
     body:has(.chess-page) {
         overflow-x: hidden !important;

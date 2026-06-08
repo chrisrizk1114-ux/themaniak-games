@@ -6,6 +6,7 @@ use App\Models\ChessGame;
 use App\Models\ChessGameMessage;
 use App\Models\User;
 use App\Support\NotificationCache;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,6 +93,9 @@ class ChessGameController extends Controller
         ]);
 
         NotificationCache::clearForUser($friend->id);
+
+        Cache::forget('friends_presence_'.$user->id);
+        Cache::forget('friends_presence_'.$friend->id);
 
         return $this->inviteSuccess(
             $request,

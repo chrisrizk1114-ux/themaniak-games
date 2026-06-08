@@ -2,8 +2,6 @@
 
 @section('content')
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&display=swap');
-
     .main-content:has(.home-page) {
         max-width: none;
         padding: 0;

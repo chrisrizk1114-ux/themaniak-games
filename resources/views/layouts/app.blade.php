@@ -11,10 +11,15 @@
     <title>@yield('title', config('app.name')) — themaniak.online</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="{{ asset('js/game-sounds.js') }}"></script>
-    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260606">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet">
+    @if (file_exists(public_path('build/manifest.json')))
+        @vite(['resources/css/app.css'])
+    @else
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" defer></script>
+    @endif
+    <script src="{{ asset('js/game-sounds.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260607">
+    @stack('head')
     <style>
         * {
             margin: 0;
@@ -906,7 +911,7 @@
             window.addEventListener('offline', updateSelfStatusFromNetwork);
 
             async function pingPresence() {
-                if (!navigator.onLine) return;
+                if (!navigator.onLine || document.hidden) return;
                 try {
                     await fetch(pingUrl, {
                         method: 'POST',
@@ -955,7 +960,7 @@
             }
 
             async function pollFriendsPresence() {
-                if (!navigator.onLine) return;
+                if (!navigator.onLine || document.hidden) return;
                 try {
                     const res = await fetch(friendsPresenceUrl, {
                         headers: { 'Accept': 'application/json' },
@@ -970,7 +975,7 @@
             }
 
             pollFriendsPresence();
-            setInterval(pollFriendsPresence, 3000);
+            setInterval(pollFriendsPresence, 5000);
 
             function updateNavNotifyBadge(total) {
                 const badge = document.getElementById('navNotifyBadge');
@@ -1018,7 +1023,7 @@
             }
 
             async function pollChessInvites() {
-                if (!navigator.onLine) return;
+                if (!navigator.onLine || document.hidden) return;
                 try {
                     const res = await fetch(chessInviteCheckUrl, {
                         headers: { 'Accept': 'application/json' },
@@ -1045,7 +1050,15 @@
 
             refreshNotifyBadge();
             pollChessInvites();
-            setInterval(pollChessInvites, 3000);
+            setInterval(pollChessInvites, 5000);
+
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    pingPresence();
+                    pollFriendsPresence();
+                    pollChessInvites();
+                }
+            });
 
             @if (auth()->user()->isOwner())
             const feedbackCheckUrl = @json(route('owner.feedback.check'));

@@ -1,3 +1,13 @@
+FROM node:20-bookworm-slim AS assets
+
+WORKDIR /app
+
+COPY package.json package-lock.json vite.config.js ./
+RUN npm ci
+
+COPY resources ./resources
+RUN npm run build
+
 FROM php:8.2-cli-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,8 +25,11 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
 COPY . .
+
+COPY --from=assets /app/public/build ./public/build
+
 ENV APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-RUN composer dump-autoload --optimize \
+RUN composer dump-autoload --optimize --classmap-authoritative \
     && php artisan route:cache \
     && php artisan view:cache \
     && chmod +x deploy/docker-start.sh

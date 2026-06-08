@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class PresenceController extends Controller
 {
@@ -21,11 +22,13 @@ class PresenceController extends Controller
     {
         $user = auth()->user();
 
-        $friends = $user->friends()->map(fn ($friend) => [
-            'id' => $friend->id,
-            'name' => $friend->name,
-            'online' => $friend->isOnline(2),
-        ])->values();
+        $friends = Cache::remember('friends_presence_'.$user->id, 3, function () use ($user) {
+            return $user->friends()->map(fn ($friend) => [
+                'id' => $friend->id,
+                'name' => $friend->name,
+                'online' => $friend->isOnline(2),
+            ])->values();
+        });
 
         return response()->json(['friends' => $friends]);
     }

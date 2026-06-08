@@ -47,7 +47,7 @@ class AppServiceProvider extends ServiceProvider
             $userId = Auth::id();
             $cacheKey = 'nav_notifications_'.$userId;
 
-            $data = Cache::remember($cacheKey, 5, function () use ($userId) {
+            $data = Cache::remember($cacheKey, 60, function () use ($userId) {
                 $user = Auth::user();
                 $incoming = $user->pendingIncoming();
 
