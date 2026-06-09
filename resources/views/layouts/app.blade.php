@@ -8,7 +8,7 @@
     <meta name="description" content="Mini Games — free browser games at themaniak.online. Bowling, cards, chess, arcade & more.">
     <link rel="canonical" href="{{ url()->current() }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', config('app.name')) — themaniak.online</title>
+    <title>@yield('title', 'Mini Games') — themaniak.online</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" media="(min-width: 861px)">
@@ -823,7 +823,7 @@
         <div class="nav-inner">
             <a href="{{ url('/') }}" class="nav-logo">
                 <span class="nav-logo-icon">🎮</span>
-                <span class="nav-logo-text">{{ config('app.name') }}<small style="display:block;font-size:0.55em;letter-spacing:0.12em;opacity:0.65;font-weight:600;">themaniak.online</small></span>
+                <span class="nav-logo-text">Mini Games<small style="display:block;font-size:0.55em;letter-spacing:0.12em;opacity:0.65;font-weight:600;">themaniak.online</small></span>
             </a>
 
             <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle menu">☰</button>
