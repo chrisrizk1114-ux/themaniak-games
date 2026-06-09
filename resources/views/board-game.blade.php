@@ -368,11 +368,11 @@
 
     function buildTileLayout() {
         boardTiles = [];
-        const marginX = 48;
-        const marginTop = 52;
+        const marginX = canvas.width < 520 ? 32 : 48;
+        const marginTop = canvas.width < 520 ? 38 : 52;
         const boardW = canvas.width - marginX * 2;
-        const boardH = canvas.height - marginTop - 72;
-        const depth = 14;
+        const boardH = canvas.height - marginTop - (canvas.width < 520 ? 58 : 72);
+        const depth = canvas.width < 520 ? 10 : 14;
 
         for (let num = 1; num <= 100; num++) {
             const { row, col } = getTilePosition(num);
@@ -447,8 +447,8 @@
         ctx.fillStyle = tg;
         ctx.fillRect(t.x, t.y, t.w, t.h);
 
-        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 1.5;
         ctx.strokeRect(t.x, t.y, t.w, t.h);
 
         if (highlightTiles.includes(t.num)) {
@@ -467,33 +467,7 @@
             ctx.strokeRect(t.x + 1, t.y + 1, t.w - 2, t.h - 2);
         }
 
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.font = `bold ${Math.max(9, t.w * 0.22)}px Arial`;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText(t.num, t.x + 4, t.y + 3);
-
-        if (t.type === 'snake') {
-            ctx.font = `${Math.max(12, t.w * 0.34)}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.fillText('🐍', t.cx, t.y + t.h * 0.36);
-            ctx.font = `bold ${Math.max(9, t.w * 0.2)}px Arial`;
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = '#7f1d1d';
-            ctx.lineWidth = 3;
-            ctx.strokeText(`↓${snakes[t.num]}`, t.cx, t.y + t.h * 0.72);
-            ctx.fillText(`↓${snakes[t.num]}`, t.cx, t.y + t.h * 0.72);
-        } else if (t.type === 'ladder') {
-            ctx.font = `${Math.max(12, t.w * 0.34)}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.fillText('🧗', t.cx, t.y + t.h * 0.36);
-            ctx.font = `bold ${Math.max(9, t.w * 0.2)}px Arial`;
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = '#78350f';
-            ctx.lineWidth = 3;
-            ctx.strokeText(`↑${ladders[t.num]}`, t.cx, t.y + t.h * 0.72);
-            ctx.fillText(`↑${ladders[t.num]}`, t.cx, t.y + t.h * 0.72);
-        }
+        drawTileTypeHint(t);
 
         ctx.restore();
     }
@@ -658,6 +632,80 @@
         return `rgb(${r},${g},${b})`;
     }
 
+    function roundRect(x, y, w, h, r) {
+        const rad = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + rad, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rad);
+        ctx.arcTo(x + w, y + h, x, y + h, rad);
+        ctx.arcTo(x, y + h, x, y, rad);
+        ctx.arcTo(x, y, x + w, y, rad);
+        ctx.closePath();
+    }
+
+    function tileNumberFontSize(t) {
+        const boost = canvas.width < 520 ? 1.3 : canvas.width < 720 ? 1.12 : 1;
+        return Math.max(13, Math.min(22, t.w * 0.42 * boost));
+    }
+
+    function drawTileNumberBadge(t) {
+        const fontSize = tileNumberFontSize(t);
+        const label = String(t.num);
+        ctx.font = `800 ${fontSize}px Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const padX = Math.max(4, fontSize * 0.28);
+        const padY = Math.max(3, fontSize * 0.22);
+        const tw = ctx.measureText(label).width + padX * 2;
+        const th = fontSize + padY * 2;
+        const cx = t.type === 'normal' ? t.cx : t.x + Math.min(t.w * 0.22, 14) + tw / 2;
+        const cy = t.type === 'normal' ? t.cy : t.y + Math.min(t.h * 0.18, 12) + th / 2;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+        roundRect(cx - tw / 2, cy - th / 2, tw, th, Math.min(5, th / 3));
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.lineWidth = Math.max(2, fontSize * 0.14);
+        ctx.lineJoin = 'round';
+        ctx.strokeText(label, cx, cy);
+        ctx.fillText(label, cx, cy);
+    }
+
+    function drawTileTypeHint(t) {
+        if (t.type === 'normal') return;
+
+        const dest = t.type === 'snake' ? snakes[t.num] : ladders[t.num];
+        const arrow = t.type === 'snake' ? '↓' : '↑';
+        const hintSize = Math.max(10, Math.min(14, t.w * 0.24));
+        const emojiSize = Math.max(11, Math.min(16, t.w * 0.28));
+
+        ctx.font = `${emojiSize}px Arial`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(t.type === 'snake' ? '🐍' : '🧗', t.x + t.w - 3, t.y + t.h - 3);
+
+        ctx.font = `bold ${hintSize}px Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        const hint = `${arrow}${dest}`;
+        const hw = ctx.measureText(hint).width + 8;
+        const hh = hintSize + 6;
+        const hx = t.cx - hw / 2;
+        const hy = t.y + t.h - 4;
+
+        ctx.fillStyle = t.type === 'snake' ? 'rgba(127,29,29,0.88)' : 'rgba(120,53,15,0.88)';
+        roundRect(hx, hy - hh, hw, hh, 4);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.fillText(hint, t.cx, hy - 3);
+    }
+
     function renderBoard() {
         drawBackground();
         boardTiles.forEach(t => {
@@ -665,6 +713,10 @@
         });
         Object.entries(ladders).forEach(([from, to]) => drawLadder3D(+from, to));
         Object.entries(snakes).forEach(([from, to]) => drawSnake3D(+from, to));
+
+        boardTiles.forEach(t => {
+            if (t) drawTileNumberBadge(t);
+        });
 
         players.forEach((player, idx) => {
             let cx, cy;
