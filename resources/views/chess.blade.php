@@ -620,13 +620,17 @@
         .chess-board-col { order: 2; }
         .chess-panel--right { order: 3; }
         .panel-card { max-width: 100%; }
-        .player-strip .timer {
+        .chess-turn-row .mobile-clock { display: inline-flex; }
+        .chess-panel--left .player-strip .timer,
+        .chess-panel--right .player-strip .timer { display: none; }
+        .chess-turn-row .status {
+            min-width: 0;
+            flex: 1;
+            max-width: 11rem;
             font-size: 0.82rem;
-            min-width: 52px;
-            padding: 0.2rem 0.35rem;
+            padding: 0.35rem 0.55rem;
         }
         .player-icon { font-size: 1.35rem; }
-        .player-label { font-size: 0.78rem; }
         .panel-card { padding: 0.55rem 0.7rem; }
         .controls-bar {
             flex-wrap: wrap;
@@ -962,6 +966,39 @@
         border-radius: 2px;
         min-width: 200px;
     }
+
+    .chess-turn-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .mobile-clock {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Source Sans 3', monospace;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #4ade80;
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(74, 222, 128, 0.4);
+        border-radius: 999px;
+        padding: 0.22rem 0.5rem;
+        min-width: 2.75rem;
+        line-height: 1.2;
+        transition: all 0.25s;
+    }
+
+    .mobile-clock.active {
+        color: #bbf7d0;
+        background: rgba(34, 197, 94, 0.2);
+        border-color: #4ade80;
+        box-shadow: 0 0 10px rgba(74, 222, 128, 0.35);
+    }
     #gameArea {
         display: none;
         width: 100%;
@@ -1193,7 +1230,11 @@
 
             <!-- CENTER: Board -->
             <div class="chess-board-col">
-                <div class="status" id="status">White's Turn</div>
+                <div class="chess-turn-row">
+                    <span class="mobile-clock" id="black-timer-mobile">10:00</span>
+                    <div class="status" id="status">White's Turn</div>
+                    <span class="mobile-clock" id="white-timer-mobile">10:00</span>
+                </div>
                 <div class="online-invite-bar" id="onlineInviteBar">
                     <span id="onlineInviteText"></span>
                     <button type="button" class="friend-action-btn" id="copyGameLinkBtn" onclick="copyOnlineGameLink()">Copy link</button>
@@ -2872,14 +2913,23 @@
         document.getElementById('white-timer').textContent = whiteText;
         document.getElementById('black-timer').textContent = blackText;
 
+        const whiteMobile = document.getElementById('white-timer-mobile');
+        const blackMobile = document.getElementById('black-timer-mobile');
+        if (whiteMobile) whiteMobile.textContent = whiteText;
+        if (blackMobile) blackMobile.textContent = blackText;
+
         const whiteTimerEl = document.getElementById('white-timer');
         const blackTimerEl = document.getElementById('black-timer');
         if (currentPlayer === 'white') {
             whiteTimerEl.classList.add('active');
             blackTimerEl.classList.remove('active');
+            whiteMobile?.classList.add('active');
+            blackMobile?.classList.remove('active');
         } else {
             blackTimerEl.classList.add('active');
             whiteTimerEl.classList.remove('active');
+            blackMobile?.classList.add('active');
+            whiteMobile?.classList.remove('active');
         }
     }
 

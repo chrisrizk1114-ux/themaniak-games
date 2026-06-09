@@ -131,14 +131,22 @@
         .hud-player-block { display: none !important; }
         .hud-scoreboard {
             top: 0.35rem !important;
+            left: 50% !important;
+            right: auto !important;
+            transform: translateX(-50%) !important;
+            max-width: calc(100% - 0.7rem) !important;
+            width: min(20rem, calc(100% - 0.7rem)) !important;
+        }
+        .hud-coins-bar {
+            top: 2.55rem !important;
+            bottom: auto !important;
             left: 0.35rem !important;
-            right: 0.35rem !important;
+            right: auto !important;
             transform: none !important;
-            max-width: none !important;
-            width: auto !important;
+            padding: 0.3rem 0.55rem !important;
         }
         .hud-top-right {
-            top: 2.6rem !important;
+            top: 2.55rem !important;
             right: 0.35rem !important;
             left: auto !important;
             gap: 0.35rem !important;
@@ -168,13 +176,6 @@
             width: 2.35rem;
             height: 2.35rem;
             font-size: 0.95rem;
-        }
-        .hud-coins-bar {
-            top: 2.6rem !important;
-            bottom: auto !important;
-            left: 0.35rem !important;
-            right: auto !important;
-            padding: 0.3rem 0.55rem !important;
         }
         .hud-coins-bar .hud-coins-icon { font-size: 1rem; }
         .hud-coins-bar .hud-coins-num { font-size: 0.9rem; }
@@ -353,6 +354,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const BASE_W = 1100, BASE_H = 688;
     let gameScale = 1;
     let BALL_REST_Z, FOUL_LINE_Z, CAM_Z, LANE_W, Z_NEAR, Z_FAR, PROJ_BASE;
+    let laneVanishRatio = 0.22;
+    let laneDepthFactor = 0.62;
+    let laneViewShift = 0;
 
     function S(v) { return v * gameScale; }
     function Fs(v) { return Math.max(10, v * gameScale); }
@@ -369,6 +373,15 @@ document.addEventListener('DOMContentLoaded', () => {
         Z_FAR = S(470);
         PROJ_BASE = S(310);
         const isMobileHud = window.innerWidth <= 720;
+        if (isMobileHud) {
+            laneVanishRatio = 0.30;
+            laneDepthFactor = 0.50;
+            laneViewShift = ch * 0.05;
+        } else {
+            laneVanishRatio = 0.22;
+            laneDepthFactor = 0.62;
+            laneViewShift = 0;
+        }
         const uiScale = isMobileHud
             ? Math.min(Math.max(gameScale * 0.88, 0.58), 0.78)
             : Math.min(Math.max(gameScale * 1.18, 1.08), 1.65);
@@ -477,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let needFullRack = false;
     let pinsKnockedThisRoll = 0;
     let standingAtRollStart = 10;
-    const VANISH_Y = () => canvas.height * 0.22;
+    const VANISH_Y = () => canvas.height * laneVanishRatio + laneViewShift;
 
     function project(x, y, z) {
         const depth = CAM_Z - z;
@@ -486,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = Math.max(0, Math.min(1, (z - Z_NEAR) / (Z_FAR - Z_NEAR)));
         return {
             x: canvas.width / 2 + x * scale,
-            y: VANISH_Y() + t * (canvas.height * 0.62) + (y || 0) * scale * 0.9,
+            y: VANISH_Y() + t * (canvas.height * laneDepthFactor) + (y || 0) * scale * 0.9,
             scale
         };
     }
