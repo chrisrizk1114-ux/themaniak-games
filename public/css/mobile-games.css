@@ -108,6 +108,48 @@ button,
     font-size: 1.5rem;
 }
 
+@media (max-width: 860px) {
+    .chess-page .chess-turn-row .mobile-clock {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #4ade80 !important;
+        background: rgba(34, 197, 94, 0.14);
+        border: 1px solid rgba(74, 222, 128, 0.55);
+        border-radius: 999px;
+        padding: 0.2rem 0.45rem;
+        min-width: 2.65rem;
+    }
+
+    .chess-page .chess-panel .player-strip .timer {
+        display: none !important;
+    }
+
+    .bowling-page .bowling-stage {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .bowling-page .hud-scoreboard,
+    .bowling-page .bowling-stats-bar,
+    .bowling-page .bowling-bottom-bar,
+    .bowling-page .hud-ball-picker,
+    .bowling-page .hud-side-controls,
+    .bowling-page .hud-coins-bar,
+    .bowling-page .hud-top-right,
+    .bowling-page .hud-frame-bottom {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        transform: none !important;
+        translate: none !important;
+    }
+}
+
 @media (max-width: 900px), (hover: none) and (pointer: coarse) {
     .mobile-touch-controls {
         display: flex;

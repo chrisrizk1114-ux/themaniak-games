@@ -82,6 +82,49 @@
     .hud-r { right: calc(0.75rem * var(--game-scale)); }
     .hud-l { left: calc(0.75rem * var(--game-scale)); }
     .hud-b { bottom: calc(0.75rem * var(--game-scale)); }
+
+    .hud-scoreboard {
+        position: absolute;
+        top: calc(0.75rem * var(--game-scale));
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 30;
+    }
+    .hud-ball-picker {
+        position: absolute;
+        left: calc(0.75rem * var(--game-scale));
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 30;
+    }
+    .hud-side-controls {
+        position: absolute;
+        right: calc(0.75rem * var(--game-scale));
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 30;
+    }
+    .hud-top-right {
+        position: absolute;
+        top: calc(0.75rem * var(--game-scale));
+        right: calc(0.75rem * var(--game-scale));
+        z-index: 30;
+    }
+    .hud-coins-bar {
+        position: absolute;
+        bottom: calc(0.75rem * var(--game-scale));
+        right: calc(0.75rem * var(--game-scale));
+        z-index: 30;
+    }
+    .hud-frame-bottom {
+        position: absolute;
+        bottom: calc(0.75rem * var(--game-scale));
+        left: calc(0.75rem * var(--game-scale));
+        z-index: 30;
+    }
+    .bowling-stats-bar,
+    .bowling-bottom-bar { display: contents; }
+
     .hud-icon-btn {
         width: calc(3.35rem * var(--game-scale));
         height: calc(3.35rem * var(--game-scale));
@@ -125,80 +168,124 @@
     .hud-cheer { top: calc(4rem * var(--game-scale)); font-size: calc(0.875rem * var(--game-scale)); padding: calc(0.5rem * var(--game-scale)) calc(1.25rem * var(--game-scale)); }
     .score-frame-cell { min-width: calc(3.1rem * var(--game-scale)); }
 
-    @media (max-width: 720px) {
-        .bowling-stage { --game-scale: 0.72; }
-        .hud-stella-block { display: none !important; }
-        .hud-player-block { display: none !important; }
-        .hud-scoreboard {
-            top: 0.35rem !important;
-            left: 50% !important;
-            right: auto !important;
-            transform: translateX(-50%) !important;
-            max-width: calc(100% - 0.7rem) !important;
-            width: min(20rem, calc(100% - 0.7rem)) !important;
+    @media (max-width: 860px) {
+        .bowling-page .bowling-stage {
+            --game-scale: 0.72;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: calc(100svh - var(--nav-h));
+            overflow: hidden;
         }
-        .hud-coins-bar {
-            top: 2.55rem !important;
-            bottom: auto !important;
-            left: 0.35rem !important;
-            right: auto !important;
-            transform: none !important;
-            padding: 0.3rem 0.55rem !important;
+        .bowling-page #bowling-canvas {
+            position: relative !important;
+            flex: 1 1 0;
+            min-height: 140px;
+            width: 100% !important;
+            height: 100% !important;
+            order: 2;
         }
-        .hud-top-right {
-            top: 2.55rem !important;
-            right: 0.35rem !important;
+        .bowling-page .bowling-stats-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.35rem;
+            order: 1;
+            flex-shrink: 0;
+            padding: 0.35rem 0.35rem 0;
+            z-index: 30;
+        }
+        .bowling-page .bowling-bottom-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            order: 3;
+            flex-shrink: 0;
+            padding: 0 0.35rem 0.35rem;
+            z-index: 30;
+        }
+        .bowling-page .bowling-bottom-tools {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.35rem;
+        }
+        .bowling-page .hud-scoreboard {
+            position: relative !important;
+            top: auto !important;
             left: auto !important;
-            gap: 0.35rem !important;
-        }
-        .hud-top-right .hud-score-num { font-size: 1.35rem; }
-        .hud-top-right .hud-panel-pad { padding: 0.35rem 0.55rem; }
-        .hud-top-right .hud-pin-mini { width: 2.4rem; padding: 0.3rem; }
-        .hud-ball-picker {
-            top: auto !important;
-            bottom: 3.1rem !important;
-            left: 0.35rem !important;
+            right: auto !important;
+            bottom: auto !important;
             transform: none !important;
+            translate: none !important;
+            order: 0;
+            width: calc(100% - 0.7rem) !important;
+            max-width: 20rem !important;
+            margin: 0.35rem auto 0 !important;
+            flex-shrink: 0;
+        }
+        .bowling-page .bowling-stats-bar { order: 1; }
+        .bowling-page #bowling-canvas { order: 2; }
+        .bowling-page .bowling-bottom-bar { order: 3; }
+        .bowling-page .bowling-stats-bar .hud-coins-bar,
+        .bowling-page .bowling-stats-bar .hud-top-right {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: none !important;
+            translate: none !important;
+        }
+        .bowling-page .hud-stella-block { display: none !important; }
+        .bowling-page .hud-player-block { display: none !important; }
+        .bowling-page .hud-top-right .hud-score-num { font-size: 1.2rem; }
+        .bowling-page .hud-top-right .hud-panel-pad { padding: 0.3rem 0.5rem; }
+        .bowling-page .hud-top-right .hud-pin-mini { width: 2.2rem; padding: 0.25rem; }
+        .bowling-page .hud-coins-bar { padding: 0.28rem 0.5rem !important; }
+        .bowling-page .hud-coins-bar .hud-coins-icon { font-size: 0.95rem; }
+        .bowling-page .hud-coins-bar .hud-coins-num { font-size: 0.85rem; }
+        .bowling-page .bowling-bottom-tools .hud-ball-picker,
+        .bowling-page .bowling-bottom-tools .hud-side-controls {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: none !important;
+            translate: none !important;
             flex-direction: row !important;
         }
-        .hud-ball-picker .hud-ball-btn {
-            width: 2.35rem;
-            height: 2.35rem;
+        .bowling-page .hud-ball-picker .hud-ball-btn {
+            width: 2.2rem;
+            height: 2.2rem;
         }
-        .hud-side-controls {
+        .bowling-page .hud-side-controls .hud-icon-btn {
+            width: 2.2rem;
+            height: 2.2rem;
+            font-size: 0.9rem;
+        }
+        .bowling-page .hud-frame-bottom {
+            position: relative !important;
             top: auto !important;
-            bottom: 3.1rem !important;
-            right: 0.35rem !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
             transform: none !important;
-            flex-direction: row !important;
-        }
-        .hud-side-controls .hud-icon-btn {
-            width: 2.35rem;
-            height: 2.35rem;
-            font-size: 0.95rem;
-        }
-        .hud-coins-bar .hud-coins-icon { font-size: 1rem; }
-        .hud-coins-bar .hud-coins-num { font-size: 0.9rem; }
-        .hud-frame-bottom {
-            bottom: 0.35rem !important;
-            left: 0.35rem !important;
-            right: 0.35rem !important;
+            translate: none !important;
             justify-content: center;
             gap: 0.35rem;
         }
-        .hud-frame-bottom .hud-text-sm { font-size: 0.68rem; }
-        .hud-frame-bottom .hud-panel-pad-sm { padding: 0.3rem 0.5rem; }
-        .hud-leaderboard {
+        .bowling-page .hud-frame-bottom .hud-text-sm { font-size: 0.68rem; }
+        .bowling-page .hud-frame-bottom .hud-panel-pad-sm { padding: 0.3rem 0.5rem; }
+        .bowling-page .hud-leaderboard {
             width: min(17rem, 88vw) !important;
         }
-        .hud-cheer { top: 3.5rem !important; font-size: 0.72rem; padding: 0.35rem 0.75rem; }
+        .bowling-page .hud-cheer { top: 3.5rem !important; font-size: 0.72rem; padding: 0.35rem 0.75rem; }
     }
 
     @media (max-width: 480px) {
-        .bowling-stage { --game-scale: 0.62; }
-        .hud-top-right { top: 2.45rem !important; }
-        .hud-ball-picker { bottom: 2.85rem !important; }
-        .hud-side-controls { bottom: 2.85rem !important; }
+        .bowling-page .bowling-stage { --game-scale: 0.62; }
     }
 </style>
 
@@ -206,82 +293,82 @@
 <div class="game-shell">
     <div class="bowling-stage">
 
-        <canvas id="bowling-canvas" width="1100" height="688"></canvas>
-
-        <!-- Ball picker (left) -->
-        <div class="absolute hud-l top-1/2 -translate-y-1/2 z-30 flex flex-col hud-gap hud-ball-picker">
-            <button class="ball-skin-btn active hud-ball-btn rounded-xl hud-panel overflow-hidden border-2 border-transparent" data-skin="energy" title="Cosmic Energy">
-                <canvas class="skin-preview w-full h-full" data-skin="energy" width="56" height="56"></canvas>
-            </button>
-            <button class="ball-skin-btn hud-ball-btn rounded-xl hud-panel overflow-hidden border-2 border-transparent" data-skin="stella" title="Stella Strike">
-                <canvas class="skin-preview w-full h-full" data-skin="stella" width="56" height="56"></canvas>
-            </button>
-            <button class="ball-skin-btn hud-ball-btn rounded-xl hud-panel overflow-hidden border-2 border-transparent" data-skin="flag" title="Star Spangled">
-                <canvas class="skin-preview w-full h-full" data-skin="flag" width="56" height="56"></canvas>
-            </button>
-            <button class="ball-skin-btn hud-ball-btn rounded-xl hud-panel overflow-hidden border-2 border-transparent" data-skin="polka" title="Nebula Dots">
-                <canvas class="skin-preview w-full h-full" data-skin="polka" width="56" height="56"></canvas>
-            </button>
-        </div>
-
-        <!-- Frame scoreboard (top center) -->
-        <div class="absolute hud-t left-1/2 -translate-x-1/2 z-30 hud-panel rounded-lg hud-board hud-scoreboard max-w-[70%] overflow-x-auto">
+        <div class="hud-panel rounded-lg hud-board hud-scoreboard max-w-[70%] overflow-x-auto">
             <div id="scoreboard-frames" class="flex gap-1"></div>
         </div>
 
-        <!-- Top right HUD -->
-        <div class="absolute hud-t hud-r z-30 flex items-start hud-gap hud-top-right">
-            <div class="hud-panel rounded-xl hud-panel-pad text-center" style="min-width: calc(5.25rem * var(--game-scale))">
-                <div class="hud-score-num font-black text-yellow-400" id="score">0</div>
-                <div class="hud-score-lbl text-gray-400 uppercase mt-0.5">Score</div>
+        <div class="bowling-stats-bar">
+            <div class="hud-coins-bar hud-panel rounded-full hud-panel-pad flex items-center hud-gap">
+                <span class="hud-coins-icon">🪙</span>
+                <span class="hud-coins-num font-bold text-yellow-400" id="coins">800</span>
             </div>
-            <div class="hud-panel rounded-xl hud-pin-mini flex items-center justify-center">
-                <canvas id="pin-mini" width="40" height="50"></canvas>
-            </div>
-            <div class="flex flex-col hud-gap">
-                <div class="hud-panel rounded-xl hud-panel-pad-sm flex items-center hud-gap hud-player-block" style="min-width: calc(10rem * var(--game-scale))">
-                    <div class="hud-avatar rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center font-bold" id="player-avatar">P</div>
-                    <div>
-                        <div class="hud-text-sm font-bold text-white leading-tight" id="player-label">Player</div>
-                        <div class="hud-text-2xs text-cyan-400">Lvl <span id="player-level">1</span></div>
+
+            <div class="flex items-start hud-gap hud-top-right">
+                <div class="hud-panel rounded-xl hud-panel-pad text-center" style="min-width: calc(5.25rem * var(--game-scale))">
+                    <div class="hud-score-num font-black text-yellow-400" id="score">0</div>
+                    <div class="hud-score-lbl text-gray-400 uppercase mt-0.5">Score</div>
+                </div>
+                <div class="hud-panel rounded-xl hud-pin-mini flex items-center justify-center">
+                    <canvas id="pin-mini" width="40" height="50"></canvas>
+                </div>
+                <div class="flex flex-col hud-gap">
+                    <div class="hud-panel rounded-xl hud-panel-pad-sm flex items-center hud-gap hud-player-block" style="min-width: calc(10rem * var(--game-scale))">
+                        <div class="hud-avatar rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center font-bold" id="player-avatar">P</div>
+                        <div>
+                            <div class="hud-text-sm font-bold text-white leading-tight" id="player-label">Player</div>
+                            <div class="hud-text-2xs text-cyan-400">Lvl <span id="player-level">1</span></div>
+                        </div>
+                    </div>
+                    <div class="hud-panel rounded-xl hud-panel-pad-sm flex items-center hud-gap border border-pink-500/30 hud-stella-block">
+                        <div class="hud-avatar-sm rounded-lg bg-gradient-to-br from-pink-500 to-amber-500 flex items-center justify-center">👑</div>
+                        <div class="flex-1">
+                            <div class="hud-text-xs font-bold stella-name leading-tight">Stella</div>
+                            <div class="hud-text-2xs text-pink-300">300 champ</div>
+                        </div>
+                        <div class="hud-text-sm font-bold text-pink-400">300</div>
                     </div>
                 </div>
-                <div class="hud-panel rounded-xl hud-panel-pad-sm flex items-center hud-gap border border-pink-500/30 hud-stella-block">
-                    <div class="hud-avatar-sm rounded-lg bg-gradient-to-br from-pink-500 to-amber-500 flex items-center justify-center">👑</div>
-                    <div class="flex-1">
-                        <div class="hud-text-xs font-bold stella-name leading-tight">Stella</div>
-                        <div class="hud-text-2xs text-pink-300">300 champ</div>
-                    </div>
-                    <div class="hud-text-sm font-bold text-pink-400">300</div>
+            </div>
+        </div>
+
+        <canvas id="bowling-canvas" width="1100" height="688"></canvas>
+
+        <div class="bowling-bottom-bar">
+            <div class="bowling-bottom-tools">
+                <div class="flex flex-col hud-gap hud-ball-picker">
+                    <button class="ball-skin-btn active hud-ball-btn rounded-xl hud-panel overflow-hidden border-2 border-transparent" data-skin="energy" title="Cosmic Energy">
+                        <canvas class="skin-preview w-full h-full" data-skin="energy" width="56" height="56"></canvas>
+                    </button>
+                    <button class="ball-skin-btn hud-ball-btn rounded-xl hud-panel overflow-hidden border-2 border-transparent" data-skin="stella" title="Stella Strike">
+                        <canvas class="skin-preview w-full h-full" data-skin="stella" width="56" height="56"></canvas>
+                    </button>
+                    <button class="ball-skin-btn hud-ball-btn rounded-xl hud-panel overflow-hidden border-2 border-transparent" data-skin="flag" title="Star Spangled">
+                        <canvas class="skin-preview w-full h-full" data-skin="flag" width="56" height="56"></canvas>
+                    </button>
+                    <button class="ball-skin-btn hud-ball-btn rounded-xl hud-panel overflow-hidden border-2 border-transparent" data-skin="polka" title="Nebula Dots">
+                        <canvas class="skin-preview w-full h-full" data-skin="polka" width="56" height="56"></canvas>
+                    </button>
+                </div>
+
+                <div class="flex flex-col hud-gap hud-side-controls">
+                    <button id="pause-btn" class="hud-icon-btn rounded-xl hud-panel text-cyan-400 hover:bg-white/10 flex items-center justify-center" title="Pause">⏸</button>
+                    <button id="sound-btn" class="hud-icon-btn rounded-xl hud-panel text-gray-300 hover:bg-white/10 flex items-center justify-center" title="Sound">🔊</button>
+                    <button id="menu-btn" class="hud-icon-btn rounded-xl hud-panel text-cyan-400 hover:bg-white/10 flex items-center justify-center relative" title="Leaderboard">
+                        ☰
+                        <span class="absolute -top-1 -right-1 rounded-full bg-red-500 hud-text-2xs font-bold flex items-center justify-center" style="width: calc(1rem * var(--game-scale)); height: calc(1rem * var(--game-scale));">1</span>
+                    </button>
                 </div>
             </div>
-        </div>
 
-        <!-- Right controls -->
-        <div class="absolute hud-r top-1/2 -translate-y-1/2 z-30 flex flex-col hud-gap hud-side-controls">
-            <button id="pause-btn" class="hud-icon-btn rounded-xl hud-panel text-cyan-400 hover:bg-white/10 flex items-center justify-center" title="Pause">⏸</button>
-            <button id="sound-btn" class="hud-icon-btn rounded-xl hud-panel text-gray-300 hover:bg-white/10 flex items-center justify-center" title="Sound">🔊</button>
-            <button id="menu-btn" class="hud-icon-btn rounded-xl hud-panel text-cyan-400 hover:bg-white/10 flex items-center justify-center relative" title="Leaderboard">
-                ☰
-                <span class="absolute -top-1 -right-1 rounded-full bg-red-500 hud-text-2xs font-bold flex items-center justify-center" style="width: calc(1rem * var(--game-scale)); height: calc(1rem * var(--game-scale));">1</span>
-            </button>
-        </div>
-
-        <!-- Coins -->
-        <div class="absolute hud-b hud-r z-30 hud-panel rounded-full hud-panel-pad flex items-center hud-gap hud-coins-bar">
-            <span class="hud-coins-icon">🪙</span>
-            <span class="hud-coins-num font-bold text-yellow-400" id="coins">800</span>
-        </div>
-
-        <!-- Frame / strikes (bottom left) -->
-        <div class="absolute hud-b hud-l z-30 flex hud-gap hud-frame-bottom flex-wrap">
-            <div class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm">
-                Frame <span class="font-bold text-purple-400" id="frame">1/10</span>
+            <div class="flex hud-gap hud-frame-bottom flex-wrap">
+                <div class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm">
+                    Frame <span class="font-bold text-purple-400" id="frame">1/10</span>
+                </div>
+                <div class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm">
+                    Strikes <span class="font-bold text-pink-400" id="strikes">0</span>
+                </div>
+                <button id="reset-btn" class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm hover:bg-white/10 text-pink-300">↻ New Game</button>
             </div>
-            <div class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm">
-                Strikes <span class="font-bold text-pink-400" id="strikes">0</span>
-            </div>
-            <button id="reset-btn" class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm hover:bg-white/10 text-pink-300">↻ New Game</button>
         </div>
 
         <!-- Stella cheer -->
@@ -372,11 +459,11 @@ document.addEventListener('DOMContentLoaded', () => {
         Z_NEAR = S(45);
         Z_FAR = S(470);
         PROJ_BASE = S(310);
-        const isMobileHud = window.innerWidth <= 720;
+        const isMobileHud = window.innerWidth <= 860;
         if (isMobileHud) {
-            laneVanishRatio = 0.30;
-            laneDepthFactor = 0.50;
-            laneViewShift = ch * 0.05;
+            laneVanishRatio = 0.32;
+            laneDepthFactor = 0.48;
+            laneViewShift = ch * 0.07;
         } else {
             laneVanishRatio = 0.22;
             laneDepthFactor = 0.62;
@@ -417,8 +504,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resizeCanvas() {
-        let w = stage.clientWidth;
-        let h = stage.clientHeight;
+        const isMobileHud = window.innerWidth <= 860;
+        let w, h;
+        if (isMobileHud) {
+            const rect = canvas.getBoundingClientRect();
+            w = Math.max(2, Math.floor(rect.width));
+            h = Math.max(140, Math.floor(rect.height));
+            if (w < 10 || h < 10) {
+                w = stage.clientWidth || window.innerWidth;
+                h = Math.max(140, Math.floor((stage.clientHeight || window.innerHeight - 76) * 0.42));
+            }
+        } else {
+            w = stage.clientWidth;
+            h = stage.clientHeight;
+        }
         if (w < 2 || h < 2) {
             w = window.innerWidth;
             h = Math.max(400, window.innerHeight - 76);
@@ -432,8 +531,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function scheduleCanvasResize() {
+        requestAnimationFrame(() => {
+            resizeCanvas();
+            requestAnimationFrame(resizeCanvas);
+        });
+    }
+
     window.addEventListener('resize', () => {
-        resizeCanvas();
+        scheduleCanvasResize();
         initStars();
         drawPinMini();
         drawSkinPreviews();
@@ -2093,7 +2199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function bootGame() {
-        resizeCanvas();
+        scheduleCanvasResize();
         initStars();
         drawSkinPreviews();
         resetGame();

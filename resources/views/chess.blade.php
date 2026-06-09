@@ -606,7 +606,7 @@
             12vmin
         );
     }
-    @media (max-width: 720px) {
+    @media (max-width: 860px) {
         .chess-arena {
             grid-template-columns: 1fr;
             grid-template-rows: auto auto auto;
@@ -620,9 +620,9 @@
         .chess-board-col { order: 2; }
         .chess-panel--right { order: 3; }
         .panel-card { max-width: 100%; }
-        .chess-turn-row .mobile-clock { display: inline-flex; }
+        .chess-turn-row .mobile-clock { display: inline-flex !important; }
         .chess-panel--left .player-strip .timer,
-        .chess-panel--right .player-strip .timer { display: none; }
+        .chess-panel--right .player-strip .timer { display: none !important; }
         .chess-turn-row .status {
             min-width: 0;
             flex: 1;
@@ -977,20 +977,32 @@
     }
 
     .mobile-clock {
-        display: none;
+        display: none !important;
         align-items: center;
         justify-content: center;
         font-family: 'Source Sans 3', monospace;
-        font-size: 0.72rem;
+        font-size: 0.7rem;
         font-weight: 700;
-        color: #4ade80;
-        background: rgba(34, 197, 94, 0.1);
-        border: 1px solid rgba(74, 222, 128, 0.4);
+        color: #4ade80 !important;
+        background: rgba(34, 197, 94, 0.14);
+        border: 1px solid rgba(74, 222, 128, 0.55);
         border-radius: 999px;
-        padding: 0.22rem 0.5rem;
-        min-width: 2.75rem;
+        padding: 0.2rem 0.45rem;
+        min-width: 2.65rem;
         line-height: 1.2;
         transition: all 0.25s;
+    }
+
+    @media (max-width: 860px) {
+        .chess-page .chess-turn-row .mobile-clock {
+            display: inline-flex !important;
+        }
+    }
+
+    @media (min-width: 861px) {
+        .chess-page .mobile-clock {
+            display: none !important;
+        }
     }
 
     .mobile-clock.active {
