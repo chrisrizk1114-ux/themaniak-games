@@ -99,11 +99,17 @@
         width: 100%;
     }
 
+    .snl-hud .game-title {
+        font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+        margin-bottom: 0.15rem;
+    }
+
     .board-scene {
         position: relative;
         flex: 1 1 auto;
         width: 100%;
-        min-height: 0;
+        min-height: clamp(380px, 58vh, 820px);
+        max-height: calc(100svh - var(--nav-h) - 118px);
         border-radius: clamp(12px, 2vw, 20px);
         overflow: hidden;
         box-shadow: 0 25px 60px rgba(0,0,0,0.55), 0 0 80px rgba(34,197,94,0.08);
@@ -118,6 +124,7 @@
         height: 100%;
         background: radial-gradient(ellipse at 50% 20%, #1e3a5f 0%, #0f172a 55%, #020617 100%);
         cursor: default;
+        image-rendering: auto;
     }
 
     .snl-footer {
@@ -126,9 +133,9 @@
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
-        gap: clamp(0.5rem, 2vw, 1.25rem);
+        gap: clamp(0.35rem, 1.5vw, 0.85rem);
         width: 100%;
-        padding-top: clamp(0.25rem, 0.8vh, 0.5rem);
+        padding-top: 0.2rem;
     }
 
     .controls-row {
@@ -185,73 +192,47 @@
     .legend {
         display: flex;
         justify-content: center;
-        gap: clamp(0.4rem, 1.5vw, 0.85rem);
+        gap: clamp(0.75rem, 2vw, 1.2rem);
         flex-wrap: wrap;
-        width: 100%;
     }
     .legend-item {
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        gap: 0.4rem;
-        padding: 0.4rem 0.75rem;
-        border-radius: 999px;
-        font-weight: 800;
-        font-size: clamp(0.72rem, 2vw, 0.88rem);
-        letter-spacing: 0.02em;
-        border: 2px solid transparent;
-    }
-    .legend-item--snake {
-        color: #fecaca;
-        background: rgba(239, 68, 68, 0.22);
-        border-color: rgba(239, 68, 68, 0.55);
-    }
-    .legend-item--ladder {
-        color: #fef3c7;
-        background: rgba(251, 191, 36, 0.22);
-        border-color: rgba(251, 191, 36, 0.55);
-    }
-    .legend-item--tile {
-        color: #bbf7d0;
-        background: rgba(34, 197, 94, 0.18);
-        border-color: rgba(74, 222, 128, 0.45);
+        gap: 8px;
+        color: white;
+        font-weight: bold;
+        font-size: 0.9rem;
     }
     .legend-box {
-        width: 26px;
-        height: 26px;
-        border-radius: 6px;
+        width: 28px;
+        height: 28px;
+        border-radius: 5px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 13px;
-        border: 2px solid rgba(0,0,0,0.25);
-        flex-shrink: 0;
+        border: 2px solid rgba(0,0,0,0.3);
     }
-    .snl-rules {
-        color: rgba(255,255,255,0.82);
-        font-size: clamp(0.85rem, 2.2vw, 0.95rem);
-        line-height: 1.45;
-        margin: 0 0 1rem;
-        padding: 0.65rem 0.85rem;
-        border-radius: 12px;
-        background: rgba(0,0,0,0.25);
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-    .snl-rules strong { color: #fbbf24; }
 
     @media (max-width: 600px) {
         .snl-shell:has(#gameArea.active) {
-            padding: 0.25rem 0.35rem 0.35rem;
+            padding: 0.2rem 0.3rem 0.3rem;
         }
-        .snl-hud .game-title { font-size: 1.15rem; margin-bottom: 0.15rem; }
-        .status { font-size: 0.88rem; line-height: 1.35; }
-        .legend-item { font-size: 0.72rem; padding: 0.35rem 0.6rem; }
+        .board-scene {
+            min-height: clamp(340px, 52vh, 680px);
+            max-height: calc(100svh - var(--nav-h) - 108px);
+        }
+        .snl-hud .game-title { display: none; }
+        .status { font-size: 0.9rem; margin-bottom: 0.15rem; }
+        .snl-footer { gap: 0.35rem; padding-top: 0.15rem; }
+        .legend { gap: 0.5rem; }
+        .legend-item { font-size: 0.8rem; }
         .roll-btn, .player-count-btn, #soundBtn {
             min-height: 48px;
             min-width: 48px;
             font-size: 1rem;
         }
-        .controls-row { flex-wrap: wrap; justify-content: center; }
-        .dice-display { font-size: 2.75rem; }
+        .dice-display { font-size: 2.5rem; }
     }
 </style>
 
@@ -259,7 +240,6 @@
     <div class="snl-shell">
         <div class="player-select" id="playerSelect">
             <h1 class="game-title">Snakes &amp; Ladders 3D 🎲🐍🧗</h1>
-            <p class="snl-rules"><strong>🐍 Red tiles</strong> = snake (slide down) · <strong>🧗 Gold tiles</strong> = ladder (climb up) · First to <strong>100</strong> wins!</p>
             <h2>How many players?</h2>
             <div class="player-count-btns">
                 <button class="player-count-btn" onclick="startGame(1)">1 Player</button>
@@ -286,17 +266,17 @@
                     <button class="player-count-btn" id="soundBtn" type="button">🔊</button>
                 </div>
                 <div class="legend">
-                    <div class="legend-item legend-item--tile">
+                    <div class="legend-item">
                         <div class="legend-box" style="background:linear-gradient(135deg,#86efac,#22c55e);border-color:#15803d;">1</div>
-                        <span>Normal tile</span>
+                        <span>Tile</span>
                     </div>
-                    <div class="legend-item legend-item--ladder">
+                    <div class="legend-item">
                         <div class="legend-box" style="background:linear-gradient(135deg,#fde047,#ca8a04);border-color:#a16207;">🧗</div>
-                        <span>Ladder ↑ climb</span>
+                        <span>Ladder</span>
                     </div>
-                    <div class="legend-item legend-item--snake">
+                    <div class="legend-item">
                         <div class="legend-box" style="background:linear-gradient(135deg,#f87171,#dc2626);border-color:#991b1b;">🐍</div>
-                        <span>Snake ↓ slide</span>
+                        <span>Snake</span>
                     </div>
                 </div>
             </div>
@@ -317,10 +297,15 @@
     function resizeCanvas() {
         const rect = boardScene.getBoundingClientRect();
         const w = Math.max(480, Math.floor(rect.width) || window.innerWidth - 32);
-        const h = Math.max(320, Math.floor(rect.height) || (window.innerHeight - 220));
-        if (canvas.width === w && canvas.height === h) return false;
-        canvas.width = w;
-        canvas.height = h;
+        const h = Math.max(400, Math.floor(rect.height) || (window.innerHeight - 180));
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        if (canvas._logicalW === w && canvas._logicalH === h && canvas._dpr === dpr) return false;
+        canvas._logicalW = w;
+        canvas._logicalH = h;
+        canvas._dpr = dpr;
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         buildTileLayout();
         initStars();
         renderBoard();
@@ -348,11 +333,13 @@
     let stars = [];
 
     function initStars() {
+        const w = canvas._logicalW || canvas.width;
+        const h = canvas._logicalH || canvas.height;
         stars = [];
         for (let i = 0; i < 80; i++) {
             stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height * 0.55,
+                x: Math.random() * w,
+                y: Math.random() * h * 0.55,
                 r: Math.random() * 1.2 + 0.3,
                 a: Math.random() * 0.5 + 0.2,
             });
@@ -368,23 +355,40 @@
 
     function buildTileLayout() {
         boardTiles = [];
-        const marginX = canvas.width < 520 ? 32 : 48;
-        const marginTop = canvas.width < 520 ? 38 : 52;
-        const boardW = canvas.width - marginX * 2;
-        const boardH = canvas.height - marginTop - (canvas.width < 520 ? 58 : 72);
-        const depth = canvas.width < 520 ? 10 : 14;
+        const w = canvas._logicalW || canvas.width;
+        const h = canvas._logicalH || canvas.height;
+        const marginX = w < 520 ? 18 : 28;
+        const marginTop = w < 520 ? 20 : 28;
+        const marginBottom = w < 520 ? 28 : 36;
+        const boardW = w - marginX * 2;
+        const boardH = h - marginTop - marginBottom;
+        const depth = w < 520 ? 7 : 10;
+
+        const rowScales = [];
+        const rowHeights = [];
+        const rowY = [];
+
+        for (let row = 0; row < 10; row++) {
+            const t = row / 9;
+            rowScales[row] = 0.86 + t * 0.14;
+            rowHeights[row] = boardH / 10;
+            rowY[row] = marginTop + rowHeights.slice(0, row).reduce((sum, v) => sum + v, 0);
+        }
 
         for (let num = 1; num <= 100; num++) {
             const { row, col } = getTilePosition(num);
-            const t = row / 9;
-            const scale = 0.82 + t * 0.18;
+            const scale = rowScales[row];
             const tileW = (boardW / 10) * scale;
-            const tileH = (boardH / 10) * (0.88 + t * 0.12);
+            const tileH = rowHeights[row];
             const offsetX = (boardW - tileW * 10) / 2;
             const x = marginX + offsetX + col * tileW;
-            const y = marginTop + row * tileH;
+            const y = rowY[row];
             const type = snakes[num] ? 'snake' : ladders[num] ? 'ladder' : 'normal';
-            boardTiles[num] = { num, row, col, x, y, w: tileW, h: tileH, depth, type, cx: x + tileW / 2, cy: y + tileH / 2 };
+            boardTiles[num] = {
+                num, row, col, x, y, w: tileW, h: tileH, depth, type,
+                cx: x + tileW / 2,
+                cy: y + tileH / 2,
+            };
         }
     }
 
@@ -393,12 +397,14 @@
     }
 
     function drawBackground() {
-        const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        const w = canvas._logicalW || canvas.width;
+        const h = canvas._logicalH || canvas.height;
+        const g = ctx.createLinearGradient(0, 0, 0, h);
         g.addColorStop(0, '#0c1929');
         g.addColorStop(0.5, '#111827');
         g.addColorStop(1, '#030712');
         ctx.fillStyle = g;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, w, h);
 
         stars.forEach(s => {
             ctx.globalAlpha = s.a;
@@ -411,7 +417,7 @@
 
         ctx.fillStyle = 'rgba(15,23,42,0.6)';
         ctx.beginPath();
-        ctx.ellipse(canvas.width / 2, canvas.height - 30, canvas.width * 0.42, 40, 0, 0, Math.PI * 2);
+        ctx.ellipse(w / 2, h - 30, w * 0.42, 40, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
@@ -457,17 +463,29 @@
             ctx.strokeRect(t.x - 1, t.y - 1, t.w + 2, t.h + 2);
         }
 
-        if (t.type === 'snake') {
-            ctx.strokeStyle = 'rgba(239,68,68,0.9)';
-            ctx.lineWidth = 2.5;
-            ctx.strokeRect(t.x + 1, t.y + 1, t.w - 2, t.h - 2);
-        } else if (t.type === 'ladder') {
-            ctx.strokeStyle = 'rgba(251,191,36,0.95)';
-            ctx.lineWidth = 2.5;
-            ctx.strokeRect(t.x + 1, t.y + 1, t.w - 2, t.h - 2);
-        }
+        const numSize = Math.max(11, Math.min(24, Math.min(t.w, t.h) * 0.36));
+        const padX = Math.max(4, t.w * 0.08);
+        const padY = Math.max(3, t.h * 0.1);
+        ctx.font = `bold ${numSize}px Arial, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.lineWidth = Math.max(2, numSize * 0.13);
+        ctx.strokeStyle = 'rgba(0,0,0,0.92)';
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeText(String(t.num), t.x + padX, t.y + padY);
+        ctx.fillText(String(t.num), t.x + padX, t.y + padY);
 
-        drawTileTypeHint(t);
+        if (t.type === 'snake') {
+            ctx.font = `${Math.max(12, Math.min(t.w, t.h) * 0.28)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🐍', t.cx, t.cy + numSize * 0.12);
+        } else if (t.type === 'ladder') {
+            ctx.font = `${Math.max(12, Math.min(t.w, t.h) * 0.28)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🧗', t.cx, t.cy + numSize * 0.12);
+        }
 
         ctx.restore();
     }
@@ -477,7 +495,7 @@
         const b = boardTiles[toNum];
         if (!a || !b) return;
 
-        const thick = canvas.width < 520 ? 1.45 : 1;
+        const thick = (canvas._logicalW || canvas.width) < 520 ? 1.35 : 1;
         const ax = a.cx, ay = a.cy;
         const bx = b.cx, by = b.cy;
         const dx = bx - ax, dy = by - ay;
@@ -516,9 +534,9 @@
         }
 
         ctx.fillStyle = '#fef3c7';
-        ctx.font = `bold ${Math.round(11 * thick)}px Arial`;
+        ctx.font = 'bold 11px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🧗 LADDER', (ax + bx) / 2, (ay + by) / 2 - 6);
+        ctx.fillText('LADDER', (ax + bx) / 2, (ay + by) / 2 - 6);
     }
 
     function drawSnake3D(fromNum, toNum) {
@@ -526,7 +544,6 @@
         const b = boardTiles[toNum];
         if (!a || !b) return;
 
-        const thick = canvas.width < 520 ? 1.45 : 1;
         const ax = a.cx, ay = a.cy;
         const bx = b.cx, by = b.cy;
         const mx = (ax + bx) / 2 + (by - ay) * 0.15;
@@ -537,7 +554,7 @@
         ctx.lineJoin = 'round';
 
         ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-        ctx.lineWidth = 16 * thick;
+        ctx.lineWidth = 16;
         ctx.beginPath();
         ctx.moveTo(ax, ay);
         ctx.quadraticCurveTo(mx, my, bx, by);
@@ -548,7 +565,7 @@
         sg.addColorStop(0.5, '#22c55e');
         sg.addColorStop(1, '#dc2626');
         ctx.strokeStyle = sg;
-        ctx.lineWidth = 12 * thick;
+        ctx.lineWidth = 12;
         ctx.beginPath();
         ctx.moveTo(ax, ay);
         ctx.quadraticCurveTo(mx, my, bx, by);
@@ -590,10 +607,10 @@
 
         ctx.restore();
 
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.font = `bold ${Math.round(11 * thick)}px Arial`;
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = 'bold 10px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🐍 SNAKE', mx, my - 8);
+        ctx.fillText('SNAKE', mx, my - 8);
     }
 
     function drawPlayerToken(cx, cy, color, num, elevated = 0) {
@@ -632,80 +649,6 @@
         return `rgb(${r},${g},${b})`;
     }
 
-    function roundRect(x, y, w, h, r) {
-        const rad = Math.min(r, w / 2, h / 2);
-        ctx.beginPath();
-        ctx.moveTo(x + rad, y);
-        ctx.arcTo(x + w, y, x + w, y + h, rad);
-        ctx.arcTo(x + w, y + h, x, y + h, rad);
-        ctx.arcTo(x, y + h, x, y, rad);
-        ctx.arcTo(x, y, x + w, y, rad);
-        ctx.closePath();
-    }
-
-    function tileNumberFontSize(t) {
-        const boost = canvas.width < 520 ? 1.3 : canvas.width < 720 ? 1.12 : 1;
-        return Math.max(13, Math.min(22, t.w * 0.42 * boost));
-    }
-
-    function drawTileNumberBadge(t) {
-        const fontSize = tileNumberFontSize(t);
-        const label = String(t.num);
-        ctx.font = `800 ${fontSize}px Arial, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        const padX = Math.max(4, fontSize * 0.28);
-        const padY = Math.max(3, fontSize * 0.22);
-        const tw = ctx.measureText(label).width + padX * 2;
-        const th = fontSize + padY * 2;
-        const cx = t.type === 'normal' ? t.cx : t.x + Math.min(t.w * 0.22, 14) + tw / 2;
-        const cy = t.type === 'normal' ? t.cy : t.y + Math.min(t.h * 0.18, 12) + th / 2;
-
-        ctx.fillStyle = 'rgba(0,0,0,0.72)';
-        roundRect(cx - tw / 2, cy - th / 2, tw, th, Math.min(5, th / 3));
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
-        ctx.lineWidth = Math.max(2, fontSize * 0.14);
-        ctx.lineJoin = 'round';
-        ctx.strokeText(label, cx, cy);
-        ctx.fillText(label, cx, cy);
-    }
-
-    function drawTileTypeHint(t) {
-        if (t.type === 'normal') return;
-
-        const dest = t.type === 'snake' ? snakes[t.num] : ladders[t.num];
-        const arrow = t.type === 'snake' ? '↓' : '↑';
-        const hintSize = Math.max(10, Math.min(14, t.w * 0.24));
-        const emojiSize = Math.max(11, Math.min(16, t.w * 0.28));
-
-        ctx.font = `${emojiSize}px Arial`;
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(t.type === 'snake' ? '🐍' : '🧗', t.x + t.w - 3, t.y + t.h - 3);
-
-        ctx.font = `bold ${hintSize}px Arial, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        const hint = `${arrow}${dest}`;
-        const hw = ctx.measureText(hint).width + 8;
-        const hh = hintSize + 6;
-        const hx = t.cx - hw / 2;
-        const hy = t.y + t.h - 4;
-
-        ctx.fillStyle = t.type === 'snake' ? 'rgba(127,29,29,0.88)' : 'rgba(120,53,15,0.88)';
-        roundRect(hx, hy - hh, hw, hh, 4);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.fillText(hint, t.cx, hy - 3);
-    }
-
     function renderBoard() {
         drawBackground();
         boardTiles.forEach(t => {
@@ -713,10 +656,6 @@
         });
         Object.entries(ladders).forEach(([from, to]) => drawLadder3D(+from, to));
         Object.entries(snakes).forEach(([from, to]) => drawSnake3D(+from, to));
-
-        boardTiles.forEach(t => {
-            if (t) drawTileNumberBadge(t);
-        });
 
         players.forEach((player, idx) => {
             let cx, cy;
@@ -743,7 +682,7 @@
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.font = '12px Arial';
         ctx.textAlign = 'right';
-        ctx.fillText('3D perspective board', canvas.width - 14, canvas.height - 14);
+        ctx.fillText('3D perspective board', (canvas._logicalW || canvas.width) - 14, (canvas._logicalH || canvas.height) - 14);
     }
 
     function sleep(ms) {
@@ -915,6 +854,9 @@
         resizeTimer = setTimeout(resizeCanvas, 100);
     });
 
+    canvas._logicalW = 920;
+    canvas._logicalH = 620;
+    canvas._dpr = 1;
     buildTileLayout();
     initStars();
     renderBoard();

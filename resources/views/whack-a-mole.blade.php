@@ -185,7 +185,7 @@
         align-items: center;
         justify-content: center;
         width: 100%;
-        padding: clamp(5.5rem, 14vh, 7rem) clamp(0.5rem, 2vw, 1rem) clamp(4rem, 10vh, 5.5rem);
+        padding: clamp(5.5rem, 14vh, 7rem) min(270px, 28vw) clamp(4rem, 10vh, 5.5rem) clamp(0.5rem, 2vw, 1rem);
     }
 
     .board-frame {
@@ -343,6 +343,22 @@
         100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
     }
 
+    .whack-lb-panel {
+        position: absolute;
+        top: 50%;
+        right: clamp(0.5rem, 1.5vw, 1rem);
+        transform: translateY(-50%);
+        z-index: 15;
+        width: min(240px, 26vw);
+        pointer-events: auto;
+    }
+
+    .whack-lb-panel .game-lb {
+        margin: 0;
+        max-width: none;
+        width: 100%;
+    }
+
     .whack-footer {
         position: absolute;
         bottom: 0;
@@ -355,12 +371,8 @@
         justify-content: center;
         gap: 0.45rem;
         padding: clamp(0.35rem, 1vh, 0.75rem) clamp(0.5rem, 2vw, 1rem);
+        padding-right: min(260px, 28vw);
         pointer-events: none;
-    }
-
-    .whack-lb-wrap {
-        width: min(320px, 94vw);
-        pointer-events: auto;
     }
 
     .whack-footer-actions {
@@ -508,6 +520,16 @@
         }
         .board-frame::before { display: none; }
         .whack-subtitle { display: none; }
+        .whack-lb-panel {
+            top: auto;
+            bottom: 4.5rem;
+            right: 0.35rem;
+            transform: none;
+            width: min(190px, 44vw);
+        }
+        .whack-footer {
+            padding-right: clamp(0.5rem, 2vw, 1rem);
+        }
         .whack-btn {
             min-height: 48px;
             min-width: 48px;
@@ -552,10 +574,11 @@
             </div>
         </div>
 
+        <aside class="whack-lb-panel">
+            @include('partials.game-leaderboard', ['game' => 'whack-a-mole', 'id' => 'whackLeaderboard'])
+        </aside>
+
         <footer class="whack-footer">
-            <div class="whack-lb-wrap">
-                @include('partials.game-leaderboard', ['game' => 'whack-a-mole', 'id' => 'whackLeaderboard'])
-            </div>
             <div class="whack-footer-actions">
                 <button class="whack-btn whack-btn-primary" id="startBtn" type="button">🔨 Start Game!</button>
                 <button class="whack-btn whack-btn-ghost" id="soundBtn" type="button" title="Toggle sound">🔊</button>

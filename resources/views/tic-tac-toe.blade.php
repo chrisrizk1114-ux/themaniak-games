@@ -4,6 +4,10 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&display=swap');
 
+    body:has(.ttt-page) {
+        overflow-y: auto;
+    }
+
     .main-content:has(.ttt-page) {
         max-width: none;
         padding: 0;
@@ -19,16 +23,19 @@
         --nav-h: 76px;
         --cell: min(calc((100svh - 260px) / 3), calc((100vw - 200px) / 3), 150px);
         font-family: 'Rajdhani', sans-serif;
-        height: calc(100svh - var(--nav-h));
         min-height: calc(100svh - var(--nav-h));
         width: 100%;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         background:
             radial-gradient(ellipse at 15% 20%, rgba(255,45,106,0.14) 0%, transparent 45%),
             radial-gradient(ellipse at 85% 80%, rgba(0,240,255,0.12) 0%, transparent 45%),
             radial-gradient(ellipse at 50% 50%, rgba(168,85,247,0.08) 0%, transparent 60%),
             linear-gradient(160deg, #050510 0%, #0a0a1e 45%, #080818 100%);
         position: relative;
+        display: flex;
+        flex-direction: column;
     }
 
     .ttt-page::before {
@@ -53,13 +60,14 @@
     .ttt-shell {
         position: relative;
         z-index: 1;
-        height: 100%;
+        min-height: calc(100svh - var(--nav-h) - 120px);
+        flex: 1 0 auto;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: space-between;
-        padding: clamp(0.75rem, 2vh, 1.5rem) clamp(0.75rem, 3vw, 2rem);
-        gap: clamp(0.5rem, 1.5vh, 1rem);
+        justify-content: flex-start;
+        padding: clamp(0.75rem, 2vh, 1.5rem) clamp(0.75rem, 3vw, 2rem) 0;
+        gap: clamp(0.75rem, 2vh, 1.25rem);
     }
 
     .ttt-header {
@@ -97,13 +105,12 @@
     }
 
     .ttt-main {
-        flex: 1;
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: clamp(1rem, 4vw, 3rem);
         width: 100%;
-        min-height: 0;
     }
 
     .player-panel {
@@ -307,15 +314,21 @@
     .turn-badge.game-end { color: var(--neon-gold); border-color: rgba(255,213,74,0.4); }
 
     .ttt-footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 20;
+        flex-shrink: 0;
+        width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.65rem;
-        margin-top: 1rem;
-    }
-
-    .ttt-lb-wrap {
-        width: min(320px, 100%);
+        gap: 0.75rem;
+        padding: clamp(0.85rem, 2vh, 1.1rem) clamp(0.75rem, 3vw, 2rem);
+        margin-top: auto;
+        background: rgba(5, 8, 20, 0.96);
+        backdrop-filter: blur(12px);
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
     }
 
     .ttt-footer-actions {
@@ -324,6 +337,12 @@
         justify-content: center;
         gap: clamp(0.5rem, 2vw, 1rem);
         flex-wrap: wrap;
+        width: 100%;
+        max-width: 640px;
+    }
+
+    .ttt-lb-wrap {
+        width: min(360px, 100%);
     }
 
     .ttt-btn {
@@ -426,7 +445,16 @@
             -webkit-tap-highlight-color: transparent;
         }
         .ttt-page {
-            --cell: min(calc((100svh - 380px) / 3), calc((100vw - 60px) / 3), 110px);
+            --cell: min(calc((100vw - 60px) / 3), 120px);
+        }
+        .ttt-shell {
+            min-height: auto;
+            padding-bottom: 0;
+        }
+        .ttt-footer {
+            position: sticky;
+            bottom: 0;
+            padding-bottom: max(0.85rem, env(safe-area-inset-bottom));
         }
         .ttt-main {
             flex-direction: column;
@@ -500,19 +528,19 @@
                 <div class="player-score" id="scoreO">0</div>
             </aside>
         </div>
-
-        <footer class="ttt-footer">
-            <div class="ttt-lb-wrap">
-                @include('partials.game-leaderboard', ['game' => 'tic-tac-toe', 'id' => 'tttLeaderboard'])
-            </div>
-            <div class="ttt-footer-actions">
-                <span class="draws-pill">Draws: <strong id="scoreDraw">0</strong></span>
-                <button class="ttt-btn ttt-btn-primary" id="restartBtn" type="button">↻ New Round</button>
-                <button class="ttt-btn ttt-btn-ghost" id="resetScoresBtn" type="button">Reset Scores</button>
-                <button class="ttt-btn ttt-btn-ghost" id="soundBtn" type="button" title="Toggle sound">🔊</button>
-            </div>
-        </footer>
     </div>
+
+    <footer class="ttt-footer">
+        <div class="ttt-footer-actions">
+            <span class="draws-pill">Draws: <strong id="scoreDraw">0</strong></span>
+            <button class="ttt-btn ttt-btn-primary" id="restartBtn" type="button">↻ New Round</button>
+            <button class="ttt-btn ttt-btn-ghost" id="resetScoresBtn" type="button">Reset Scores</button>
+            <button class="ttt-btn ttt-btn-ghost" id="soundBtn" type="button" title="Toggle sound">🔊</button>
+        </div>
+        <div class="ttt-lb-wrap">
+            @include('partials.game-leaderboard', ['game' => 'tic-tac-toe', 'id' => 'tttLeaderboard'])
+        </div>
+    </footer>
 
     <div id="resultOverlay" class="result-overlay hidden">
         <div class="result-card">
