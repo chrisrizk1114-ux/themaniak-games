@@ -346,17 +346,12 @@
         100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
     }
 
-    .whack-lb-panel {
-        position: absolute;
-        top: 50%;
-        right: clamp(0.5rem, 1.5vw, 1rem);
-        transform: translateY(-50%);
-        z-index: 15;
-        width: min(230px, 25vw);
-        pointer-events: auto;
+    .whack-end-lb {
+        width: min(320px, 88vw);
+        margin: 0 auto 1rem;
     }
 
-    .whack-lb-panel .game-lb {
+    .whack-end-lb .game-lb {
         margin: 0;
         max-width: none;
         width: 100%;
@@ -520,16 +515,6 @@
         }
         .board-frame::before { display: none; }
         .whack-subtitle { display: none; }
-        .whack-lb-panel {
-            top: auto;
-            bottom: 0.5rem;
-            right: 0.35rem;
-            transform: none;
-            width: min(175px, 42vw);
-        }
-        .whack-footer {
-            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-        }
         .whack-btn {
             min-height: 48px;
             min-width: 48px;
@@ -574,10 +559,6 @@
                     </div>
                 </div>
             </div>
-
-            <aside class="whack-lb-panel">
-                @include('partials.game-leaderboard', ['game' => 'whack-a-mole', 'id' => 'whackLeaderboard'])
-            </aside>
         </div>
 
         <footer class="whack-footer">
@@ -602,6 +583,9 @@
             <p class="big-score" id="finalScore">0</p>
             <p>Best Combo: <strong id="finalCombo">0</strong>x</p>
             <p id="newRecord" class="new-record hidden">🎉 New High Score!</p>
+            <div class="whack-end-lb">
+                @include('partials.game-leaderboard', ['game' => 'whack-a-mole', 'id' => 'whackLeaderboard'])
+            </div>
             <button class="whack-btn whack-btn-primary" id="playAgainBtn" type="button">Play Again!</button>
         </div>
     </div>
@@ -848,7 +832,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         @auth
         if (typeof GameLeaderboard !== 'undefined') {
-            GameLeaderboard.submit('whack-a-mole', score).catch(() => {});
+            GameLeaderboard.submit('whack-a-mole', score)
+                .then(() => GameLeaderboard.mount('#whackLeaderboard', 'whack-a-mole'))
+                .catch(() => GameLeaderboard.mount('#whackLeaderboard', 'whack-a-mole'));
+        }
+        @else
+        if (typeof GameLeaderboard !== 'undefined') {
+            GameLeaderboard.mount('#whackLeaderboard', 'whack-a-mole');
         }
         @endauth
 

@@ -609,16 +609,50 @@
     @media (max-width: 720px) {
         .chess-arena {
             grid-template-columns: 1fr;
-            grid-template-rows: auto auto auto;
+            grid-template-rows: auto auto auto auto;
             max-width: 400px;
         }
         #gameArea.active .chess-arena {
             --sq: min(calc((100vw - 24px) / 8), calc((100svh - 320px) / 8), 48px);
             padding: 0 0.25rem;
         }
-        .chess-panel--left { order: 1; }
+        .chess-mobile-timers {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 0.35rem;
+        }
+        .mobile-timer-card {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.45rem;
+            padding: 0.5rem 0.65rem;
+            background: linear-gradient(160deg, rgba(42,24,16,0.92), rgba(18,14,22,0.96));
+            border: 1px solid rgba(212,168,83,0.28);
+            border-radius: 3px;
+        }
+        .mobile-timer-card .player-icon {
+            font-size: 1.35rem;
+        }
+        .mobile-timer-card .player-label {
+            font-size: 0.72rem;
+            line-height: 1.2;
+        }
+        .mobile-timer-card .timer {
+            font-size: 1.05rem;
+            min-width: 64px;
+            padding: 0.25rem 0.45rem;
+        }
+        .chess-panel--left { order: 3; }
         .chess-board-col { order: 2; }
-        .chess-panel--right { order: 3; }
+        .chess-panel--right { order: 4; }
+        .chess-panel--left .player-strip .timer,
+        .chess-panel--right .player-strip .timer {
+            display: none;
+        }
         .panel-card { max-width: 100%; }
         .controls-bar {
             flex-wrap: wrap;
@@ -729,6 +763,11 @@
         align-items: center;
         gap: 0.65rem;
         justify-content: center;
+    }
+
+    .chess-mobile-timers {
+        display: none;
+        width: 100%;
     }
     #gameArea.active .chess-board-col {
         flex: 0 1 auto;
@@ -1185,6 +1224,22 @@
 
             <!-- CENTER: Board -->
             <div class="chess-board-col">
+                <div class="chess-mobile-timers">
+                    <div class="mobile-timer-card">
+                        <span class="player-icon player-icon--black">♚</span>
+                        <div class="player-meta">
+                            <div class="player-label">Black</div>
+                        </div>
+                        <div class="timer" id="black-timer-mobile">10:00</div>
+                    </div>
+                    <div class="mobile-timer-card">
+                        <span class="player-icon player-icon--white">♔</span>
+                        <div class="player-meta">
+                            <div class="player-label">White</div>
+                        </div>
+                        <div class="timer" id="white-timer-mobile">10:00</div>
+                    </div>
+                </div>
                 <div class="status" id="status">White's Turn</div>
                 <div class="online-invite-bar" id="onlineInviteBar">
                     <span id="onlineInviteText"></span>
@@ -2858,17 +2913,29 @@
     }
 
     function updateTimerDisplay() {
-        document.getElementById('white-timer').textContent = formatTime(whiteTime);
-        document.getElementById('black-timer').textContent = formatTime(blackTime);
-        
+        const whiteText = formatTime(whiteTime);
+        const blackText = formatTime(blackTime);
+
+        document.getElementById('white-timer').textContent = whiteText;
+        document.getElementById('black-timer').textContent = blackText;
+
+        const whiteMobile = document.getElementById('white-timer-mobile');
+        const blackMobile = document.getElementById('black-timer-mobile');
+        if (whiteMobile) whiteMobile.textContent = whiteText;
+        if (blackMobile) blackMobile.textContent = blackText;
+
         const whiteTimerEl = document.getElementById('white-timer');
         const blackTimerEl = document.getElementById('black-timer');
         if (currentPlayer === 'white') {
             whiteTimerEl.classList.add('active');
             blackTimerEl.classList.remove('active');
+            whiteMobile?.classList.add('active');
+            blackMobile?.classList.remove('active');
         } else {
             blackTimerEl.classList.add('active');
             whiteTimerEl.classList.remove('active');
+            blackMobile?.classList.add('active');
+            whiteMobile?.classList.remove('active');
         }
     }
 
