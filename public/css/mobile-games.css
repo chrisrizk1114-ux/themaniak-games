@@ -109,13 +109,17 @@ button,
 }
 
 @media (max-width: 860px) {
-    .chess-page .chess-turn-row .mobile-clock {
+    .chess-page .chess-turn-row .mobile-clock,
+    .chess-page .chess-turn-row .mobile-clock.active,
+    .chess-page #black-timer-mobile,
+    .chess-page #white-timer-mobile {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
         font-size: 0.7rem;
         font-weight: 700;
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         background: rgba(255, 255, 255, 0.08);
         border: 1px solid rgba(255, 255, 255, 0.35);
         border-radius: 999px;
@@ -123,30 +127,10 @@ button,
         min-width: 2.65rem;
     }
 
-    .chess-page .chess-panel .player-strip .timer {
+    .chess-page .chess-panel .player-strip .timer,
+    .chess-page #black-timer,
+    .chess-page #white-timer {
         display: none !important;
-    }
-
-    .bowling-page .bowling-stage {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    .bowling-page .hud-scoreboard,
-    .bowling-page .bowling-stats-bar,
-    .bowling-page .bowling-bottom-bar,
-    .bowling-page .hud-ball-picker,
-    .bowling-page .hud-side-controls,
-    .bowling-page .hud-coins-bar,
-    .bowling-page .hud-top-right,
-    .bowling-page .hud-frame-bottom {
-        position: relative !important;
-        top: auto !important;
-        left: auto !important;
-        right: auto !important;
-        bottom: auto !important;
-        transform: none !important;
-        translate: none !important;
     }
 }
 

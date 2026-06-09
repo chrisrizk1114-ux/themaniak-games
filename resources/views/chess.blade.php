@@ -620,9 +620,18 @@
         .chess-board-col { order: 2; }
         .chess-panel--right { order: 3; }
         .panel-card { max-width: 100%; }
-        .chess-turn-row .mobile-clock { display: inline-flex !important; }
+        .chess-turn-row .mobile-clock,
+        .chess-turn-row .mobile-clock.active {
+            display: inline-flex !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
         .chess-panel--left .player-strip .timer,
-        .chess-panel--right .player-strip .timer { display: none !important; }
+        .chess-panel--right .player-strip .timer,
+        .chess-page #black-timer,
+        .chess-page #white-timer {
+            display: none !important;
+        }
         .chess-turn-row .status {
             min-width: 0;
             flex: 1;
@@ -994,8 +1003,11 @@
     }
 
     @media (max-width: 860px) {
-        .chess-page .chess-turn-row .mobile-clock {
+        .chess-page .chess-turn-row .mobile-clock,
+        .chess-page .chess-turn-row .mobile-clock.active {
             display: inline-flex !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
         }
     }
 
@@ -1007,9 +1019,10 @@
 
     .mobile-clock.active {
         color: #ffffff !important;
-        background: rgba(255, 255, 255, 0.16);
-        border-color: rgba(255, 255, 255, 0.65);
-        box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+        -webkit-text-fill-color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.18);
+        border-color: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
     }
     #gameArea {
         display: none;
@@ -2927,8 +2940,14 @@
 
         const whiteMobile = document.getElementById('white-timer-mobile');
         const blackMobile = document.getElementById('black-timer-mobile');
-        if (whiteMobile) whiteMobile.textContent = whiteText;
-        if (blackMobile) blackMobile.textContent = blackText;
+        if (whiteMobile) {
+            whiteMobile.textContent = whiteText;
+            whiteMobile.style.setProperty('color', '#ffffff', 'important');
+        }
+        if (blackMobile) {
+            blackMobile.textContent = blackText;
+            blackMobile.style.setProperty('color', '#ffffff', 'important');
+        }
 
         const whiteTimerEl = document.getElementById('white-timer');
         const blackTimerEl = document.getElementById('black-timer');

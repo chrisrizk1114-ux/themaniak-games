@@ -170,119 +170,116 @@
 
     @media (max-width: 860px) {
         .bowling-page .bowling-stage {
-            --game-scale: 0.72;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            min-height: calc(100svh - var(--nav-h));
-            overflow: hidden;
+            --game-scale: 0.55;
+        }
+        .bowling-page .bowling-stats-bar,
+        .bowling-page .bowling-bottom-bar,
+        .bowling-page .bowling-bottom-tools {
+            display: contents !important;
         }
         .bowling-page #bowling-canvas {
-            position: relative !important;
-            flex: 1 1 0;
-            min-height: 140px;
+            position: absolute !important;
+            inset: 0 !important;
             width: 100% !important;
             height: 100% !important;
-            order: 2;
-        }
-        .bowling-page .bowling-stats-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.35rem;
-            order: 1;
-            flex-shrink: 0;
-            padding: 0.2rem 0.35rem 0;
-            z-index: 30;
-        }
-        .bowling-page .bowling-bottom-bar {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-            order: 3;
-            flex-shrink: 0;
-            padding: 0 0.35rem 0.25rem;
-            z-index: 30;
-        }
-        .bowling-page .bowling-bottom-tools {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.35rem;
+            flex: unset !important;
+            min-height: unset !important;
+            order: unset !important;
         }
         .bowling-page .hud-scoreboard {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
+            position: absolute !important;
+            top: 0.3rem !important;
+            left: 50% !important;
             right: auto !important;
             bottom: auto !important;
-            transform: none !important;
+            transform: translateX(-50%) !important;
             translate: none !important;
-            order: 0;
-            width: calc(100% - 0.7rem) !important;
-            max-width: 18rem !important;
-            margin: 0.25rem auto 0 !important;
-            flex-shrink: 0;
-            padding: 0.25rem 0.4rem !important;
+            width: min(calc(100% - 0.6rem), 18.5rem) !important;
+            max-width: 96vw !important;
+            margin: 0 !important;
+            padding: 0.22rem 0.35rem !important;
+            z-index: 30;
         }
-        .bowling-page .bowling-stats-bar { order: 1; }
-        .bowling-page #bowling-canvas { order: 2; }
-        .bowling-page .bowling-bottom-bar { order: 3; }
-        .bowling-page .bowling-stats-bar .hud-coins-bar,
-        .bowling-page .bowling-stats-bar .hud-top-right {
-            position: relative !important;
-            top: auto !important;
+        .bowling-page .hud-top-right {
+            position: absolute !important;
+            top: 2.35rem !important;
+            right: 0.35rem !important;
             left: auto !important;
-            right: auto !important;
             bottom: auto !important;
             transform: none !important;
             translate: none !important;
         }
-        .bowling-page .hud-stella-block { display: none !important; }
-        .bowling-page .hud-player-block { display: none !important; }
-        .bowling-page .hud-top-right .hud-score-num { font-size: 1.2rem; }
-        .bowling-page .hud-top-right .hud-panel-pad { padding: 0.3rem 0.5rem; }
-        .bowling-page .hud-top-right .hud-pin-mini { width: 2.2rem; padding: 0.25rem; }
-        .bowling-page .hud-coins-bar { padding: 0.28rem 0.5rem !important; }
-        .bowling-page .hud-coins-bar .hud-coins-icon { font-size: 0.95rem; }
-        .bowling-page .hud-coins-bar .hud-coins-num { font-size: 0.85rem; }
-        .bowling-page .bowling-bottom-tools .hud-ball-picker,
-        .bowling-page .bowling-bottom-tools .hud-side-controls {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
+        .bowling-page .hud-coins-bar {
+            position: absolute !important;
+            top: 2.35rem !important;
+            left: 0.35rem !important;
             right: auto !important;
             bottom: auto !important;
+            transform: none !important;
+            translate: none !important;
+            padding: 0.25rem 0.5rem !important;
+        }
+        .bowling-page .hud-stella-block,
+        .bowling-page .hud-player-block {
+            display: none !important;
+        }
+        .bowling-page .hud-top-right .hud-score-num { font-size: 1.05rem; }
+        .bowling-page .hud-top-right .hud-panel-pad { padding: 0.25rem 0.45rem; }
+        .bowling-page .hud-top-right .hud-pin-mini { width: 2rem; padding: 0.2rem; }
+        .bowling-page .hud-coins-bar .hud-coins-icon { font-size: 0.88rem; }
+        .bowling-page .hud-coins-bar .hud-coins-num { font-size: 0.78rem; }
+        .bowling-page .hud-ball-picker {
+            position: absolute !important;
+            left: 0.35rem !important;
+            right: auto !important;
+            top: auto !important;
+            bottom: 2.55rem !important;
             transform: none !important;
             translate: none !important;
             flex-direction: row !important;
+            gap: 0.28rem !important;
         }
         .bowling-page .hud-ball-picker .hud-ball-btn {
-            width: 2.2rem;
-            height: 2.2rem;
+            width: 2.1rem;
+            height: 2.1rem;
         }
-        .bowling-page .hud-side-controls .hud-icon-btn {
-            width: 2.2rem;
-            height: 2.2rem;
-            font-size: 0.9rem;
-        }
-        .bowling-page .hud-frame-bottom {
-            position: relative !important;
-            top: auto !important;
+        .bowling-page .hud-side-controls {
+            position: absolute !important;
+            right: 0.35rem !important;
             left: auto !important;
-            right: auto !important;
-            bottom: auto !important;
+            top: auto !important;
+            bottom: 2.55rem !important;
             transform: none !important;
             translate: none !important;
-            justify-content: center;
-            gap: 0.35rem;
+            flex-direction: row !important;
+            gap: 0.28rem !important;
         }
-        .bowling-page .hud-frame-bottom .hud-text-sm { font-size: 0.68rem; }
-        .bowling-page .hud-frame-bottom .hud-panel-pad-sm { padding: 0.3rem 0.5rem; }
+        .bowling-page .hud-side-controls .hud-icon-btn {
+            width: 2.1rem;
+            height: 2.1rem;
+            font-size: 0.82rem;
+        }
+        .bowling-page .hud-frame-bottom {
+            position: absolute !important;
+            left: 50% !important;
+            right: auto !important;
+            bottom: 0.3rem !important;
+            transform: translateX(-50%) !important;
+            translate: none !important;
+            justify-content: center;
+            gap: 0.28rem;
+            flex-wrap: nowrap;
+        }
+        .bowling-page .hud-frame-bottom .hud-text-sm { font-size: 0.64rem; }
+        .bowling-page .hud-frame-bottom .hud-panel-pad-sm { padding: 0.22rem 0.42rem; }
         .bowling-page .hud-leaderboard {
             width: min(17rem, 88vw) !important;
         }
-        .bowling-page .hud-cheer { top: 3.5rem !important; font-size: 0.72rem; padding: 0.35rem 0.75rem; }
+        .bowling-page .hud-cheer {
+            top: 3rem !important;
+            font-size: 0.68rem;
+            padding: 0.28rem 0.6rem;
+        }
     }
 
     @media (max-width: 480px) {
@@ -464,11 +461,11 @@ document.addEventListener('DOMContentLoaded', () => {
         PROJ_BASE = S(310);
         const isMobileHud = window.innerWidth <= 860;
         if (isMobileHud) {
-            laneVanishRatio = 0.44;
-            laneDepthFactor = 0.34;
-            laneViewShift = ch * 0.06;
-            mobileLaneScale = 0.82;
-            mobileLaneYOffset = ch * 0.04;
+            laneVanishRatio = 0.26;
+            laneDepthFactor = 0.50;
+            laneViewShift = ch * 0.14;
+            mobileLaneScale = 0.92;
+            mobileLaneYOffset = 0;
         } else {
             laneVanishRatio = 0.22;
             laneDepthFactor = 0.62;
@@ -511,20 +508,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resizeCanvas() {
-        const isMobileHud = window.innerWidth <= 860;
-        let w, h;
-        if (isMobileHud) {
-            const rect = canvas.getBoundingClientRect();
-            w = Math.max(2, Math.floor(rect.width));
-            h = Math.max(140, Math.floor(rect.height));
-            if (w < 10 || h < 10) {
-                w = stage.clientWidth || window.innerWidth;
-                h = Math.max(140, Math.floor((stage.clientHeight || window.innerHeight - 76) * 0.42));
-            }
-        } else {
-            w = stage.clientWidth;
-            h = stage.clientHeight;
-        }
+        let w = stage.clientWidth;
+        let h = stage.clientHeight;
         if (w < 2 || h < 2) {
             w = window.innerWidth;
             h = Math.max(400, window.innerHeight - 76);
