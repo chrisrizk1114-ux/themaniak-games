@@ -283,6 +283,27 @@
             font-size: 0.68rem;
             padding: 0.28rem 0.6rem;
         }
+        .bowling-page .bowling-mobile-hint {
+            display: block;
+            position: absolute;
+            left: 50%;
+            bottom: 5.1rem;
+            transform: translateX(-50%);
+            z-index: 35;
+            pointer-events: none;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.88);
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+            padding: 0.28rem 0.65rem;
+            white-space: nowrap;
+        }
+    }
+
+    .bowling-page .bowling-mobile-hint {
+        display: none;
     }
 
     @media (max-width: 480px) {
@@ -290,7 +311,7 @@
     }
 </style>
 
-<div class="bowling-page" data-build="20260611">
+<div class="bowling-page" data-build="20260612">
 <div class="game-shell">
     <div class="bowling-stage">
 
@@ -333,6 +354,8 @@
         </div>
 
         <canvas id="bowling-canvas" width="1100" height="688"></canvas>
+
+        <div class="bowling-mobile-hint" id="bowlingMobileHint">Swipe down on the ball to bowl</div>
 
         <div class="bowling-bottom-bar">
             <div class="bowling-bottom-tools">
@@ -434,8 +457,17 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('bowling-canvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
     const stage = canvas.parentElement;
+    let ctx = null;
+
+    function bindCtx() {
+        ctx = canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
+        return ctx;
+    }
+    if (!bindCtx()) {
+        console.error('Bowling: canvas 2D context unavailable');
+        return;
+    }
     const pinMini = document.getElementById('pin-mini');
     const pinMiniCtx = pinMini.getContext('2d');
 
@@ -520,6 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevScale = gameScale;
         canvas.width = w;
         canvas.height = h;
+        bindCtx();
         updateGameMetrics();
         if (prevScale > 0 && Math.abs(prevScale - gameScale) > 0.001 && (ball || pins.length)) {
             scaleWorld(gameScale / prevScale);
@@ -595,15 +628,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function project(x, y, z) {
         const depth = CAM_Z - z;
-        if (depth <= S(8)) return { x: canvas.width/2, y: canvas.height, scale: 0 };
+        if (!Number.isFinite(depth) || depth <= S(8)) {
+            return { x: canvas.width / 2, y: canvas.height, scale: 0 };
+        }
         const scale = PROJ_BASE / depth;
         const t = Math.max(0, Math.min(1, (z - Z_NEAR) / (Z_FAR - Z_NEAR)));
         const laneScale = mobileLaneScale;
-        return {
-            x: canvas.width / 2 + x * scale * laneScale,
-            y: VANISH_Y() + t * (canvas.height * laneDepthFactor) + (y || 0) * scale * 0.9 + mobileLaneYOffset,
-            scale: scale * laneScale
-        };
+        const px = canvas.width / 2 + x * scale * laneScale;
+        const py = VANISH_Y() + t * (canvas.height * laneDepthFactor) + (y || 0) * scale * 0.9 + mobileLaneYOffset;
+        if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(scale)) {
+            return { x: canvas.width / 2, y: canvas.height * 0.5, scale: 0.01 };
+        }
+        return { x: px, y: py, scale: scale * laneScale };
     }
 
     function quad(x1,z1, x2,z2, x3,z3, x4,z4) {
@@ -1134,6 +1170,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getCanvasPos(clientX, clientY) {
         const rect = canvas.getBoundingClientRect();
+        if (rect.width < 1 || rect.height < 1) {
+            return { x: canvas.width / 2, y: canvas.height * 0.82 };
+        }
         const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
         return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
     }
@@ -1400,12 +1439,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawPillarsAndCeiling() {
         [-LANE_W-S(55), LANE_W+S(55)].forEach(lx => {
             const top = project(lx, 0, S(480)), bot = project(lx, 0, S(-30));
+            const pillarY = Math.min(top.y, bot.y);
+            const pillarH = Math.max(1, Math.abs(bot.y - top.y));
             const g = ctx.createLinearGradient(top.x, top.y, bot.x, bot.y);
             g.addColorStop(0,'#e2e8f0'); g.addColorStop(0.5,'#94a3b8'); g.addColorStop(1,'#475569');
             ctx.fillStyle=g;
-            ctx.fillRect(top.x-8, top.y, 16, bot.y-top.y);
+            ctx.fillRect(top.x-8, pillarY, 16, pillarH);
             ctx.fillStyle='rgba(124,58,237,0.15)';
-            ctx.fillRect(top.x-10, top.y, 20, (bot.y-top.y)*0.6);
+            ctx.fillRect(top.x-10, pillarY, 20, pillarH * 0.6);
         });
         const ceilL = project(-canvas.width*0.3, 0, 500);
         const ceilR = project(canvas.width*0.3, 0, 500);
@@ -2022,33 +2063,58 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText('Tap New Game to play again', canvas.width/2, canvas.height/2+S(85));
     }
 
-    function draw() {
+    function drawFallbackScene() {
+        const w = canvas.width, h = canvas.height;
+        const bg = ctx.createLinearGradient(0, 0, 0, h);
+        bg.addColorStop(0, '#1e1b4b');
+        bg.addColorStop(0.5, '#312e81');
+        bg.addColorStop(1, '#0f172a');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+
+        const topY = h * 0.2, botY = h * 0.88;
+        const topW = w * 0.11, botW = w * 0.4;
+        const cx = w / 2;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(cx - botW - 12, topY, (botW + 12) * 2, botY - topY + 8);
+        ctx.fillStyle = '#c9a66b';
+        ctx.beginPath();
+        ctx.moveTo(cx - topW, topY);
+        ctx.lineTo(cx + topW, topY);
+        ctx.lineTo(cx + botW, botY);
+        ctx.lineTo(cx - botW, botY);
+        ctx.closePath();
+        ctx.fill();
+
+        if (ball) {
+            const bx = cx, by = botY - h * 0.08;
+            ctx.fillStyle = '#4ade80';
+            ctx.beginPath();
+            ctx.arc(bx, by, Math.max(10, w * 0.035), 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function drawScene() {
         ctx.save();
         if (screenShake > 0.5) {
             const shake = screenShake;
             ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
         }
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#0a0a14';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Floor / ambient
         const floorG=ctx.createLinearGradient(0,canvas.height*0.5,0,canvas.height);
         floorG.addColorStop(0,'#1a1035'); floorG.addColorStop(1,'#0a0a14');
         ctx.fillStyle=floorG; ctx.fillRect(0,0,canvas.width,canvas.height);
 
         drawCosmicWindow();
         drawPillarsAndCeiling();
-
-        // Side lanes
         drawLaneSurface(-LANE_W*2.2, false);
         drawLaneSurface(LANE_W*2.2, false);
-
-        // Main lane
         drawLaneSurface(0, true);
-
-        // Pinsetter behind pins
         drawPinsetter();
 
-        // Objects back-to-front
         const pinList = pinsetter.phase === 'place' ? pinsetter.placing : pins;
         const objs = [
             ...pinList.map(p => ({ type: 'pin', z: p.z, obj: p })),
@@ -2063,6 +2129,20 @@ document.addEventListener('DOMContentLoaded', () => {
         drawAimLine();
         drawGameOver();
         ctx.restore();
+    }
+
+    function draw() {
+        if (!ctx || canvas.width < 2 || canvas.height < 2) return;
+        try {
+            drawScene();
+        } catch (err) {
+            console.error('Bowling draw failed, using fallback:', err);
+            try {
+                drawFallbackScene();
+            } catch (fallbackErr) {
+                console.error('Bowling fallback draw failed:', fallbackErr);
+            }
+        }
     }
 
     function drawSkinPreviews() {
@@ -2115,8 +2195,19 @@ document.addEventListener('DOMContentLoaded', () => {
             draw();
         } catch (err) {
             console.error('Bowling render error:', err);
+            try { drawFallbackScene(); } catch (_) {}
         }
         requestAnimationFrame(gameLoop);
+    }
+
+    function tickBowling() {
+        try {
+            update();
+            draw();
+        } catch (err) {
+            console.error('Bowling tick error:', err);
+            try { drawFallbackScene(); } catch (_) {}
+        }
     }
 
     // Events
@@ -2198,19 +2289,45 @@ document.addEventListener('DOMContentLoaded', () => {
         GameLeaderboard.mount('#bowling-leaderboard', 'galaxy-bowling');
     }
 
-    function bootGame() {
+    function startBowling() {
+        if (window._bowlingBooted) {
+            resizeCanvas();
+            initStars();
+            draw();
+            return;
+        }
+        if (stage.clientWidth < 8 || stage.clientHeight < 8) return;
+
+        window._bowlingBooted = true;
         resizeCanvas();
         initStars();
         drawSkinPreviews();
         resetGame();
         draw();
+
         if (!window._bowlingLoopStarted) {
             window._bowlingLoopStarted = true;
-            gameLoop();
+            const isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+            if (isTouchDevice) {
+                setInterval(tickBowling, 33);
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
         }
     }
 
-    requestAnimationFrame(bootGame);
+    if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(() => startBowling()).observe(stage);
+    }
+    window.addEventListener('load', startBowling);
+    window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+            resizeCanvas();
+            initStars();
+            draw();
+        }, 200);
+    });
+    startBowling();
 });
 </script>
 @endsection
