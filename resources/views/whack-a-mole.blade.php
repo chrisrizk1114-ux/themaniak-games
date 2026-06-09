@@ -178,21 +178,17 @@
         flex: 1 1 auto;
         min-height: 0;
         position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         width: 100%;
-        padding: 0 clamp(0.5rem, 2vw, 1rem);
     }
 
     .whack-arena {
-        flex: 0 0 auto;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
         display: flex;
         align-items: center;
         justify-content: center;
-        max-width: 100%;
-        margin: 0 auto;
-        padding-right: min(250px, 27vw);
     }
 
     .board-frame {
@@ -510,7 +506,10 @@
             --hole: min(96px, calc((100svh - var(--nav-h) - 260px) / 3), calc((100vw - 40px) / 3));
         }
         .whack-arena {
-            padding-right: 0;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            max-width: calc(100vw - 1rem);
         }
         .hud-row {
             gap: 0.3rem;
