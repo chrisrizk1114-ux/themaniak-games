@@ -231,7 +231,7 @@
         cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E🔨%3C/text%3E%3C/svg%3E") 16 16, pointer;
         border-radius: 50%;
         -webkit-tap-highlight-color: transparent;
-        touch-action: none;
+        touch-action: manipulation;
     }
 
     .hole-pit {
@@ -281,6 +281,7 @@
 
     .mole.up {
         bottom: 2%;
+        pointer-events: auto;
     }
 
     .mole.whacked {
@@ -479,13 +480,24 @@
 
     @media (max-width: 600px) {
         .whack-page {
-            --hole: min(calc((100svh - var(--nav-h) - 200px) / 3), calc((100vw - 24px) / 3));
+            --hole: min(96px, calc((100svh - var(--nav-h) - 150px) / 3), calc((100vw - 20px) / 3));
         }
         .whack-arena {
-            padding: 5.5rem 0.35rem 4.5rem;
+            padding: 5rem 0.25rem 4rem;
+        }
+        .hud-row {
+            gap: 0.3rem;
+        }
+        .hud-pill {
+            padding: 0.35rem 0.65rem;
+            font-size: 0.78rem;
         }
         .board-frame::before { display: none; }
         .whack-subtitle { display: none; }
+        .whack-btn {
+            min-height: 48px;
+            min-width: 48px;
+        }
     }
 </style>
 
@@ -535,7 +547,7 @@
     <div id="startOverlay" class="overlay">
         <div class="overlay-card">
             <h2>🔨 Mole Mayhem</h2>
-            <p>Tap the mice as they pop up! Build combos for bonus points.</p>
+            <p>Tap the holes when mice pop up! Build combos for bonus points.</p>
             <button class="whack-btn whack-btn-primary" id="startOverlayBtn" type="button">Let's Whack! →</button>
         </div>
     </div>
@@ -799,10 +811,10 @@ document.addEventListener('DOMContentLoaded', () => {
     playAgainBtn.addEventListener('click', startGame);
     holes.forEach(hole => {
         hole.addEventListener('pointerdown', e => {
-            if (e.pointerType !== 'mouse') return;
+            if (!gameRunning) return;
             e.preventDefault();
             handleHoleClick(hole);
-        });
+        }, { passive: false });
     });
     soundBtn.addEventListener('click', () => {
         GameSounds.init();

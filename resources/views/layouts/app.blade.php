@@ -747,9 +747,66 @@
                 transition-duration: 0.01ms !important;
             }
         }
+
+        #site-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            background: linear-gradient(165deg, #050510 0%, #0c0c22 45%, #080818 100%);
+            color: #fff;
+            font-family: 'Rajdhani', Arial, sans-serif;
+            transition: opacity 0.25s ease;
+        }
+
+        #site-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #site-loader-icon {
+            font-size: 2.5rem;
+            animation: loader-pulse 1.2s ease-in-out infinite;
+        }
+
+        #site-loader-text {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.85);
+        }
+
+        @keyframes loader-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
     </style>
 </head>
 <body>
+    <div id="site-loader" aria-live="polite" aria-busy="true">
+        <span id="site-loader-icon">🎮</span>
+        <span id="site-loader-text">Loading The Maniak…</span>
+    </div>
+    <script>
+        (function () {
+            const hide = () => {
+                const el = document.getElementById('site-loader');
+                if (!el) return;
+                el.classList.add('hidden');
+                el.setAttribute('aria-busy', 'false');
+                setTimeout(() => el.remove(), 300);
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', hide, { once: true });
+            } else {
+                hide();
+            }
+        })();
+    </script>
     @php
         $games = [
             ['url' => '/galaxy-bowling', 'icon' => '🎳', 'name' => 'Galaxy Bowling', 'tag' => 'Sports', 'class' => 'bowling', 'path' => 'galaxy-bowling'],

@@ -173,30 +173,6 @@
         text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
 
-    .legend {
-        display: flex;
-        justify-content: center;
-        gap: clamp(0.75rem, 2vw, 1.2rem);
-        flex-wrap: wrap;
-    }
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: white;
-        font-weight: bold;
-        font-size: 0.9rem;
-    }
-    .legend-box {
-        width: 28px;
-        height: 28px;
-        border-radius: 5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        border: 2px solid rgba(0,0,0,0.3);
-    }
     .game-title {
         font-size: clamp(1.4rem, 3.5vw, 2rem);
         margin: 0 0 0.75rem;
@@ -206,16 +182,76 @@
         background-clip: text;
     }
 
+    .legend {
+        display: flex;
+        justify-content: center;
+        gap: clamp(0.4rem, 1.5vw, 0.85rem);
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: clamp(0.72rem, 2vw, 0.88rem);
+        letter-spacing: 0.02em;
+        border: 2px solid transparent;
+    }
+    .legend-item--snake {
+        color: #fecaca;
+        background: rgba(239, 68, 68, 0.22);
+        border-color: rgba(239, 68, 68, 0.55);
+    }
+    .legend-item--ladder {
+        color: #fef3c7;
+        background: rgba(251, 191, 36, 0.22);
+        border-color: rgba(251, 191, 36, 0.55);
+    }
+    .legend-item--tile {
+        color: #bbf7d0;
+        background: rgba(34, 197, 94, 0.18);
+        border-color: rgba(74, 222, 128, 0.45);
+    }
+    .legend-box {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        border: 2px solid rgba(0,0,0,0.25);
+        flex-shrink: 0;
+    }
+    .snl-rules {
+        color: rgba(255,255,255,0.82);
+        font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+        line-height: 1.45;
+        margin: 0 0 1rem;
+        padding: 0.65rem 0.85rem;
+        border-radius: 12px;
+        background: rgba(0,0,0,0.25);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .snl-rules strong { color: #fbbf24; }
+
     @media (max-width: 600px) {
-        .legend { display: none; }
         .snl-shell:has(#gameArea.active) {
             padding: 0.25rem 0.35rem 0.35rem;
         }
+        .snl-hud .game-title { font-size: 1.15rem; margin-bottom: 0.15rem; }
+        .status { font-size: 0.88rem; line-height: 1.35; }
+        .legend-item { font-size: 0.72rem; padding: 0.35rem 0.6rem; }
         .roll-btn, .player-count-btn, #soundBtn {
-            min-height: 44px;
-            min-width: 44px;
+            min-height: 48px;
+            min-width: 48px;
+            font-size: 1rem;
         }
         .controls-row { flex-wrap: wrap; justify-content: center; }
+        .dice-display { font-size: 2.75rem; }
     }
 </style>
 
@@ -223,6 +259,7 @@
     <div class="snl-shell">
         <div class="player-select" id="playerSelect">
             <h1 class="game-title">Snakes &amp; Ladders 3D 🎲🐍🧗</h1>
+            <p class="snl-rules"><strong>🐍 Red tiles</strong> = snake (slide down) · <strong>🧗 Gold tiles</strong> = ladder (climb up) · First to <strong>100</strong> wins!</p>
             <h2>How many players?</h2>
             <div class="player-count-btns">
                 <button class="player-count-btn" onclick="startGame(1)">1 Player</button>
@@ -249,17 +286,17 @@
                     <button class="player-count-btn" id="soundBtn" type="button">🔊</button>
                 </div>
                 <div class="legend">
-                    <div class="legend-item">
+                    <div class="legend-item legend-item--tile">
                         <div class="legend-box" style="background:linear-gradient(135deg,#86efac,#22c55e);border-color:#15803d;">1</div>
-                        <span>Tile</span>
+                        <span>Normal tile</span>
                     </div>
-                    <div class="legend-item">
+                    <div class="legend-item legend-item--ladder">
                         <div class="legend-box" style="background:linear-gradient(135deg,#fde047,#ca8a04);border-color:#a16207;">🧗</div>
-                        <span>Ladder</span>
+                        <span>Ladder ↑ climb</span>
                     </div>
-                    <div class="legend-item">
+                    <div class="legend-item legend-item--snake">
                         <div class="legend-box" style="background:linear-gradient(135deg,#f87171,#dc2626);border-color:#991b1b;">🐍</div>
-                        <span>Snake</span>
+                        <span>Snake ↓ slide</span>
                     </div>
                 </div>
             </div>
@@ -420,6 +457,16 @@
             ctx.strokeRect(t.x - 1, t.y - 1, t.w + 2, t.h + 2);
         }
 
+        if (t.type === 'snake') {
+            ctx.strokeStyle = 'rgba(239,68,68,0.9)';
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(t.x + 1, t.y + 1, t.w - 2, t.h - 2);
+        } else if (t.type === 'ladder') {
+            ctx.strokeStyle = 'rgba(251,191,36,0.95)';
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(t.x + 1, t.y + 1, t.w - 2, t.h - 2);
+        }
+
         ctx.fillStyle = 'rgba(0,0,0,0.55)';
         ctx.font = `bold ${Math.max(9, t.w * 0.22)}px Arial`;
         ctx.textAlign = 'left';
@@ -427,18 +474,24 @@
         ctx.fillText(t.num, t.x + 4, t.y + 3);
 
         if (t.type === 'snake') {
-            ctx.font = `${Math.max(10, t.w * 0.28)}px Arial`;
+            ctx.font = `${Math.max(12, t.w * 0.34)}px Arial`;
             ctx.textAlign = 'center';
-            ctx.fillText('🐍', t.cx, t.y + t.h * 0.38);
-            ctx.font = `bold ${Math.max(7, t.w * 0.16)}px Arial`;
-            ctx.fillStyle = '#7f1d1d';
+            ctx.fillText('🐍', t.cx, t.y + t.h * 0.36);
+            ctx.font = `bold ${Math.max(9, t.w * 0.2)}px Arial`;
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#7f1d1d';
+            ctx.lineWidth = 3;
+            ctx.strokeText(`↓${snakes[t.num]}`, t.cx, t.y + t.h * 0.72);
             ctx.fillText(`↓${snakes[t.num]}`, t.cx, t.y + t.h * 0.72);
         } else if (t.type === 'ladder') {
-            ctx.font = `${Math.max(10, t.w * 0.28)}px Arial`;
+            ctx.font = `${Math.max(12, t.w * 0.34)}px Arial`;
             ctx.textAlign = 'center';
-            ctx.fillText('🧗', t.cx, t.y + t.h * 0.38);
-            ctx.font = `bold ${Math.max(7, t.w * 0.16)}px Arial`;
-            ctx.fillStyle = '#78350f';
+            ctx.fillText('🧗', t.cx, t.y + t.h * 0.36);
+            ctx.font = `bold ${Math.max(9, t.w * 0.2)}px Arial`;
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 3;
+            ctx.strokeText(`↑${ladders[t.num]}`, t.cx, t.y + t.h * 0.72);
             ctx.fillText(`↑${ladders[t.num]}`, t.cx, t.y + t.h * 0.72);
         }
 
@@ -450,6 +503,7 @@
         const b = boardTiles[toNum];
         if (!a || !b) return;
 
+        const thick = canvas.width < 520 ? 1.45 : 1;
         const ax = a.cx, ay = a.cy;
         const bx = b.cx, by = b.cy;
         const dx = bx - ax, dy = by - ay;
@@ -462,7 +516,7 @@
         railGrad.addColorStop(1, '#92400e');
 
         ctx.lineCap = 'round';
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 5 * thick;
         ctx.strokeStyle = railGrad;
         ctx.shadowColor = 'rgba(0,0,0,0.4)';
         ctx.shadowBlur = 6;
@@ -479,7 +533,7 @@
         for (let i = 1; i < rungs; i++) {
             const t = i / rungs;
             const rx = ax + dx * t, ry = ay + dy * t;
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 4 * thick;
             ctx.strokeStyle = '#fbbf24';
             ctx.beginPath();
             ctx.moveTo(rx + nx, ry + ny);
@@ -488,9 +542,9 @@
         }
 
         ctx.fillStyle = '#fef3c7';
-        ctx.font = 'bold 11px Arial';
+        ctx.font = `bold ${Math.round(11 * thick)}px Arial`;
         ctx.textAlign = 'center';
-        ctx.fillText('LADDER', (ax + bx) / 2, (ay + by) / 2 - 6);
+        ctx.fillText('🧗 LADDER', (ax + bx) / 2, (ay + by) / 2 - 6);
     }
 
     function drawSnake3D(fromNum, toNum) {
@@ -498,6 +552,7 @@
         const b = boardTiles[toNum];
         if (!a || !b) return;
 
+        const thick = canvas.width < 520 ? 1.45 : 1;
         const ax = a.cx, ay = a.cy;
         const bx = b.cx, by = b.cy;
         const mx = (ax + bx) / 2 + (by - ay) * 0.15;
@@ -508,7 +563,7 @@
         ctx.lineJoin = 'round';
 
         ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-        ctx.lineWidth = 16;
+        ctx.lineWidth = 16 * thick;
         ctx.beginPath();
         ctx.moveTo(ax, ay);
         ctx.quadraticCurveTo(mx, my, bx, by);
@@ -519,7 +574,7 @@
         sg.addColorStop(0.5, '#22c55e');
         sg.addColorStop(1, '#dc2626');
         ctx.strokeStyle = sg;
-        ctx.lineWidth = 12;
+        ctx.lineWidth = 12 * thick;
         ctx.beginPath();
         ctx.moveTo(ax, ay);
         ctx.quadraticCurveTo(mx, my, bx, by);
@@ -561,10 +616,10 @@
 
         ctx.restore();
 
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font = 'bold 10px Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = `bold ${Math.round(11 * thick)}px Arial`;
         ctx.textAlign = 'center';
-        ctx.fillText('SNAKE', mx, my - 8);
+        ctx.fillText('🐍 SNAKE', mx, my - 8);
     }
 
     function drawPlayerToken(cx, cy, color, num, elevated = 0) {

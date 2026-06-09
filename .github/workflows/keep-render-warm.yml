@@ -2,17 +2,22 @@ name: Keep site awake
 
 on:
   schedule:
-    # Render free tier sleeps after ~15 min idle — ping every 10 minutes.
-    - cron: '*/10 * * * *'
+    # Render free tier sleeps after ~15 min idle — ping every 5 minutes.
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
-      - name: Warm health check
-        run: curl -fsS --max-time 90 "https://themaniak.online/up" >/dev/null
+      - name: Warm themaniak.online
+        run: |
+          set -e
+          for path in /up / /board-game /whack-a-mole /login; do
+            curl -fsS --max-time 90 "https://themaniak.online${path}" >/dev/null &
+          done
+          wait
 
-      - name: Warm home page
-        run: curl -fsS --max-time 90 "https://themaniak.online/" >/dev/null
+      - name: Warm Render direct URL
+        run: curl -fsS --max-time 90 "https://themaniak-games.onrender.com/up" >/dev/null
