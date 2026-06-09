@@ -108,7 +108,7 @@ button,
     font-size: 1.5rem;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 960px), (hover: none) and (pointer: coarse) {
     .chess-page .chess-turn-row .mobile-clock,
     .chess-page .chess-turn-row .mobile-clock.active,
     .chess-page #black-timer-mobile,

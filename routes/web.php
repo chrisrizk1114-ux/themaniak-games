@@ -97,7 +97,10 @@ Route::middleware(['auth', 'owner'])->prefix('owner')->name('owner.')->group(fun
 });
 
 Route::get('/galaxy-bowling', function () {
-    return view('galaxy-bowling');
+    return response()
+        ->view('galaxy-bowling')
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache');
 });
 
 Route::get('/game', function () {
@@ -156,14 +159,17 @@ Route::get('/chess', function () {
             ->get();
     }
 
-    return view('chess', [
+    return response()
+        ->view('chess', [
         'friends' => $friends,
         'chessUserId' => $user?->id,
         'chessUserName' => $user?->name,
         'incomingChessInvites' => $incomingChessInvites,
         'outgoingChessInvites' => $outgoingChessInvites,
         'openChessRooms' => $openChessRooms,
-    ]);
+    ])
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache');
 });
 
 Route::get('/uno', function () {

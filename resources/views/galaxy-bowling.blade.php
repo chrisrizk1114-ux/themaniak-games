@@ -74,7 +74,10 @@
         width: 100%;
         height: 100%;
         display: block;
+        z-index: 1;
+        background: #0a0a14;
     }
+    .game-overlay-hidden { display: none !important; }
     .bowling-stage {
         --game-scale: 1;
     }
@@ -168,7 +171,7 @@
     .hud-cheer { top: calc(4rem * var(--game-scale)); font-size: calc(0.875rem * var(--game-scale)); padding: calc(0.5rem * var(--game-scale)) calc(1.25rem * var(--game-scale)); }
     .score-frame-cell { min-width: calc(3.1rem * var(--game-scale)); }
 
-    @media (max-width: 860px) {
+    @media (max-width: 960px), (hover: none) and (pointer: coarse) {
         .bowling-page .bowling-stage {
             --game-scale: 0.55;
         }
@@ -287,7 +290,7 @@
     }
 </style>
 
-<div class="bowling-page">
+<div class="bowling-page" data-build="20260611">
 <div class="game-shell">
     <div class="bowling-stage">
 
@@ -370,15 +373,15 @@
         </div>
 
         <!-- Stella cheer -->
-        <div id="stella-cheer" class="hidden absolute hud-cheer left-1/2 -translate-x-1/2 z-30 rounded-full border border-pink-400/50 bg-pink-500/25 backdrop-blur text-pink-100 font-semibold">
+        <div id="stella-cheer" class="game-overlay-hidden absolute hud-cheer left-1/2 -translate-x-1/2 z-30 rounded-full border border-pink-400/50 bg-pink-500/25 backdrop-blur text-pink-100 font-semibold">
             ✨ Stella approves! Legendary bowling!
         </div>
 
         <!-- Strike flash -->
-        <div id="strike-flash" class="hidden absolute inset-0 z-20 pointer-events-none bg-gradient-to-b from-green-400/25 to-transparent"></div>
+        <div id="strike-flash" class="game-overlay-hidden absolute inset-0 z-20 pointer-events-none bg-gradient-to-b from-green-400/25 to-transparent"></div>
 
         <!-- Pause overlay -->
-        <div id="pause-overlay" class="hidden absolute inset-0 z-40 bg-black/60 flex items-center justify-center">
+        <div id="pause-overlay" class="game-overlay-hidden absolute inset-0 z-40 bg-black/60 flex items-center justify-center">
             <div class="text-center">
                 <div class="hud-pause-title font-black text-white mb-4">PAUSED</div>
                 <button id="resume-btn" class="hud-pause-btn bg-cyan-500 rounded-xl font-bold hover:bg-cyan-400">Resume</button>
@@ -386,7 +389,7 @@
         </div>
 
         <!-- Leaderboard slide panel -->
-        <div id="leaderboard-panel" class="hidden absolute top-0 right-0 h-full hud-leaderboard z-50 leaderboard-panel hud-panel border-l border-cyan-500/30 overflow-y-auto">
+        <div id="leaderboard-panel" class="game-overlay-hidden absolute top-0 right-0 h-full hud-leaderboard z-50 leaderboard-panel hud-panel border-l border-cyan-500/30 overflow-y-auto">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-lg font-bold text-fuchsia-300">🏆 Top 3 Players</h2>
                 <button id="close-leaderboard" class="text-gray-400 hover:text-white text-xl">&times;</button>
@@ -431,7 +434,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('bowling-canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     const stage = canvas.parentElement;
     const pinMini = document.getElementById('pin-mini');
     const pinMiniCtx = pinMini.getContext('2d');
@@ -459,12 +462,12 @@ document.addEventListener('DOMContentLoaded', () => {
         Z_NEAR = S(45);
         Z_FAR = S(470);
         PROJ_BASE = S(310);
-        const isMobileHud = window.innerWidth <= 860;
+        const isMobileHud = window.innerWidth <= 960 || window.matchMedia('(hover: none) and (pointer: coarse)').matches;
         if (isMobileHud) {
-            laneVanishRatio = 0.26;
-            laneDepthFactor = 0.50;
-            laneViewShift = ch * 0.14;
-            mobileLaneScale = 0.92;
+            laneVanishRatio = 0.24;
+            laneDepthFactor = 0.54;
+            laneViewShift = ch * 0.10;
+            mobileLaneScale = 0.95;
             mobileLaneYOffset = 0;
         } else {
             laneVanishRatio = 0.22;
@@ -907,9 +910,9 @@ document.addEventListener('DOMContentLoaded', () => {
         pinsetter = { phase: 'idle', timer: 0, sweepX: S(-220), placing: [] };
         canBowl = true; needFullRack = false; pinsKnockedThisRoll = 0; standingAtRollStart = 10;
         rollTrail = [];
-        pauseOverlay.classList.add('hidden');
-        stellaCheerEl.classList.add('hidden');
-        strikeFlashEl.classList.add('hidden');
+        pauseOverlay.classList.add('game-overlay-hidden');
+        stellaCheerEl.classList.add('game-overlay-hidden');
+        strikeFlashEl.classList.add('game-overlay-hidden');
         initScoreboard(); initPins(); resetBall(); updateScore(); drawPinMini();
     }
 
@@ -1122,12 +1125,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function showStellaCheer() {
         if (stellaCheerShown || totalScore < 150) return;
         stellaCheerShown = true;
-        stellaCheerEl.classList.remove('hidden');
+        stellaCheerEl.classList.remove('game-overlay-hidden');
         launchConfetti();
         playSound('cheer');
     }
 
-    function flashStrike() { strikeFlashTimer = 18; strikeFlashEl.classList.remove('hidden'); }
+    function flashStrike() { strikeFlashTimer = 18; strikeFlashEl.classList.remove('game-overlay-hidden'); }
 
     function getCanvasPos(clientX, clientY) {
         const rect = canvas.getBoundingClientRect();
@@ -1214,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function update() {
         if (paused || gameOver) return;
         animFrame++;
-        if (strikeFlashTimer>0) { strikeFlashTimer--; if (!strikeFlashTimer) strikeFlashEl.classList.add('hidden'); }
+        if (strikeFlashTimer>0) { strikeFlashTimer--; if (!strikeFlashTimer) strikeFlashEl.classList.add('game-overlay-hidden'); }
 
         if (screenShake > 0) screenShake *= 0.82;
         if (ball && ball.squash > 0) ball.squash--;
@@ -2107,8 +2110,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function gameLoop() {
-        update();
-        draw();
+        try {
+            update();
+            draw();
+        } catch (err) {
+            console.error('Bowling render error:', err);
+        }
         requestAnimationFrame(gameLoop);
     }
 
@@ -2163,16 +2170,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    pauseBtn.addEventListener('click', () => { initAudio(); playSound('click'); paused=true; pauseOverlay.classList.remove('hidden'); });
-    resumeBtn.addEventListener('click', () => { initAudio(); playSound('click'); paused=false; pauseOverlay.classList.add('hidden'); });
+    pauseBtn.addEventListener('click', () => { initAudio(); playSound('click'); paused=true; pauseOverlay.classList.remove('game-overlay-hidden'); });
+    resumeBtn.addEventListener('click', () => { initAudio(); playSound('click'); paused=false; pauseOverlay.classList.add('game-overlay-hidden'); });
     soundBtn.addEventListener('click', () => {
         initAudio();
         soundOn=!soundOn;
         soundBtn.textContent = soundOn ? '🔊' : '🔇';
         if (soundOn) playSound('click');
     });
-    menuBtn.addEventListener('click', () => { initAudio(); playSound('click'); leaderboardPanel.classList.remove('hidden'); });
-    closeLeaderboard.addEventListener('click', () => { playSound('click'); leaderboardPanel.classList.add('hidden'); });
+    menuBtn.addEventListener('click', () => { initAudio(); playSound('click'); leaderboardPanel.classList.remove('game-overlay-hidden'); });
+    closeLeaderboard.addEventListener('click', () => { playSound('click'); leaderboardPanel.classList.add('game-overlay-hidden'); });
     resetBtn.addEventListener('click', () => { initAudio(); playSound('click'); resetGame(); });
 
     const savedSkin = localStorage.getItem(SKIN_KEY);
@@ -2192,17 +2199,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function bootGame() {
-        scheduleCanvasResize();
+        resizeCanvas();
         initStars();
         drawSkinPreviews();
         resetGame();
+        draw();
         if (!window._bowlingLoopStarted) {
             window._bowlingLoopStarted = true;
             gameLoop();
         }
     }
 
-    requestAnimationFrame(() => requestAnimationFrame(bootGame));
+    requestAnimationFrame(bootGame);
 });
 </script>
 @endsection

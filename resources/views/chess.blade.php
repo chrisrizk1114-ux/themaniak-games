@@ -606,7 +606,7 @@
             12vmin
         );
     }
-    @media (max-width: 860px) {
+    @media (max-width: 960px), (hover: none) and (pointer: coarse) {
         .chess-arena {
             grid-template-columns: 1fr;
             grid-template-rows: auto auto auto;
@@ -1002,7 +1002,7 @@
         transition: all 0.25s;
     }
 
-    @media (max-width: 860px) {
+    @media (max-width: 960px), (hover: none) and (pointer: coarse) {
         .chess-page .chess-turn-row .mobile-clock,
         .chess-page .chess-turn-row .mobile-clock.active {
             display: inline-flex !important;
@@ -1011,7 +1011,7 @@
         }
     }
 
-    @media (min-width: 861px) {
+    @media (min-width: 961px) and (hover: hover) and (pointer: fine) {
         .chess-page .mobile-clock {
             display: none !important;
         }
@@ -1154,7 +1154,7 @@
     }
 </style>
 
-<div class="chess-page">
+<div class="chess-page" data-build="20260611">
 <div class="game-container">
     <h1 class="chess-title">Royal Chess <span>♟</span></h1>
     
@@ -1256,9 +1256,9 @@
             <!-- CENTER: Board -->
             <div class="chess-board-col">
                 <div class="chess-turn-row">
-                    <span class="mobile-clock" id="black-timer-mobile">10:00</span>
+                    <span class="mobile-clock" id="black-timer-mobile" style="color:#fff!important;-webkit-text-fill-color:#fff!important">10:00</span>
                     <div class="status" id="status">White's Turn</div>
-                    <span class="mobile-clock" id="white-timer-mobile">10:00</span>
+                    <span class="mobile-clock" id="white-timer-mobile" style="color:#fff!important;-webkit-text-fill-color:#fff!important">10:00</span>
                 </div>
                 <div class="online-invite-bar" id="onlineInviteBar">
                     <span id="onlineInviteText"></span>
