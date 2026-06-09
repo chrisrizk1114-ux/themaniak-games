@@ -7,7 +7,7 @@
     <header class="owner-header">
         <div class="owner-badge">👑 Owner Panel</div>
         <h1 class="owner-title">Site Control</h1>
-        <p class="owner-subtitle">Manage The Maniak — users, friendships, and live stats.</p>
+        <p class="owner-subtitle">Manage Mini Games — users, friendships, and live stats.</p>
     </header>
 
     @include('owner.partials.nav')

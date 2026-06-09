@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#050510">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="description" content="The Maniak — free browser games at themaniak.online. Bowling, cards, chess, arcade & more.">
+    <meta name="description" content="Mini Games — free browser games at themaniak.online. Bowling, cards, chess, arcade & more.">
     <link rel="canonical" href="{{ url()->current() }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name')) — themaniak.online</title>
@@ -789,7 +789,7 @@
 <body>
     <div id="site-loader" aria-live="polite" aria-busy="true">
         <span id="site-loader-icon">🎮</span>
-        <span id="site-loader-text">Loading The Maniak…</span>
+        <span id="site-loader-text">Loading Mini Games…</span>
     </div>
     <script>
         (function () {

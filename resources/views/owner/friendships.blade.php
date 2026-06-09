@@ -7,7 +7,7 @@
     <header class="owner-header">
         <div class="owner-badge">👑 Owner Panel</div>
         <h1 class="owner-title">Friendships</h1>
-        <p class="owner-subtitle">All friend connections and pending requests on The Maniak.</p>
+        <p class="owner-subtitle">All friend connections and pending requests on Mini Games.</p>
     </header>
 
     @include('owner.partials.nav')

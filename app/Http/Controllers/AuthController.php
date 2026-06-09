@@ -73,7 +73,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect('/')->with('success', 'Welcome to The Maniak, '.$user->name.'!');
+        return redirect('/')->with('success', 'Welcome to Mini Games, '.$user->name.'!');
     }
 
     public function logout(Request $request): RedirectResponse

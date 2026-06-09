@@ -203,7 +203,7 @@
     <div class="auth-card">
         <span class="auth-badge">✨ Join the Arcade</span>
         <h1 class="auth-title">Create Account</h1>
-        <p class="auth-subtitle">Sign up free and unlock your player profile across all The Maniak games.</p>
+        <p class="auth-subtitle">Sign up free and unlock your player profile across all Mini Games.</p>
 
         <div class="auth-perks">
             <div class="auth-perk"><span>🏆</span> Save high scores</div>

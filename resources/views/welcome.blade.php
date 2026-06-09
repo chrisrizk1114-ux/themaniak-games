@@ -434,7 +434,7 @@
         <!-- Hero -->
         <section class="hero">
             <div class="hero-badge">🎮 <span>6 Games</span> · Zero Downloads</div>
-            <h1 class="hero-title">The Maniak</h1>
+            <h1 class="hero-title">Mini Games</h1>
             <p class="hero-sub">
                 Free games at <strong>themaniak.online</strong> — bowling, cards, puzzles, strategy &amp; more in your browser.
                 Every game has sound effects. Hit 🔊 in any game to toggle audio.
