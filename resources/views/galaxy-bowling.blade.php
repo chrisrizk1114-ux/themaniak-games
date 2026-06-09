@@ -126,16 +126,78 @@
     .score-frame-cell { min-width: calc(3.1rem * var(--game-scale)); }
 
     @media (max-width: 720px) {
+        .bowling-stage { --game-scale: 0.72; }
         .hud-stella-block { display: none !important; }
-        .hud-player-block { min-width: 0 !important; }
-        .hud-player-block .hud-text-sm { font-size: calc(0.8rem * var(--game-scale)); }
-        .hud-board { max-width: 92% !important; }
-        .hud-ball-picker { transform: scale(0.85); transform-origin: left center; }
+        .hud-player-block { display: none !important; }
+        .hud-scoreboard {
+            top: 0.35rem !important;
+            left: 0.35rem !important;
+            right: 0.35rem !important;
+            transform: none !important;
+            max-width: none !important;
+            width: auto !important;
+        }
+        .hud-top-right {
+            top: 2.6rem !important;
+            right: 0.35rem !important;
+            left: auto !important;
+            gap: 0.35rem !important;
+        }
+        .hud-top-right .hud-score-num { font-size: 1.35rem; }
+        .hud-top-right .hud-panel-pad { padding: 0.35rem 0.55rem; }
+        .hud-top-right .hud-pin-mini { width: 2.4rem; padding: 0.3rem; }
+        .hud-ball-picker {
+            top: auto !important;
+            bottom: 3.1rem !important;
+            left: 0.35rem !important;
+            transform: none !important;
+            flex-direction: row !important;
+        }
+        .hud-ball-picker .hud-ball-btn {
+            width: 2.35rem;
+            height: 2.35rem;
+        }
+        .hud-side-controls {
+            top: auto !important;
+            bottom: 3.1rem !important;
+            right: 0.35rem !important;
+            transform: none !important;
+            flex-direction: row !important;
+        }
+        .hud-side-controls .hud-icon-btn {
+            width: 2.35rem;
+            height: 2.35rem;
+            font-size: 0.95rem;
+        }
+        .hud-coins-bar {
+            top: 2.6rem !important;
+            bottom: auto !important;
+            left: 0.35rem !important;
+            right: auto !important;
+            padding: 0.3rem 0.55rem !important;
+        }
+        .hud-coins-bar .hud-coins-icon { font-size: 1rem; }
+        .hud-coins-bar .hud-coins-num { font-size: 0.9rem; }
+        .hud-frame-bottom {
+            bottom: 0.35rem !important;
+            left: 0.35rem !important;
+            right: 0.35rem !important;
+            justify-content: center;
+            gap: 0.35rem;
+        }
+        .hud-frame-bottom .hud-text-sm { font-size: 0.68rem; }
+        .hud-frame-bottom .hud-panel-pad-sm { padding: 0.3rem 0.5rem; }
+        .hud-leaderboard {
+            width: min(17rem, 88vw) !important;
+        }
+        .hud-cheer { top: 3.5rem !important; font-size: 0.72rem; padding: 0.35rem 0.75rem; }
     }
 
     @media (max-width: 480px) {
-        .hud-frame-bottom .hud-text-sm { font-size: 0.7rem; }
-        .hud-frame-bottom .hud-panel-pad-sm { padding: 0.35rem 0.6rem; }
+        .bowling-stage { --game-scale: 0.62; }
+        .hud-top-right { top: 2.45rem !important; }
+        .hud-ball-picker { bottom: 2.85rem !important; }
+        .hud-side-controls { bottom: 2.85rem !important; }
     }
 </style>
 
@@ -162,12 +224,12 @@
         </div>
 
         <!-- Frame scoreboard (top center) -->
-        <div class="absolute hud-t left-1/2 -translate-x-1/2 z-30 hud-panel rounded-lg hud-board max-w-[70%] overflow-x-auto">
+        <div class="absolute hud-t left-1/2 -translate-x-1/2 z-30 hud-panel rounded-lg hud-board hud-scoreboard max-w-[70%] overflow-x-auto">
             <div id="scoreboard-frames" class="flex gap-1"></div>
         </div>
 
         <!-- Top right HUD -->
-        <div class="absolute hud-t hud-r z-30 flex items-start hud-gap">
+        <div class="absolute hud-t hud-r z-30 flex items-start hud-gap hud-top-right">
             <div class="hud-panel rounded-xl hud-panel-pad text-center" style="min-width: calc(5.25rem * var(--game-scale))">
                 <div class="hud-score-num font-black text-yellow-400" id="score">0</div>
                 <div class="hud-score-lbl text-gray-400 uppercase mt-0.5">Score</div>
@@ -195,7 +257,7 @@
         </div>
 
         <!-- Right controls -->
-        <div class="absolute hud-r top-1/2 -translate-y-1/2 z-30 flex flex-col hud-gap">
+        <div class="absolute hud-r top-1/2 -translate-y-1/2 z-30 flex flex-col hud-gap hud-side-controls">
             <button id="pause-btn" class="hud-icon-btn rounded-xl hud-panel text-cyan-400 hover:bg-white/10 flex items-center justify-center" title="Pause">⏸</button>
             <button id="sound-btn" class="hud-icon-btn rounded-xl hud-panel text-gray-300 hover:bg-white/10 flex items-center justify-center" title="Sound">🔊</button>
             <button id="menu-btn" class="hud-icon-btn rounded-xl hud-panel text-cyan-400 hover:bg-white/10 flex items-center justify-center relative" title="Leaderboard">
@@ -205,7 +267,7 @@
         </div>
 
         <!-- Coins -->
-        <div class="absolute hud-b hud-r z-30 hud-panel rounded-full hud-panel-pad flex items-center hud-gap">
+        <div class="absolute hud-b hud-r z-30 hud-panel rounded-full hud-panel-pad flex items-center hud-gap hud-coins-bar">
             <span class="hud-coins-icon">🪙</span>
             <span class="hud-coins-num font-bold text-yellow-400" id="coins">800</span>
         </div>
@@ -306,7 +368,10 @@ document.addEventListener('DOMContentLoaded', () => {
         Z_NEAR = S(45);
         Z_FAR = S(470);
         PROJ_BASE = S(310);
-        const uiScale = Math.min(Math.max(gameScale * 1.18, 1.08), 1.65);
+        const isMobileHud = window.innerWidth <= 720;
+        const uiScale = isMobileHud
+            ? Math.min(Math.max(gameScale * 0.88, 0.58), 0.78)
+            : Math.min(Math.max(gameScale * 1.18, 1.08), 1.65);
         stage.style.setProperty('--game-scale', uiScale);
         const pinSize = Math.max(28, Math.round(40 * uiScale));
         pinMini.width = pinSize;
