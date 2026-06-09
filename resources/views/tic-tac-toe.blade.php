@@ -308,6 +308,18 @@
 
     .ttt-footer {
         display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.65rem;
+        margin-top: 1rem;
+    }
+
+    .ttt-lb-wrap {
+        width: min(320px, 100%);
+    }
+
+    .ttt-footer-actions {
+        display: flex;
         align-items: center;
         justify-content: center;
         gap: clamp(0.5rem, 2vw, 1rem);
@@ -490,10 +502,15 @@
         </div>
 
         <footer class="ttt-footer">
-            <span class="draws-pill">Draws: <strong id="scoreDraw">0</strong></span>
-            <button class="ttt-btn ttt-btn-primary" id="restartBtn" type="button">↻ New Round</button>
-            <button class="ttt-btn ttt-btn-ghost" id="resetScoresBtn" type="button">Reset Scores</button>
-            <button class="ttt-btn ttt-btn-ghost" id="soundBtn" type="button" title="Toggle sound">🔊</button>
+            <div class="ttt-lb-wrap">
+                @include('partials.game-leaderboard', ['game' => 'tic-tac-toe', 'id' => 'tttLeaderboard'])
+            </div>
+            <div class="ttt-footer-actions">
+                <span class="draws-pill">Draws: <strong id="scoreDraw">0</strong></span>
+                <button class="ttt-btn ttt-btn-primary" id="restartBtn" type="button">↻ New Round</button>
+                <button class="ttt-btn ttt-btn-ghost" id="resetScoresBtn" type="button">Reset Scores</button>
+                <button class="ttt-btn ttt-btn-ghost" id="soundBtn" type="button" title="Toggle sound">🔊</button>
+            </div>
         </footer>
     </div>
 
@@ -631,6 +648,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentPlayer === 'X') scores.x++;
             else scores.o++;
             updateScoreDisplay();
+            @auth
+            if (typeof GameLeaderboard !== 'undefined') {
+                GameLeaderboard.recordWin('tic-tac-toe').catch(() => {});
+            }
+            @endauth
             setTimeout(() => {
                 showResult(
                     `${currentPlayer} Wins! 🎉`,

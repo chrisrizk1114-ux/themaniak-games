@@ -1,6 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
+@once
+    @push('head')
+        <link rel="stylesheet" href="{{ asset('css/game-leaderboard.css') }}?v=20260608">
+        <script src="{{ asset('js/game-leaderboard.js') }}?v=20260608" defer></script>
+    @endpush
+@endonce
 <style>
     @keyframes stella-glow {
         0%, 100% { box-shadow: 0 0 20px rgba(236,72,153,0.5), inset 0 0 20px rgba(251,191,36,0.1); }
@@ -233,10 +239,12 @@
 
         <!-- Leaderboard slide panel -->
         <div id="leaderboard-panel" class="hidden absolute top-0 right-0 h-full hud-leaderboard z-50 leaderboard-panel hud-panel border-l border-cyan-500/30 overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-fuchsia-300">🏆 Pro Board</h2>
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-lg font-bold text-fuchsia-300">🏆 Top 3 Players</h2>
                 <button id="close-leaderboard" class="text-gray-400 hover:text-white text-xl">&times;</button>
             </div>
+
+            <div id="bowling-leaderboard" class="mb-4"></div>
 
             <div class="stella-card rounded-2xl border-2 border-pink-400/50 p-3 mb-4 bg-pink-500/10">
                 <div class="flex items-center gap-2 mb-2">
@@ -254,7 +262,10 @@
                 </div>
             </div>
 
-            <div id="pro-leaderboard" class="space-y-1.5 mb-4"></div>
+            <div class="border-t border-gray-600 pt-3 mb-4">
+                <h3 class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Arcade Rivals</h3>
+                <div id="pro-leaderboard" class="space-y-1.5"></div>
+            </div>
 
             <div class="border-t border-gray-600 pt-3">
                 <h3 class="text-xs font-bold text-cyan-300 mb-2">🎯 Your Best Scores</h3>
@@ -476,6 +487,11 @@ document.addEventListener('DOMContentLoaded', () => {
         loadYourScores();
         addCoins(Math.floor(score / 5));
         playerLevel.textContent = Math.min(99, 1 + Math.floor(coins / 200));
+        @auth
+        if (typeof GameLeaderboard !== 'undefined') {
+            GameLeaderboard.submit('galaxy-bowling', score).catch(() => {});
+        }
+        @endauth
     }
 
     function getStellaRank(score) {
@@ -1994,6 +2010,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCoins();
     renderProLeaderboard();
     loadYourScores();
+    if (typeof GameLeaderboard !== 'undefined') {
+        GameLeaderboard.mount('#bowling-leaderboard', 'galaxy-bowling');
+    }
 
     function bootGame() {
         resizeCanvas();

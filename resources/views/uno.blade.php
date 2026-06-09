@@ -90,6 +90,11 @@
 
     .hud-btns { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
+    .uno-lb-wrap {
+        width: min(320px, 100%);
+        margin: 0.45rem auto 0;
+    }
+
     .uno-btn {
         font-family: 'Outfit', sans-serif;
         font-weight: 700;
@@ -525,6 +530,9 @@
                 <button class="uno-btn" id="soundBtn" type="button">🔊</button>
                 <button class="uno-btn" id="restartBtn" type="button">↻ New Game</button>
             </div>
+            <div class="uno-lb-wrap">
+                @include('partials.game-leaderboard', ['game' => 'uno', 'id' => 'unoLeaderboard'])
+            </div>
         </header>
 
         <div class="uno-arena">
@@ -867,6 +875,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (winner === 0) {
             wins++;
             localStorage.setItem(WINS_KEY, String(wins));
+            @auth
+            if (typeof GameLeaderboard !== 'undefined') {
+                GameLeaderboard.recordWin('uno').catch(() => {});
+            }
+            @endauth
             GameSounds.play('celebrate');
             document.getElementById('winTitle').textContent = '🎉 You Win!';
             document.getElementById('winMsg').textContent = `Cosmic UNO champion! Total wins: ${wins}`;

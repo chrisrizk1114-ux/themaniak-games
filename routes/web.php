@@ -5,6 +5,7 @@ use App\Http\Controllers\ChessGameController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FriendChatController;
 use App\Http\Controllers\FriendController;
+use App\Http\Controllers\GameScoreController;
 use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\PresenceController;
 use App\Models\ChessGame;
@@ -172,3 +173,8 @@ Route::get('/uno', function () {
 Route::get('/bowling', function () {
     return redirect('/galaxy-bowling');
 });
+
+Route::get('/leaderboard/{game}', [GameScoreController::class, 'show'])->name('leaderboard.show');
+Route::post('/leaderboard/{game}', [GameScoreController::class, 'store'])
+    ->middleware('auth')
+    ->name('leaderboard.store');

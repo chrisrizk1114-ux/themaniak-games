@@ -71,6 +71,9 @@
             <button id="start-btn" type="button" class="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-3 font-bold text-lg hover:scale-105 transition-transform shadow-lg shadow-cyan-500/30">
                 Start Run →
             </button>
+            <div class="mt-4 w-full max-w-xs px-4">
+                @include('partials.game-leaderboard', ['game' => 'platformer', 'id' => 'platformerLeaderboard'])
+            </div>
         </div>
         <div id="game-over" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-red-950/85 backdrop-blur-sm">
             <p class="text-3xl font-bold text-red-200">Run Over!</p>
@@ -421,6 +424,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             newRecordEl.classList.add('hidden');
         }
+        @auth
+        if (typeof GameLeaderboard !== 'undefined') {
+            GameLeaderboard.submit('platformer', bestDistance).catch(() => {});
+        }
+        @endauth
         gameOverEl.classList.remove('hidden');
     }
 

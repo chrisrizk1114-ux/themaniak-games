@@ -350,12 +350,26 @@
         right: 0;
         z-index: 10;
         display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        padding: clamp(0.35rem, 1vh, 0.75rem) clamp(0.5rem, 2vw, 1rem);
+        pointer-events: none;
+    }
+
+    .whack-lb-wrap {
+        width: min(320px, 94vw);
+        pointer-events: auto;
+    }
+
+    .whack-footer-actions {
+        display: flex;
         align-items: center;
         justify-content: center;
         gap: clamp(0.5rem, 2vw, 1rem);
         flex-wrap: wrap;
-        padding: clamp(0.35rem, 1vh, 0.75rem) clamp(0.5rem, 2vw, 1rem);
-        pointer-events: none;
+        pointer-events: auto;
     }
 
     .whack-footer > * {
@@ -539,8 +553,13 @@
         </div>
 
         <footer class="whack-footer">
-            <button class="whack-btn whack-btn-primary" id="startBtn" type="button">🔨 Start Game!</button>
-            <button class="whack-btn whack-btn-ghost" id="soundBtn" type="button" title="Toggle sound">🔊</button>
+            <div class="whack-lb-wrap">
+                @include('partials.game-leaderboard', ['game' => 'whack-a-mole', 'id' => 'whackLeaderboard'])
+            </div>
+            <div class="whack-footer-actions">
+                <button class="whack-btn whack-btn-primary" id="startBtn" type="button">🔨 Start Game!</button>
+                <button class="whack-btn whack-btn-ghost" id="soundBtn" type="button" title="Toggle sound">🔊</button>
+            </div>
         </footer>
     </div>
 
@@ -801,6 +820,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             newRecordEl.classList.add('hidden');
         }
+
+        @auth
+        if (typeof GameLeaderboard !== 'undefined') {
+            GameLeaderboard.submit('whack-a-mole', score).catch(() => {});
+        }
+        @endauth
 
         endOverlay.classList.remove('hidden');
         GameSounds.play(score >= 20 ? 'celebrate' : 'timeUp');

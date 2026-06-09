@@ -1,0 +1,103 @@
+.game-lb {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    padding: 0.65rem 0.75rem;
+    border-radius: 14px;
+    background: rgba(8, 12, 28, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    font-family: 'Rajdhani', Arial, sans-serif;
+    color: #fff;
+}
+
+.game-lb-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 0.45rem;
+    text-align: center;
+}
+
+.game-lb-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.game-lb-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.game-lb-row--gold { border: 1px solid rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.1); }
+.game-lb-row--silver { border: 1px solid rgba(203, 213, 225, 0.35); background: rgba(148, 163, 184, 0.08); }
+.game-lb-row--bronze { border: 1px solid rgba(180, 83, 9, 0.4); background: rgba(180, 83, 9, 0.1); }
+.game-lb-row--you { border: 1px solid rgba(0, 240, 255, 0.45); background: rgba(0, 240, 255, 0.08); }
+
+.game-lb-rank {
+    width: 1.6rem;
+    text-align: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.game-lb-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.game-lb-score {
+    color: #fbbf24;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.game-lb-you {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.game-lb-you strong { color: #67e8f9; }
+
+.game-lb-empty {
+    text-align: center;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 0.35rem 0;
+}
+
+.game-lb--inline {
+    max-width: none;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .game-lb {
+        max-width: none;
+        padding: 0.55rem 0.65rem;
+    }
+
+    .game-lb-row {
+        font-size: 0.86rem;
+    }
+}
