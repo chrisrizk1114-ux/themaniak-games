@@ -983,9 +983,9 @@
         font-family: 'Source Sans 3', monospace;
         font-size: 0.7rem;
         font-weight: 700;
-        color: #4ade80 !important;
-        background: rgba(34, 197, 94, 0.14);
-        border: 1px solid rgba(74, 222, 128, 0.55);
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.35);
         border-radius: 999px;
         padding: 0.2rem 0.45rem;
         min-width: 2.65rem;
@@ -1006,10 +1006,10 @@
     }
 
     .mobile-clock.active {
-        color: #bbf7d0;
-        background: rgba(34, 197, 94, 0.2);
-        border-color: #4ade80;
-        box-shadow: 0 0 10px rgba(74, 222, 128, 0.35);
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.16);
+        border-color: rgba(255, 255, 255, 0.65);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
     }
     #gameArea {
         display: none;

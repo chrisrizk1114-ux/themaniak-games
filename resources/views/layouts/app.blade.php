@@ -21,7 +21,7 @@
     @if (request()->is('chess', 'platformer', 'tic-tac-toe', 'whack-a-mole', 'board-game', 'uno'))
         <script src="{{ asset('js/game-sounds.js') }}" defer></script>
     @endif
-    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260608">
+    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260609">
     @stack('head')
     <style>
         * {

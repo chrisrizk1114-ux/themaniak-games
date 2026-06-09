@@ -192,16 +192,16 @@
             gap: 0.35rem;
             order: 1;
             flex-shrink: 0;
-            padding: 0.35rem 0.35rem 0;
+            padding: 0.2rem 0.35rem 0;
             z-index: 30;
         }
         .bowling-page .bowling-bottom-bar {
             display: flex;
             flex-direction: column;
-            gap: 0.35rem;
+            gap: 0.25rem;
             order: 3;
             flex-shrink: 0;
-            padding: 0 0.35rem 0.35rem;
+            padding: 0 0.35rem 0.25rem;
             z-index: 30;
         }
         .bowling-page .bowling-bottom-tools {
@@ -220,9 +220,10 @@
             translate: none !important;
             order: 0;
             width: calc(100% - 0.7rem) !important;
-            max-width: 20rem !important;
-            margin: 0.35rem auto 0 !important;
+            max-width: 18rem !important;
+            margin: 0.25rem auto 0 !important;
             flex-shrink: 0;
+            padding: 0.25rem 0.4rem !important;
         }
         .bowling-page .bowling-stats-bar { order: 1; }
         .bowling-page #bowling-canvas { order: 2; }
@@ -444,6 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let laneVanishRatio = 0.22;
     let laneDepthFactor = 0.62;
     let laneViewShift = 0;
+    let mobileLaneScale = 1;
+    let mobileLaneYOffset = 0;
 
     function S(v) { return v * gameScale; }
     function Fs(v) { return Math.max(10, v * gameScale); }
@@ -461,13 +464,17 @@ document.addEventListener('DOMContentLoaded', () => {
         PROJ_BASE = S(310);
         const isMobileHud = window.innerWidth <= 860;
         if (isMobileHud) {
-            laneVanishRatio = 0.32;
-            laneDepthFactor = 0.48;
-            laneViewShift = ch * 0.07;
+            laneVanishRatio = 0.44;
+            laneDepthFactor = 0.34;
+            laneViewShift = ch * 0.06;
+            mobileLaneScale = 0.82;
+            mobileLaneYOffset = ch * 0.04;
         } else {
             laneVanishRatio = 0.22;
             laneDepthFactor = 0.62;
             laneViewShift = 0;
+            mobileLaneScale = 1;
+            mobileLaneYOffset = 0;
         }
         const uiScale = isMobileHud
             ? Math.min(Math.max(gameScale * 0.88, 0.58), 0.78)
@@ -603,10 +610,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (depth <= S(8)) return { x: canvas.width/2, y: canvas.height, scale: 0 };
         const scale = PROJ_BASE / depth;
         const t = Math.max(0, Math.min(1, (z - Z_NEAR) / (Z_FAR - Z_NEAR)));
+        const laneScale = mobileLaneScale;
         return {
-            x: canvas.width / 2 + x * scale,
-            y: VANISH_Y() + t * (canvas.height * laneDepthFactor) + (y || 0) * scale * 0.9,
-            scale
+            x: canvas.width / 2 + x * scale * laneScale,
+            y: VANISH_Y() + t * (canvas.height * laneDepthFactor) + (y || 0) * scale * 0.9 + mobileLaneYOffset,
+            scale: scale * laneScale
         };
     }
 
