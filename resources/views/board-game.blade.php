@@ -92,6 +92,7 @@
 
     #gameArea.active {
         display: flex;
+        overflow: hidden;
     }
 
     .snl-hud {
@@ -108,8 +109,8 @@
         position: relative;
         flex: 1 1 auto;
         width: 100%;
-        min-height: clamp(380px, 58vh, 820px);
-        max-height: calc(100svh - var(--nav-h) - 118px);
+        min-height: 0;
+        max-height: none;
         border-radius: clamp(12px, 2vw, 20px);
         overflow: hidden;
         box-shadow: 0 25px 60px rgba(0,0,0,0.55), 0 0 80px rgba(34,197,94,0.08);
@@ -135,7 +136,9 @@
         justify-content: center;
         gap: clamp(0.35rem, 1.5vw, 0.85rem);
         width: 100%;
-        padding-top: 0.2rem;
+        padding: clamp(0.45rem, 1vh, 0.75rem) clamp(0.5rem, 2vw, 1rem);
+        background: rgba(10, 22, 40, 0.92);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .controls-row {
@@ -219,8 +222,7 @@
             padding: 0.2rem 0.3rem 0.3rem;
         }
         .board-scene {
-            min-height: clamp(340px, 52vh, 680px);
-            max-height: calc(100svh - var(--nav-h) - 108px);
+            min-height: 0;
         }
         .snl-hud .game-title { display: none; }
         .status { font-size: 0.9rem; margin-bottom: 0.15rem; }
@@ -463,6 +465,12 @@
             ctx.strokeRect(t.x - 1, t.y - 1, t.w + 2, t.h + 2);
         }
 
+        ctx.restore();
+    }
+
+    function drawTileLabel(t) {
+        ctx.save();
+
         const numSize = Math.max(11, Math.min(24, Math.min(t.w, t.h) * 0.36));
         const padX = Math.max(4, t.w * 0.08);
         const padY = Math.max(3, t.h * 0.1);
@@ -653,6 +661,9 @@
         drawBackground();
         boardTiles.forEach(t => {
             if (t) drawTile3D(t, highlightTiles.includes(t.num) ? 1 : 0);
+        });
+        boardTiles.forEach(t => {
+            if (t) drawTileLabel(t);
         });
         Object.entries(ladders).forEach(([from, to]) => drawLadder3D(+from, to));
         Object.entries(snakes).forEach(([from, to]) => drawSnake3D(+from, to));

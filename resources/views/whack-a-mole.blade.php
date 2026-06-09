@@ -23,7 +23,7 @@
         --hay: #fbbf24;
         --barn-red: #dc2626;
         --nav-h: 76px;
-        --hole: min(calc((100svh - var(--nav-h) - 100px) / 3), calc((100vw - 32px) / 3));
+        --hole: min(calc((100svh - var(--nav-h) - 290px) / 3), calc((100vw - min(260px, 30vw) - 40px) / 3));
         font-family: 'Nunito', sans-serif;
         height: calc(100svh - var(--nav-h));
         min-height: calc(100svh - var(--nav-h));
@@ -57,22 +57,18 @@
         height: 100%;
         max-height: 100%;
         width: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .whack-header {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
+        flex-shrink: 0;
+        position: relative;
         z-index: 10;
         text-align: center;
         width: 100%;
-        padding: clamp(0.35rem, 1vh, 0.65rem) clamp(0.5rem, 2vw, 1rem) 0;
-        pointer-events: none;
-    }
-
-    .whack-header > * {
-        pointer-events: auto;
+        padding: clamp(0.35rem, 1vh, 0.65rem) clamp(0.5rem, 2vw, 1rem) 0.25rem;
     }
 
     .whack-title {
@@ -178,14 +174,25 @@
         100% { transform: scale(1); opacity: 1; }
     }
 
-    .whack-arena {
-        position: absolute;
-        inset: 0;
+    .whack-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
         width: 100%;
-        padding: clamp(5.5rem, 14vh, 7rem) min(270px, 28vw) clamp(4rem, 10vh, 5.5rem) clamp(0.5rem, 2vw, 1rem);
+        padding: 0 clamp(0.5rem, 2vw, 1rem);
+    }
+
+    .whack-arena {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        margin: 0 auto;
+        padding-right: min(250px, 27vw);
     }
 
     .board-frame {
@@ -349,7 +356,7 @@
         right: clamp(0.5rem, 1.5vw, 1rem);
         transform: translateY(-50%);
         z-index: 15;
-        width: min(240px, 26vw);
+        width: min(230px, 25vw);
         pointer-events: auto;
     }
 
@@ -360,19 +367,18 @@
     }
 
     .whack-footer {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        flex-shrink: 0;
+        position: relative;
         z-index: 10;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 0.45rem;
-        padding: clamp(0.35rem, 1vh, 0.75rem) clamp(0.5rem, 2vw, 1rem);
-        padding-right: min(260px, 28vw);
-        pointer-events: none;
+        gap: 0.35rem;
+        width: 100%;
+        padding: clamp(0.5rem, 1.2vh, 0.85rem) clamp(0.5rem, 2vw, 1rem);
+        background: linear-gradient(180deg, transparent, rgba(26, 77, 28, 0.55));
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .whack-footer-actions {
@@ -381,11 +387,6 @@
         justify-content: center;
         gap: clamp(0.5rem, 2vw, 1rem);
         flex-wrap: wrap;
-        pointer-events: auto;
-    }
-
-    .whack-footer > * {
-        pointer-events: auto;
     }
 
     .whack-btn {
@@ -506,10 +507,10 @@
 
     @media (max-width: 600px) {
         .whack-page {
-            --hole: min(96px, calc((100svh - var(--nav-h) - 150px) / 3), calc((100vw - 20px) / 3));
+            --hole: min(96px, calc((100svh - var(--nav-h) - 260px) / 3), calc((100vw - 40px) / 3));
         }
         .whack-arena {
-            padding: 5rem 0.25rem 4rem;
+            padding-right: 0;
         }
         .hud-row {
             gap: 0.3rem;
@@ -522,13 +523,13 @@
         .whack-subtitle { display: none; }
         .whack-lb-panel {
             top: auto;
-            bottom: 4.5rem;
+            bottom: 0.5rem;
             right: 0.35rem;
             transform: none;
-            width: min(190px, 44vw);
+            width: min(175px, 42vw);
         }
         .whack-footer {
-            padding-right: clamp(0.5rem, 2vw, 1rem);
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
         }
         .whack-btn {
             min-height: 48px;
@@ -555,28 +556,30 @@
             <p class="combo-display" id="comboDisplay"></p>
         </header>
 
-        <div class="whack-arena" id="whackArena">
-            <div class="board-frame">
-                <div class="game-board" id="gameBoard">
-                    @for ($i = 0; $i < 9; $i++)
-                    <div class="hole" data-hole="{{ $i }}">
-                        <div class="hole-pit">
-                            <div class="hole-dirt"></div>
-                            <div class="mole">
-                                <span class="mole-face">🐭</span>
+        <div class="whack-body">
+            <div class="whack-arena" id="whackArena">
+                <div class="board-frame">
+                    <div class="game-board" id="gameBoard">
+                        @for ($i = 0; $i < 9; $i++)
+                        <div class="hole" data-hole="{{ $i }}">
+                            <div class="hole-pit">
+                                <div class="hole-dirt"></div>
+                                <div class="mole">
+                                    <span class="mole-face">🐭</span>
+                                </div>
                             </div>
+                            <div class="hole-rim"></div>
+                            <div class="bonk-ring"></div>
                         </div>
-                        <div class="hole-rim"></div>
-                        <div class="bonk-ring"></div>
+                        @endfor
                     </div>
-                    @endfor
                 </div>
             </div>
-        </div>
 
-        <aside class="whack-lb-panel">
-            @include('partials.game-leaderboard', ['game' => 'whack-a-mole', 'id' => 'whackLeaderboard'])
-        </aside>
+            <aside class="whack-lb-panel">
+                @include('partials.game-leaderboard', ['game' => 'whack-a-mole', 'id' => 'whackLeaderboard'])
+            </aside>
+        </div>
 
         <footer class="whack-footer">
             <div class="whack-footer-actions">
