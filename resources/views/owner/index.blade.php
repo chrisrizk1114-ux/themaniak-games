@@ -48,6 +48,17 @@
             <p style="margin-top:0.85rem;font-size:0.85rem;color:rgba(255,255,255,0.4);">
                 Online = active in the last {{ $onlineMinutes }} minutes.
             </p>
+            @if (config('services.google_analytics.measurement_id'))
+            <p style="margin-top:0.65rem;font-size:0.88rem;">
+                <a href="https://analytics.google.com/" target="_blank" rel="noopener noreferrer" style="color:#00f0ff;text-decoration:none;font-weight:700;">
+                    📈 View today’s visitors in Google Analytics →
+                </a>
+            </p>
+            @else
+            <p style="margin-top:0.65rem;font-size:0.85rem;color:rgba(255,255,255,0.45);">
+                Page views: add <code style="color:#ffd54a;">GA_MEASUREMENT_ID</code> on Render (see setup below).
+            </p>
+            @endif
         </section>
 
         <section class="owner-card">

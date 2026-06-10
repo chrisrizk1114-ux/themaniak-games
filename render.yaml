@@ -49,3 +49,5 @@ services:
         value: file
       - key: QUEUE_CONNECTION
         value: sync
+      - key: GA_MEASUREMENT_ID
+        value: G-PVP3MF7FEF

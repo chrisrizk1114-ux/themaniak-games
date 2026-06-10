@@ -9,6 +9,13 @@
     <link rel="canonical" href="{{ url()->current() }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Mini Games') — themaniak.online</title>
+    @php
+        $gaMeasurementId = config('services.google_analytics.measurement_id');
+        $loadAnalytics = $gaMeasurementId && ! (config('app.debug') && config('app.env') === 'local');
+    @endphp
+    @if ($loadAnalytics)
+        @include('layouts.partials.google-analytics', ['measurementId' => $gaMeasurementId])
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" media="(min-width: 861px)">
