@@ -16,6 +16,8 @@ class FriendChatController extends Controller
         $friends = $user->friends()->map(fn (User $friend) => [
             'id' => $friend->id,
             'name' => $friend->name,
+            'avatar_url' => $friend->avatarUrl(),
+            'initial' => $friend->avatarInitial(),
             'online' => $friend->isOnline(),
             'unread' => FriendMessage::query()
                 ->where('sender_id', $friend->id)

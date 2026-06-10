@@ -27,6 +27,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'avatar_path',
         'google_id',
         'password',
         'role',
@@ -60,6 +61,20 @@ class User extends Authenticatable
     public function isOwner(): bool
     {
         return $this->role === self::ROLE_OWNER;
+    }
+
+    public function avatarUrl(): ?string
+    {
+        if (! $this->avatar_path) {
+            return null;
+        }
+
+        return asset('storage/'.$this->avatar_path);
+    }
+
+    public function avatarInitial(): string
+    {
+        return strtoupper(substr($this->name, 0, 1));
     }
 
     public function isOnline(int $minutes = 2): bool

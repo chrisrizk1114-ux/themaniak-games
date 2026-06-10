@@ -228,6 +228,43 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
 
+        a.nav-user-link {
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        a.nav-user-link:hover,
+        a.nav-user-link.active {
+            border-color: rgba(0,240,255,0.35);
+            background: rgba(0,240,255,0.08);
+        }
+
+        .user-avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #00f0ff, #a855f7);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 800;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .user-avatar--sm { width: 30px; height: 30px; font-size: 0.72rem; }
+        .user-avatar--md { width: 44px; height: 44px; font-size: 1rem; }
+        .user-avatar--lg { width: 64px; height: 64px; font-size: 1.35rem; }
+        .user-avatar--xl { width: 120px; height: 120px; font-size: 2.5rem; }
+
         .nav-user-avatar {
             width: 30px;
             height: 30px;
@@ -962,9 +999,9 @@
                     </a>
                 </li>
                 <li>
-                    <div class="nav-user" title="{{ auth()->user()->email }}">
+                    <a href="{{ route('profile.show') }}" class="nav-user nav-user-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" title="{{ auth()->user()->email }}">
                         <span class="nav-user-avatar-wrap">
-                            <span class="nav-user-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                            @include('layouts.partials.user-avatar', ['user' => auth()->user(), 'size' => 'sm'])
                             <span
                                 class="nav-user-online-dot {{ auth()->user()->isOnline() ? 'is-online' : 'is-offline' }}"
                                 id="navUserOnlineDot"
@@ -972,7 +1009,7 @@
                             ></span>
                         </span>
                         <span class="nav-user-name">{{ auth()->user()->name }}</span>
-                    </div>
+                    </a>
                 </li>
                 <li>
                     <a href="{{ route('logout') }}" class="nav-link nav-logout-btn">Logout</a>

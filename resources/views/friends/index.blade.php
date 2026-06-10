@@ -517,7 +517,7 @@
                 <div class="friends-item">
                     <div class="friends-item-info">
                         <span class="friends-avatar-wrap">
-                            <span class="friends-avatar">{{ strtoupper(substr($result->name, 0, 1)) }}</span>
+                            @include('layouts.partials.user-avatar', ['user' => $result, 'size' => 'md'])
                             <span class="friends-avatar-dot {{ $result->isOnline() ? 'friends-avatar-dot--online' : 'friends-avatar-dot--offline' }}"></span>
                         </span>
                         <div>
@@ -556,7 +556,7 @@
                 <div class="friends-item">
                     <div class="friends-item-info">
                         <span class="friends-avatar-wrap">
-                            <span class="friends-avatar">{{ strtoupper(substr($request->sender->name, 0, 1)) }}</span>
+                            @include('layouts.partials.user-avatar', ['user' => $request->sender, 'size' => 'md'])
                             <span class="friends-avatar-dot {{ $request->sender->isOnline() ? 'friends-avatar-dot--online' : 'friends-avatar-dot--offline' }}"></span>
                         </span>
                         <div>
@@ -599,7 +599,7 @@
                     <div class="friends-item">
                         <div class="friends-item-info">
                             <span class="friends-avatar-wrap">
-                                <span class="friends-avatar">{{ strtoupper(substr($friend->name, 0, 1)) }}</span>
+                                @include('layouts.partials.user-avatar', ['user' => $friend, 'size' => 'md'])
                                 <span class="friends-avatar-dot {{ $friend->isOnline() ? 'friends-avatar-dot--online' : 'friends-avatar-dot--offline' }}"></span>
                             </span>
                             <div>
@@ -632,7 +632,7 @@
                 <div class="friends-item">
                     <div class="friends-item-info">
                         <span class="friends-avatar-wrap">
-                            <span class="friends-avatar">{{ strtoupper(substr($request->recipient->name, 0, 1)) }}</span>
+                            @include('layouts.partials.user-avatar', ['user' => $request->recipient, 'size' => 'md'])
                             <span class="friends-avatar-dot {{ $request->recipient->isOnline() ? 'friends-avatar-dot--online' : 'friends-avatar-dot--offline' }}"></span>
                         </span>
                         <div>

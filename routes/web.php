@@ -7,6 +7,7 @@ use App\Http\Controllers\FriendChatController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GameScoreController;
 use App\Http\Controllers\OwnerController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PresenceController;
 use App\Models\ChessGame;
 use Illuminate\Http\Request;
@@ -63,6 +64,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/friends/{friendship}', [FriendController::class, 'destroy'])->name('friends.destroy');
     Route::post('/presence/ping', [PresenceController::class, 'ping'])->name('presence.ping');
     Route::get('/presence/friends', [PresenceController::class, 'friends'])->name('presence.friends');
+
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
 
     Route::get('/chat', [FriendChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/poll', [FriendChatController::class, 'poll'])->name('chat.poll');

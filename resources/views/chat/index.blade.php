@@ -96,6 +96,14 @@
         justify-content: center;
         font-weight: 800;
         flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .chat-friend-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
     }
 
     .chat-friend-meta {
@@ -243,7 +251,13 @@
                 <a href="{{ route('chat.index', ['friend' => $friend['id']]) }}"
                    class="chat-friend {{ ($activeFriendId ?? null) === $friend['id'] ? 'active' : '' }}"
                    data-friend-id="{{ $friend['id'] }}">
-                    <span class="chat-friend-avatar">{{ strtoupper(substr($friend['name'], 0, 1)) }}</span>
+                    <span class="chat-friend-avatar">
+                        @if ($friend['avatar_url'])
+                            <img src="{{ $friend['avatar_url'] }}" alt="">
+                        @else
+                            {{ $friend['initial'] }}
+                        @endif
+                    </span>
                     <span class="chat-friend-meta">
                         <span class="chat-friend-name">{{ $friend['name'] }}</span>
                         <span class="chat-friend-status">
