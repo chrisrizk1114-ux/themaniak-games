@@ -1001,7 +1001,7 @@
         @yield('content')
     </main>
 
-    <link rel="stylesheet" href="{{ asset('css/mobile-games-landscape.css') }}?v=20260613">
+    <link rel="stylesheet" href="{{ asset('css/mobile-games-landscape.css') }}?v=20260614">
 
     <script>
         window.addEventListener('orientationchange', () => {
