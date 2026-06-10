@@ -131,7 +131,7 @@
     }
     .match-modes {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
         text-align: left;
     }
@@ -1214,25 +1214,6 @@
                 <p class="mode-desc">Pass the device and take turns on the same board.</p>
                 <button class="mode-btn" type="button" onclick="startTwoPlayerGame()">Start Game</button>
             </div>
-            <div class="mode-card">
-                <h3>Play with Friends</h3>
-                <p class="mode-desc">Create a room and share a code, or join with your friend's code. Same live board on mobile or desktop.</p>
-                @auth
-                    <button type="button" class="mode-btn" onclick="openChessRoomModal()">♟ Play with Friend</button>
-                    @if(($openChessRooms ?? collect())->isNotEmpty())
-                    <div style="margin-top:0.75rem;text-align:left;">
-                        @foreach($openChessRooms as $room)
-                        <div class="chess-invite-alert" style="margin-bottom:0.5rem;">
-                            <span>Your room code: <strong>{{ $room->room_code }}</strong></span>
-                            <a href="{{ url('/chess?game='.$room->token) }}" class="mode-btn">Open room</a>
-                        </div>
-                        @endforeach
-                    </div>
-                    @endif
-                @else
-                    <p class="friends-login-hint">You must <a href="{{ route('login') }}">log in</a> to play with friends.</p>
-                @endauth
-            </div>
         </div>
     </div>
     
@@ -1330,33 +1311,6 @@
     <div class="promotion-content">
         <h3>Promote Pawn</h3>
         <div class="promotion-pieces" id="promotionPieces"></div>
-    </div>
-</div>
-
-<div class="chess-room-modal" id="chessRoomModal">
-    <div class="chess-room-modal-box">
-        <h3>♟ Play with a Friend</h3>
-        <div class="chess-room-view active" id="roomChoiceView">
-            <p>Create a room and share the code, or enter a friend's code to join.</p>
-            <div class="chess-room-actions">
-                <button type="button" class="mode-btn" id="createRoomBtn" onclick="createChessRoom()">Create Room</button>
-                <button type="button" class="mode-btn" style="background:linear-gradient(180deg,#2a4a6b,#1a3050);" onclick="showEnterCodeView()">Enter Code</button>
-            </div>
-        </div>
-        <div class="chess-room-view" id="roomCreateView">
-            <p>Share this code with your friend:</p>
-            <div class="chess-room-code" id="roomCodeDisplay">------</div>
-            <div class="chess-room-actions">
-                <button type="button" class="mode-btn" onclick="copyRoomCode()">Copy Code</button>
-                <button type="button" class="mode-btn" onclick="enterCreatedRoom()">Enter Room (You = White)</button>
-            </div>
-        </div>
-        <div class="chess-room-view" id="roomJoinView">
-            <p>Enter the 6-character room code:</p>
-            <input type="text" class="chess-room-input" id="roomCodeInput" maxlength="6" placeholder="ABC123" autocomplete="off">
-            <button type="button" class="mode-btn" style="width:100%;" onclick="joinChessRoom()">Join as Black</button>
-        </div>
-        <button type="button" class="chess-room-close" onclick="closeChessRoomModal()">Close</button>
     </div>
 </div>
 

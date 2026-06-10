@@ -239,11 +239,6 @@
                 <textarea id="message" name="message" required minlength="10" maxlength="5000" placeholder="Describe your feedback…">{{ old('message') }}</textarea>
             </div>
 
-            <div class="feedback-field">
-                <label for="special_details">Special details</label>
-                <textarea id="special_details" name="special_details" maxlength="3000" placeholder="Device, browser, steps to reproduce, game mode, etc.">{{ old('special_details') }}</textarea>
-            </div>
-
             <button type="submit" class="feedback-submit">Send Feedback</button>
         </form>
 
