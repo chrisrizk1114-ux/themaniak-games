@@ -21,7 +21,7 @@
     @if (request()->is('chess', 'platformer', 'tic-tac-toe', 'whack-a-mole', 'board-game', 'uno'))
         <script src="{{ asset('js/game-sounds.js') }}" defer></script>
     @endif
-    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260611">
+    <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260613">
     @stack('head')
     <style>
         * {
@@ -659,6 +659,32 @@
             z-index: 1;
         }
 
+        /* Compact nav when phone is rotated — more room for games */
+        @media (orientation: landscape) and (max-height: 520px) {
+            .nav-bar {
+                --nav-h: 52px;
+                height: 52px;
+            }
+
+            .nav-logo-text small {
+                display: none !important;
+            }
+
+            .nav-logo-icon {
+                font-size: 1.3rem;
+            }
+
+            .nav-logo-text {
+                font-size: 0.92rem;
+            }
+
+            .nav-toggle {
+                width: 36px;
+                height: 36px;
+                font-size: 1.05rem;
+            }
+        }
+
         /* Mobile nav */
         @media (max-width: 860px) {
             .nav-toggle {
@@ -974,6 +1000,14 @@
     <main class="main-content">
         @yield('content')
     </main>
+
+    <link rel="stylesheet" href="{{ asset('css/mobile-games-landscape.css') }}?v=20260613">
+
+    <script>
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 250);
+        });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {

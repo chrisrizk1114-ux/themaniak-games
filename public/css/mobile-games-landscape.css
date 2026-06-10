@@ -1,0 +1,481 @@
+﻿/* â”€â”€ Phone landscape (rotated) â”€â”€ */
+@media (orientation: landscape) and (max-height: 520px) {
+    :root {
+        --nav-h: 52px;
+    }
+
+    /* Royal Chess â€” side-by-side board + panels */
+    .chess-page .game-container:has(#gameArea.active) {
+        padding: 0.15rem 0.35rem calc(3.25rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .chess-page .game-container:has(#gameArea.active) .chess-title {
+        display: none;
+    }
+
+    .chess-page .chess-arena {
+        grid-template-columns: minmax(88px, 118px) auto minmax(88px, 118px) !important;
+        grid-template-rows: auto !important;
+        max-width: none !important;
+        width: 100%;
+        gap: 0.35rem !important;
+        align-items: center;
+    }
+
+    .chess-page #gameArea.active .chess-arena {
+        --sq: min(
+            calc((100svh - var(--nav-h) - 88px) / 8),
+            calc((100vw - 240px) / 8),
+            42px
+        ) !important;
+        padding: 0 0.15rem !important;
+        max-width: none !important;
+    }
+
+    .chess-page .chess-arena {
+        max-width: none !important;
+    }
+
+    .chess-page .panel-card {
+        max-width: 118px !important;
+    }
+
+    .chess-page .chess-panel--left { order: 1; }
+    .chess-page .chess-board-col { order: 2; }
+    .chess-page .chess-panel--right { order: 3; }
+
+    .chess-page .panel-card {
+        padding: 0.35rem 0.45rem;
+        max-width: 118px;
+    }
+
+    .chess-page .panel-card h4,
+    .chess-page .captured-row,
+    .chess-page .chess-chat-panel {
+        display: none !important;
+    }
+
+    .chess-page .player-icon {
+        font-size: 1.1rem;
+    }
+
+    .chess-page .player-label {
+        font-size: 0.72rem;
+    }
+
+    .chess-page .player-label small {
+        display: none;
+    }
+
+    .chess-page .chess-turn-row .status {
+        font-size: 0.72rem;
+        padding: 0.25rem 0.4rem;
+        max-width: 9rem;
+    }
+
+    .chess-page #gameArea.active .chess-footer {
+        padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+        gap: 0.3rem;
+    }
+
+    .chess-page .control-btn {
+        min-height: 36px;
+        min-width: 36px;
+        padding: 0.3rem 0.45rem;
+        font-size: 0.72rem;
+    }
+
+    .chess-page .control-btn.icon-side {
+        font-size: 0.68rem;
+    }
+
+    .chess-page .match-modes {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+    }
+
+    .chess-page .mode-card {
+        min-height: 0;
+        padding: 0.85rem 0.75rem;
+    }
+
+    .chess-page .player-select {
+        padding: 1rem 0.85rem;
+        max-width: min(720px, 96vw);
+    }
+
+    /* Galaxy Bowling â€” tighter HUD overlay */
+    .bowling-page .bowling-stage {
+        --game-scale: 0.42;
+    }
+
+    .bowling-page .hud-scoreboard {
+        top: 0.12rem !important;
+        width: min(calc(100% - 0.5rem), 16rem) !important;
+        padding: 0.15rem 0.28rem !important;
+    }
+
+    .bowling-page .hud-coins-bar,
+    .bowling-page .hud-top-right {
+        top: 1.65rem !important;
+    }
+
+    .bowling-page .hud-ball-picker,
+    .bowling-page .hud-side-controls {
+        bottom: 1.65rem !important;
+    }
+
+    .bowling-page .hud-ball-picker .hud-ball-btn,
+    .bowling-page .hud-side-controls .hud-icon-btn {
+        width: 1.85rem;
+        height: 1.85rem;
+    }
+
+    .bowling-page .hud-frame-bottom {
+        bottom: 0.12rem !important;
+    }
+
+    .bowling-page .bowling-mobile-hint {
+        display: none !important;
+    }
+
+    .bowling-page .hud-cheer {
+        top: 2.2rem !important;
+        font-size: 0.62rem;
+    }
+
+    /* Cosmic UNO â€” use wide table layout */
+    .uno-page .uno-table {
+        padding: 0.2rem 0.45rem;
+    }
+
+    .uno-page .uno-hud {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .uno-page .uno-title {
+        font-size: 1.05rem;
+        flex-shrink: 0;
+    }
+
+    .uno-page .uno-status {
+        font-size: 0.72rem;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .uno-page .uno-lb-wrap {
+        display: none;
+    }
+
+    .uno-page .hud-btns {
+        flex-shrink: 0;
+        gap: 0.25rem;
+    }
+
+    .uno-page .uno-btn {
+        min-height: 36px;
+        padding: 0.3rem 0.55rem;
+        font-size: 0.72rem;
+    }
+
+    .uno-page .uno-arena {
+        grid-template-columns: minmax(56px, 1fr) 2fr minmax(56px, 1fr) !important;
+        grid-template-rows: minmax(0, 0.85fr) 1.15fr minmax(0, 1fr) !important;
+        grid-template-areas:
+            ". top ."
+            "left center right"
+            ". bottom ." !important;
+        gap: 0.25rem;
+    }
+
+    .uno-page .opponent--left,
+    .uno-page .opponent--right {
+        display: block !important;
+    }
+
+    .uno-page .opp-name {
+        font-size: 0.72rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .uno-page .card-back {
+        width: clamp(22px, 3.5vw, 30px);
+        height: clamp(32px, 5vw, 42px);
+    }
+
+    .uno-page .uno-card {
+        width: clamp(38px, 7vw, 52px);
+        height: clamp(54px, 10vw, 72px);
+        min-width: 38px;
+    }
+
+    .uno-page .player-hand {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: center;
+        padding-bottom: 0.25rem;
+    }
+
+    .uno-page .table-center {
+        padding: 0.15rem;
+    }
+
+    .uno-page .piles {
+        gap: 0.45rem;
+    }
+
+    /* Neon Grid â€” players beside board */
+    .ttt-page .ttt-shell {
+        padding: 0.35rem 0.5rem 0.5rem;
+        min-height: calc(100svh - var(--nav-h));
+        justify-content: center;
+    }
+
+    .ttt-page {
+        --cell: min(
+            calc((100svh - var(--nav-h) - 72px) / 3),
+            calc((100vw - 220px) / 3),
+            96px
+        );
+    }
+
+    .ttt-page .ttt-header {
+        margin-bottom: 0.35rem;
+    }
+
+    .ttt-page .ttt-title {
+        font-size: 1.15rem;
+        margin-bottom: 0.1rem;
+    }
+
+    .ttt-page .ttt-subtitle {
+        display: none;
+    }
+
+    .ttt-page .turn-badge {
+        font-size: 0.78rem;
+        padding: 0.25rem 0.55rem;
+    }
+
+    .ttt-page .ttt-main {
+        flex-direction: row !important;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .ttt-page .player-panel {
+        width: auto;
+        max-width: 108px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0.45rem 0.55rem;
+        text-align: center;
+    }
+
+    .ttt-page .player-panel .panel-left {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+    }
+
+    .ttt-page .player-mark {
+        font-size: 1.35rem;
+        margin: 0;
+    }
+
+    .ttt-page .player-score {
+        font-size: 1.35rem;
+    }
+
+    .ttt-page .player-wins-label {
+        font-size: 0.65rem;
+    }
+
+    .ttt-page .ttt-footer {
+        position: static;
+        padding: 0.35rem 0;
+    }
+
+    /* Snakes & Ladders â€” maximize board */
+    .snl-page .snl-shell:has(#gameArea.active) {
+        padding: 0.15rem 0.35rem 0.25rem;
+        gap: 0.2rem;
+    }
+
+    .snl-page .snl-hud .game-title,
+    .snl-page .legend {
+        display: none !important;
+    }
+
+    .snl-page .status {
+        font-size: 0.78rem;
+        margin-bottom: 0.1rem;
+    }
+
+    .snl-page .board-scene {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .snl-page .snl-footer {
+        padding: 0.2rem 0.35rem;
+        gap: 0.25rem;
+    }
+
+    .snl-page .dice-display {
+        font-size: 2rem;
+    }
+
+    .snl-page .roll-btn {
+        min-height: 40px;
+        padding: 0.35rem 1.1rem;
+        font-size: 0.85rem;
+    }
+
+    .snl-page .player-select {
+        max-width: min(520px, 92vw);
+        padding: 0.85rem 1rem;
+    }
+
+    .snl-page .player-select .game-title {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Mole Mayhem â€” wider grid, compact chrome */
+    .whack-page {
+        --hole: min(
+            calc((100svh - var(--nav-h) - 96px) / 3),
+            calc((100vw - 140px) / 3),
+            82px
+        );
+    }
+
+    .whack-page .whack-shell {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto 1fr;
+        grid-template-areas:
+            "header header"
+            "arena footer";
+        height: 100%;
+        padding: 0.25rem 0.45rem;
+        gap: 0.25rem;
+    }
+
+    .whack-page .whack-header {
+        grid-area: header;
+        padding: 0;
+    }
+
+    .whack-page .whack-title {
+        font-size: 1rem;
+    }
+
+    .whack-page .whack-subtitle,
+    .whack-page .combo-display {
+        display: none;
+    }
+
+    .whack-page .hud-row {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: center;
+    }
+
+    .whack-page .hud-pill {
+        padding: 0.22rem 0.45rem;
+        font-size: 0.68rem;
+        white-space: nowrap;
+    }
+
+    .whack-page .timer-bar-wrap {
+        margin-top: 0.2rem;
+        height: 4px;
+    }
+
+    .whack-page .whack-body {
+        grid-area: arena;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .whack-page .whack-arena {
+        position: relative;
+        left: auto;
+        top: auto;
+        transform: none;
+        max-width: none;
+    }
+
+    .whack-page .whack-footer {
+        grid-area: footer;
+        align-self: center;
+        padding: 0;
+        border: none;
+        background: transparent;
+    }
+
+    .whack-page .whack-btn {
+        min-height: 40px;
+        min-width: 40px;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.78rem;
+    }
+
+    /* Sky Runner â€” slim HUD, keep touch controls */
+    .sky-runner-page .sky-hud {
+        padding: 0.3rem 0.45rem !important;
+        gap: 0.25rem !important;
+    }
+
+    .sky-runner-page .plat-title {
+        font-size: 0.95rem !important;
+    }
+
+    .sky-runner-page .sky-hud p {
+        display: none !important;
+    }
+
+    .sky-runner-page .hud-pill {
+        font-size: 0.62rem !important;
+        padding: 0.18rem 0.4rem !important;
+    }
+
+    .sky-runner-page .mobile-touch-controls {
+        bottom: max(6px, env(safe-area-inset-bottom, 0px));
+        padding: 0 8px 4px;
+    }
+
+    .sky-runner-page .mobile-touch-controls .touch-btn {
+        min-width: 40px;
+        min-height: 40px;
+        font-size: 1.1rem;
+    }
+
+    .sky-runner-page .mobile-touch-controls .touch-jump {
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    #start-overlay p,
+    #game-over p {
+        font-size: 0.85rem;
+        margin-bottom: 0.75rem;
+    }
+
+    #start-overlay .text-4xl,
+    #game-over .text-3xl {
+        font-size: 1.35rem !important;
+    }
+}
