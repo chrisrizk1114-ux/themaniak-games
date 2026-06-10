@@ -177,9 +177,14 @@
             transition: transform 0.25s;
         }
 
-        .nav-dropdown-wrap.open .nav-chevron,
-        .nav-dropdown-wrap:hover .nav-chevron {
+        .nav-dropdown-wrap.open .nav-chevron {
             transform: rotate(180deg);
+        }
+
+        @media (hover: hover) and (min-width: 861px) {
+            .nav-dropdown-wrap:hover .nav-chevron {
+                transform: rotate(180deg);
+            }
         }
 
         .nav-cta {
@@ -562,9 +567,14 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .nav-dropdown-wrap:hover .nav-dropdown,
         .nav-dropdown-wrap.open .nav-dropdown {
             display: block;
+        }
+
+        @media (hover: hover) and (min-width: 861px) {
+            .nav-dropdown-wrap:hover .nav-dropdown {
+                display: block;
+            }
         }
 
         .nav-dropdown-title {
@@ -1001,18 +1011,29 @@
                 navToggle.textContent = navMenu.classList.contains('open') ? '✕' : '☰';
             });
 
+            function toggleNavDropdown(wrap, otherWrap) {
+                if (!wrap) return;
+                const willOpen = !wrap.classList.contains('open');
+                wrap.classList.toggle('open', willOpen);
+                otherWrap?.classList.remove('open');
+                const btn = wrap.querySelector('button');
+                btn?.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+                if (!willOpen) btn?.blur();
+            }
+
+            gamesToggle?.setAttribute('aria-expanded', 'false');
+            notificationsToggle?.setAttribute('aria-expanded', 'false');
+
             gamesToggle?.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                gamesDropdown.classList.toggle('open');
-                notificationsDropdown?.classList.remove('open');
+                toggleNavDropdown(gamesDropdown, notificationsDropdown);
             });
 
             notificationsToggle?.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                notificationsDropdown?.classList.toggle('open');
-                gamesDropdown?.classList.remove('open');
+                toggleNavDropdown(notificationsDropdown, gamesDropdown);
             });
 
             if (friendRequestToast && friendRequestCount > 0) {
@@ -1039,12 +1060,18 @@
                 });
             }
 
+            function closeNavDropdown(wrap) {
+                if (!wrap?.classList.contains('open')) return;
+                wrap.classList.remove('open');
+                wrap.querySelector('button')?.setAttribute('aria-expanded', 'false');
+            }
+
             document.addEventListener('click', (e) => {
                 if (gamesDropdown && !gamesDropdown.contains(e.target)) {
-                    gamesDropdown.classList.remove('open');
+                    closeNavDropdown(gamesDropdown);
                 }
                 if (notificationsDropdown && !notificationsDropdown.contains(e.target)) {
-                    notificationsDropdown.classList.remove('open');
+                    closeNavDropdown(notificationsDropdown);
                 }
                 if (navMenu && navToggle && !navMenu.contains(e.target) && !navToggle.contains(e.target)) {
                     navMenu.classList.remove('open');
