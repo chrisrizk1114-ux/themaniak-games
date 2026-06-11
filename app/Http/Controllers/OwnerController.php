@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Models\Friendship;
+use App\Models\SiteDailyStat;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,9 @@ class OwnerController extends Controller
         $onlineMinutes = 5;
 
         $stats = [
+            'views_today' => SiteDailyStat::viewsForDate(today()),
+            'views_yesterday' => SiteDailyStat::viewsForDate(today()->subDay()),
+            'views_total' => SiteDailyStat::totalViews(),
             'users' => User::query()->count(),
             'owners' => User::query()->where('role', User::ROLE_OWNER)->count(),
             'online' => User::query()

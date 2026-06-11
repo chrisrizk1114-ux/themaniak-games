@@ -17,6 +17,18 @@
             <h2 class="owner-card-title">Live stats</h2>
             <div class="owner-stats">
                 <div class="owner-stat">
+                    <div class="owner-stat-value">{{ number_format($stats['views_today']) }}</div>
+                    <div class="owner-stat-label">Views today</div>
+                </div>
+                <div class="owner-stat">
+                    <div class="owner-stat-value">{{ number_format($stats['views_yesterday']) }}</div>
+                    <div class="owner-stat-label">Views yesterday</div>
+                </div>
+                <div class="owner-stat">
+                    <div class="owner-stat-value">{{ number_format($stats['views_total']) }}</div>
+                    <div class="owner-stat-label">Total views</div>
+                </div>
+                <div class="owner-stat">
                     <div class="owner-stat-value">{{ $stats['users'] }}</div>
                     <div class="owner-stat-label">Total users</div>
                 </div>
@@ -46,17 +58,13 @@
                 </div>
             </div>
             <p style="margin-top:0.85rem;font-size:0.85rem;color:rgba(255,255,255,0.4);">
-                Online = active in the last {{ $onlineMinutes }} minutes.
+                Online = active in the last {{ $onlineMinutes }} minutes. Views count page opens (guests + logged-in users).
             </p>
             @if (config('services.google_analytics.measurement_id'))
             <p style="margin-top:0.65rem;font-size:0.88rem;">
                 <a href="https://analytics.google.com/" target="_blank" rel="noopener noreferrer" style="color:#00f0ff;text-decoration:none;font-weight:700;">
-                    📈 View today’s visitors in Google Analytics →
+                    📈 More details in Google Analytics →
                 </a>
-            </p>
-            @else
-            <p style="margin-top:0.65rem;font-size:0.85rem;color:rgba(255,255,255,0.45);">
-                Page views: add <code style="color:#ffd54a;">GA_MEASUREMENT_ID</code> on Render (see setup below).
             </p>
             @endif
         </section>
@@ -68,7 +76,7 @@
                     <span class="owner-capability-icon">📊</span>
                     <div>
                         <strong>View dashboard</strong>
-                        <span>See total users, online players, new sign-ups, friendships, and pending friend requests.</span>
+                        <span>See page views (today, yesterday & total), users, online players, sign-ups, friendships, and pending requests.</span>
                     </div>
                 </div>
                 <div class="owner-capability">

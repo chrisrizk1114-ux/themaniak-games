@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->web(append: [
             \App\Http\Middleware\UpdateLastSeen::class,
+            \App\Http\Middleware\TrackPageView::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
