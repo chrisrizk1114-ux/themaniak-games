@@ -39,8 +39,6 @@ services:
         value: true
       - key: SESSION_DRIVER
         value: database
-      - key: SESSION_DOMAIN
-        value: .themaniak.online
       - key: SESSION_SECURE_COOKIE
         value: true
       - key: SESSION_ENCRYPT

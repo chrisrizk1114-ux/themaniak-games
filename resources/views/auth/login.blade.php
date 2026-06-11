@@ -311,4 +311,6 @@
         </p>
     </div>
 </div>
+
+@include('auth.partials.mobile-session')
 @endsection

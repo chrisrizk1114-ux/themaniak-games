@@ -23,7 +23,11 @@ class AppServiceProvider extends ServiceProvider
         }
 
         config([
+            'session.driver' => env('SESSION_DRIVER', 'database'),
             'session.encrypt' => false,
+            'session.domain' => null,
+            'session.secure' => true,
+            'session.same_site' => 'lax',
             'cache.default' => env('CACHE_STORE', 'file'),
         ]);
     }
@@ -38,13 +42,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         if ($this->app->environment('production') && ! $this->app->runningInConsole()) {
-            $host = request()->getHost();
-
-            if (str_ends_with($host, 'themaniak.online')) {
-                config(['session.domain' => '.themaniak.online']);
-            } else {
-                config(['session.domain' => null]);
-            }
+            config(['session.domain' => null]);
         }
 
         View::composer('layouts.app', function ($view) {

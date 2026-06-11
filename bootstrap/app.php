@@ -15,9 +15,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
+        $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_FOR
+            | Request::HEADER_X_FORWARDED_HOST
+            | Request::HEADER_X_FORWARDED_PORT
+            | Request::HEADER_X_FORWARDED_PROTO
+            | Request::HEADER_X_FORWARDED_AWS_ELB);
         $middleware->web(prepend: [
             \App\Http\Middleware\ForceCanonicalDomain::class,
+        ]);
+        $middleware->web(append: [
+            \App\Http\Middleware\PreventAuthPageCache::class,
         ]);
         $middleware->alias([
             'owner' => \App\Http\Middleware\EnsureOwner::class,
@@ -78,11 +85,24 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => 'Page expired. Please refresh and try again.'], 419);
             }
 
-            if ($request->is('login', 'register')) {
+            $isAuthForm = $request->isMethod('POST')
+                && ($request->is('login', 'register') || str_contains($request->path(), 'login') || str_contains($request->path(), 'register'));
+
+            if ($isAuthForm) {
+                if ($request->hasSession()) {
+                    try {
+                        $request->session()->regenerateToken();
+                    } catch (\Throwable) {
+                        // Session may be corrupt — redirect to a fresh login page.
+                    }
+                }
+
+                $route = str_contains($request->path(), 'register') ? 'register' : 'login';
+
                 return redirect()
-                    ->route($request->is('register') ? 'register' : 'login')
+                    ->route($route)
                     ->withInput($request->except('_token', 'password', 'password_confirmation'))
-                    ->withErrors(['email' => 'Session expired — please try again.']);
+                    ->withErrors(['email' => 'Session expired — please refresh the page and try again.']);
             }
 
             return redirect()
