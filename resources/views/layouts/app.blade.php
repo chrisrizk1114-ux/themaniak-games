@@ -83,15 +83,20 @@
         }
 
         .nav-logo {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 0.55rem;
             text-decoration: none;
             flex-shrink: 0;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            line-height: 1;
         }
 
         .nav-logo-icon {
             font-size: 1.65rem;
+            line-height: 1;
+            flex-shrink: 0;
             filter: drop-shadow(0 0 10px rgba(255,45,106,0.5));
             animation: logo-pulse 3s ease-in-out infinite;
         }
@@ -106,6 +111,8 @@
             font-size: clamp(1rem, 2.5vw, 1.35rem);
             font-weight: 800;
             letter-spacing: 0.06em;
+            line-height: 1;
+            white-space: nowrap;
             background: linear-gradient(90deg, #00f0ff, #fff, #ff2d6a);
             background-size: 200% auto;
             -webkit-background-clip: text;
@@ -940,7 +947,7 @@
         <div class="nav-inner">
             <a href="{{ url('/') }}" class="nav-logo">
                 <span class="nav-logo-icon">🎮</span>
-                <span class="nav-logo-text">Mini Games<small style="display:block;font-size:0.55em;letter-spacing:0.12em;opacity:0.65;font-weight:600;">themaniak.online</small></span>
+                <span class="nav-logo-text">Mini Games</span>
             </a>
 
             <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle menu">☰</button>
