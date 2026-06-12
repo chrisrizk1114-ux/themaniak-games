@@ -7,6 +7,7 @@ use App\Models\Feedback;
 use App\Models\FriendMessage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -43,6 +44,17 @@ class AppServiceProvider extends ServiceProvider
 
         if ($this->app->environment('production') && ! $this->app->runningInConsole()) {
             config(['session.domain' => null]);
+
+            if (config('session.driver') === 'database') {
+                if (Cache::get('db_unreachable')) {
+                    try {
+                        DB::select('SELECT 1');
+                        Cache::forget('db_unreachable');
+                    } catch (\Throwable) {
+                        config(['session.driver' => 'file']);
+                    }
+                }
+            }
         }
 
         View::composer('layouts.app', function ($view) {

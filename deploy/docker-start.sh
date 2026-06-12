@@ -10,6 +10,17 @@ php artisan config:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
 php artisan view:clear 2>/dev/null || true
 php artisan storage:link 2>/dev/null || true
-php artisan migrate --force --no-interaction 2>/dev/null || true
+
+echo "Waiting for database..."
+i=1
+while [ "$i" -le 15 ]; do
+    if php artisan migrate --force --no-interaction 2>/dev/null; then
+        echo "Database ready."
+        break
+    fi
+    echo "Database not ready yet (attempt $i/15)..."
+    i=$((i + 1))
+    sleep 2
+done
 
 exec php artisan serve --host=0.0.0.0 --port="${PORT}"

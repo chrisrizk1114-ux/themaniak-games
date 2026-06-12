@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Cache;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -52,6 +53,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
+            Cache::put('db_unreachable', true, now()->addMinutes(2));
+
             if ($request->isMethod('POST') && $request->is('login', 'register')) {
                 return null;
             }
@@ -70,11 +73,11 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($request->isMethod('GET') && ! $request->is('login', 'register')) {
-                if ($request->is('reset-session')) {
-                    return redirect('/');
+                if ($request->is('reset-session', 'up', 'db-ping')) {
+                    return null;
                 }
 
-                return redirect('/reset-session');
+                return response()->view('errors.unavailable', [], 503);
             }
 
             return null;
