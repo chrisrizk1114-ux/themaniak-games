@@ -1972,6 +1972,140 @@
         return false;
     }
 
+    function pieceAttacksSquare(b, fromRow, fromCol, toRow, toCol) {
+        if (fromRow === toRow && fromCol === toCol) return false;
+        const piece = b[fromRow][fromCol];
+        if (!piece) return false;
+
+        const type = piece.toLowerCase();
+        const color = getPieceColor(piece);
+
+        if (type === 'p') {
+            const dir = color === 'white' ? -1 : 1;
+            return fromRow + dir === toRow && Math.abs(fromCol - toCol) === 1;
+        }
+        if (type === 'r') return isRookAttack(b, fromRow, fromCol, toRow, toCol);
+        if (type === 'n') {
+            const dr = Math.abs(toRow - fromRow);
+            const dc = Math.abs(toCol - fromCol);
+            return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
+        }
+        if (type === 'b') return isBishopAttack(b, fromRow, fromCol, toRow, toCol);
+        if (type === 'q') {
+            return isRookAttack(b, fromRow, fromCol, toRow, toCol)
+                || isBishopAttack(b, fromRow, fromCol, toRow, toCol);
+        }
+        if (type === 'k') {
+            const dr = Math.abs(toRow - fromRow);
+            const dc = Math.abs(toCol - fromCol);
+            return dr <= 1 && dc <= 1;
+        }
+        return false;
+    }
+
+    function getSquareThreat(b, row, col, victimColor) {
+        const enemyColor = victimColor === 'white' ? 'black' : 'white';
+        const piece = b[row][col];
+        const victimVal = piece ? (PIECE_VALUES[piece.toLowerCase()] || 0) : 0;
+        let minAttackerVal = null;
+        let attackerCount = 0;
+        let defended = false;
+        let minDefenderVal = null;
+
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const p = b[r][c];
+                if (!p) continue;
+                const pc = getPieceColor(p);
+                if (pc === enemyColor && pieceAttacksSquare(b, r, c, row, col)) {
+                    const val = PIECE_VALUES[p.toLowerCase()] || 0;
+                    minAttackerVal = minAttackerVal === null ? val : Math.min(minAttackerVal, val);
+                    attackerCount++;
+                }
+                if (pc === victimColor && (r !== row || c !== col) && pieceAttacksSquare(b, r, c, row, col)) {
+                    defended = true;
+                    const val = PIECE_VALUES[p.toLowerCase()] || 0;
+                    minDefenderVal = minDefenderVal === null ? val : Math.min(minDefenderVal, val);
+                }
+            }
+        }
+
+        const attacked = minAttackerVal !== null;
+        const hanging = attacked && (!defended || minAttackerVal < victimVal);
+        const badTrade = attacked && defended && minAttackerVal < victimVal;
+
+        return { attacked, defended, hanging, badTrade, minAttackerVal, victimVal, attackerCount };
+    }
+
+    function hangingPieceScore(b, color) {
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        if (settings.evalLevel === 'material') return 0;
+
+        let penalty = 0;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color) continue;
+                const threat = getSquareThreat(b, r, c, color);
+                if (threat.hanging) {
+                    penalty += threat.victimVal * 0.95;
+                } else if (threat.badTrade) {
+                    penalty += (threat.victimVal - threat.minAttackerVal) * 0.7;
+                } else if (threat.attacked) {
+                    penalty += Math.min(threat.victimVal * 0.25, 80);
+                }
+            }
+        }
+        return penalty;
+    }
+
+    function findHangingPieces(b, color) {
+        const pieces = [];
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color) continue;
+                const threat = getSquareThreat(b, r, c, color);
+                if (threat.hanging || threat.badTrade) {
+                    pieces.push({ row: r, col: c, threat, type: piece.toLowerCase() });
+                }
+            }
+        }
+        return pieces;
+    }
+
+    function safetyMoveBonus(move, b, color) {
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        if (settings.evalLevel === 'material') return 0;
+
+        const piece = b[move.fromRow][move.fromCol];
+        if (!piece || getPieceColor(piece) !== color) return 0;
+
+        const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
+        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
+        let bonus = 0;
+
+        if (fromThreat.hanging && !toThreat.hanging) {
+            bonus += 120000 + fromThreat.victimVal;
+        } else if (fromThreat.attacked && !toThreat.attacked) {
+            bonus += 70000 + fromThreat.victimVal * 0.5;
+        } else if (fromThreat.attacked && toThreat.minAttackerVal !== null && fromThreat.minAttackerVal !== null
+            && toThreat.minAttackerVal > fromThreat.minAttackerVal) {
+            bonus += 40000;
+        }
+
+        const victim = b[move.toRow][move.toCol];
+        if (victim && getPieceColor(victim) !== color && fromThreat.attacked) {
+            const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+            if (victimVal <= fromThreat.victimVal) {
+                bonus += 90000 + victimVal;
+            }
+        }
+
+        return bonus;
+    }
+
     function evaluateBoard(b) {
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         let score = 0;
@@ -1991,6 +2125,8 @@
         if (settings.evalLevel !== 'material') {
             if (isInCheck(b, 'white')) score -= 50;
             if (isInCheck(b, 'black')) score += 50;
+            score -= hangingPieceScore(b, 'black');
+            score += hangingPieceScore(b, 'white');
         }
         if (settings.evalLevel === 'advanced') {
             score += centerControlScore(b, 'black');
@@ -2032,7 +2168,10 @@
         return count;
     }
 
-    function moveOrderingScore(move, b) {
+    function moveOrderingScore(move, b, color = 'black') {
+        const safety = safetyMoveBonus(move, b, color);
+        if (safety > 0) return safety;
+
         const victim = b[move.toRow][move.toCol];
         const attacker = b[move.fromRow][move.fromCol];
         if (victim) {
@@ -2047,12 +2186,22 @@
         return 0;
     }
 
-    function orderMoves(moves, b) {
-        return moves.slice().sort((a, bMove) => moveOrderingScore(bMove, b) - moveOrderingScore(a, b));
+    function orderMoves(moves, b, color = 'black') {
+        return moves.slice().sort((a, bMove) => moveOrderingScore(bMove, b, color) - moveOrderingScore(a, b));
     }
 
     function getTacticalMoves(color, b) {
-        return getAllMovesForAI(color, b).filter(move => moveOrderingScore(move, b) > 0);
+        return getAllMovesForAI(color, b).filter(move => moveOrderingScore(move, b, color) > 0);
+    }
+
+    function isSavingMove(move, b, color) {
+        const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
+        if (!fromThreat.attacked) return false;
+        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
+        if (!toThreat.hanging && !toThreat.badTrade) return true;
+        const victim = b[move.toRow][move.toCol];
+        return !!(victim && getPieceColor(victim) !== color);
     }
 
     function quiescence(b, depth, alpha, beta, maximizing) {
@@ -2070,7 +2219,7 @@
         }
 
         const color = maximizing ? 'black' : 'white';
-        const moves = orderMoves(getTacticalMoves(color, b), b);
+        const moves = orderMoves(getTacticalMoves(color, b), b, color);
         if (moves.length === 0) {
             return standPat;
         }
@@ -2163,7 +2312,7 @@
         }
 
         const color = maximizing ? 'black' : 'white';
-        const moves = orderMoves(getAllMovesForAI(color, b), b);
+        const moves = orderMoves(getAllMovesForAI(color, b), b, color);
         board = originalBoard;
 
         if (moves.length === 0) {
@@ -2195,12 +2344,32 @@
 
     function getBestMove() {
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
-        const moves = orderMoves(getAllMovesForAI('black', board), board);
+        const moves = orderMoves(getAllMovesForAI('black', board), board, 'black');
 
         if (moves.length === 0) return null;
 
         if (settings.randomMoveChance > 0 && Math.random() < settings.randomMoveChance) {
             return moves[Math.floor(Math.random() * moves.length)];
+        }
+
+        if (settings.evalLevel !== 'material') {
+            const hanging = findHangingPieces(board, 'black');
+            if (hanging.length > 0) {
+                const rescueMoves = moves.filter(move => isSavingMove(move, board, 'black'));
+                if (rescueMoves.length > 0) {
+                    let bestRescue = null;
+                    let bestRescueScore = -Infinity;
+                    for (const move of rescueMoves) {
+                        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+                        const score = minimax(newBoard, Math.max(1, settings.depth - 2), false, -Infinity, Infinity);
+                        if (score > bestRescueScore) {
+                            bestRescueScore = score;
+                            bestRescue = move;
+                        }
+                    }
+                    if (bestRescue) return bestRescue;
+                }
+            }
         }
 
         const scored = [];
