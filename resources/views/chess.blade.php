@@ -1381,27 +1381,33 @@
             thinkMin: 280,
             thinkMax: 650,
             label: 'Easy',
-            materialOnly: true,
+            evalLevel: 'material',
+            useQuiescence: false,
+            quiescenceDepth: 0,
         },
         medium: {
-            depth: 3,
-            randomMoveChance: 0.06,
-            blunderChance: 0.18,
-            topPool: 4,
-            thinkMin: 500,
-            thinkMax: 1100,
-            label: 'Medium',
-            materialOnly: false,
-        },
-        hard: {
             depth: 4,
             randomMoveChance: 0,
             blunderChance: 0,
             topPool: 1,
-            thinkMin: 850,
-            thinkMax: 1800,
+            thinkMin: 900,
+            thinkMax: 2200,
+            label: 'Medium',
+            evalLevel: 'standard',
+            useQuiescence: true,
+            quiescenceDepth: 3,
+        },
+        hard: {
+            depth: 5,
+            randomMoveChance: 0,
+            blunderChance: 0,
+            topPool: 1,
+            thinkMin: 1600,
+            thinkMax: 3500,
             label: 'Hard',
-            materialOnly: false,
+            evalLevel: 'advanced',
+            useQuiescence: true,
+            quiescenceDepth: 5,
         },
     };
 
@@ -1976,17 +1982,120 @@
                 const type = p.toLowerCase();
                 const color = getPieceColor(p);
                 let val = PIECE_VALUES[type];
-                if (!settings.materialOnly) {
+                if (settings.evalLevel !== 'material') {
                     val += pstValue(type, r, c, color);
                 }
                 score += color === 'black' ? val : -val;
             }
         }
-        if (!settings.materialOnly) {
-            if (isInCheck(b, 'white')) score -= 40;
-            if (isInCheck(b, 'black')) score += 40;
+        if (settings.evalLevel !== 'material') {
+            if (isInCheck(b, 'white')) score -= 50;
+            if (isInCheck(b, 'black')) score += 50;
+        }
+        if (settings.evalLevel === 'advanced') {
+            score += centerControlScore(b, 'black');
+            score -= centerControlScore(b, 'white');
+            score += mobilityScore(b, 'black') * 2;
+            score -= mobilityScore(b, 'white') * 2;
         }
         return score;
+    }
+
+    function centerControlScore(b, color) {
+        let score = 0;
+        const center = [[3, 3], [3, 4], [4, 3], [4, 4], [2, 3], [2, 4], [3, 2], [3, 5], [4, 2], [4, 5], [5, 3], [5, 4]];
+        for (const [r, c] of center) {
+            const piece = b[r][c];
+            if (piece && getPieceColor(piece) === color) {
+                score += piece.toLowerCase() === 'p' ? 8 : 14;
+            }
+        }
+        return score;
+    }
+
+    function mobilityScore(b, color) {
+        const originalBoard = board;
+        board = b;
+        let count = 0;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (piece && getPieceColor(piece) === color) {
+                    const saved = selectedSquare;
+                    selectedSquare = { row: r, col: c };
+                    count += getValidMoves(r, c).length;
+                    selectedSquare = saved;
+                }
+            }
+        }
+        board = originalBoard;
+        return count;
+    }
+
+    function moveOrderingScore(move, b) {
+        const victim = b[move.toRow][move.toCol];
+        const attacker = b[move.fromRow][move.fromCol];
+        if (victim) {
+            const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+            const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+            return 100000 + victimVal * 12 - attackerVal;
+        }
+        const attackerType = attacker.toLowerCase();
+        if (attackerType === 'p' && (move.toRow === 0 || move.toRow === 7)) {
+            return 90000;
+        }
+        return 0;
+    }
+
+    function orderMoves(moves, b) {
+        return moves.slice().sort((a, bMove) => moveOrderingScore(bMove, b) - moveOrderingScore(a, b));
+    }
+
+    function getTacticalMoves(color, b) {
+        return getAllMovesForAI(color, b).filter(move => moveOrderingScore(move, b) > 0);
+    }
+
+    function quiescence(b, depth, alpha, beta, maximizing) {
+        const standPat = evaluateBoard(b);
+        if (depth === 0) {
+            return standPat;
+        }
+
+        if (maximizing) {
+            if (standPat >= beta) return beta;
+            alpha = Math.max(alpha, standPat);
+        } else {
+            if (standPat <= alpha) return alpha;
+            beta = Math.min(beta, standPat);
+        }
+
+        const color = maximizing ? 'black' : 'white';
+        const moves = orderMoves(getTacticalMoves(color, b), b);
+        if (moves.length === 0) {
+            return standPat;
+        }
+
+        if (maximizing) {
+            let maxEval = standPat;
+            for (const move of moves) {
+                const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+                const evalResult = quiescence(newBoard, depth - 1, alpha, beta, false);
+                maxEval = Math.max(maxEval, evalResult);
+                alpha = Math.max(alpha, evalResult);
+                if (beta <= alpha) break;
+            }
+            return maxEval;
+        }
+
+        let minEval = standPat;
+        for (const move of moves) {
+            const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+            const evalResult = quiescence(newBoard, depth - 1, alpha, beta, true);
+            minEval = Math.min(minEval, evalResult);
+            beta = Math.min(beta, evalResult);
+            if (beta <= alpha) break;
+        }
+        return minEval;
     }
 
     function showHint() {
@@ -2043,21 +2152,24 @@
     function minimax(b, depth, maximizing, alpha, beta) {
         const originalBoard = board;
         board = b;
-        
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+
         if (depth === 0) {
-            const score = evaluateBoard(b);
+            const score = settings.useQuiescence
+                ? quiescence(b, settings.quiescenceDepth, alpha, beta, maximizing)
+                : evaluateBoard(b);
             board = originalBoard;
             return score;
         }
-        
+
         const color = maximizing ? 'black' : 'white';
-        const moves = getAllMovesForAI(color, b);
+        const moves = orderMoves(getAllMovesForAI(color, b), b);
         board = originalBoard;
-        
+
         if (moves.length === 0) {
             return maximizing ? -Infinity : Infinity;
         }
-        
+
         if (maximizing) {
             let maxEval = -Infinity;
             for (const move of moves) {
@@ -2068,34 +2180,28 @@
                 if (beta <= alpha) break;
             }
             return maxEval;
-        } else {
-            let minEval = Infinity;
-            for (const move of moves) {
-                const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
-                const evalResult = minimax(newBoard, depth - 1, true, alpha, beta);
-                minEval = Math.min(minEval, evalResult);
-                beta = Math.min(beta, evalResult);
-                if (beta <= alpha) break;
-            }
-            return minEval;
         }
+
+        let minEval = Infinity;
+        for (const move of moves) {
+            const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+            const evalResult = minimax(newBoard, depth - 1, true, alpha, beta);
+            minEval = Math.min(minEval, evalResult);
+            beta = Math.min(beta, evalResult);
+            if (beta <= alpha) break;
+        }
+        return minEval;
     }
 
     function getBestMove() {
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
-        const moves = getAllMovesForAI('black', board);
+        const moves = orderMoves(getAllMovesForAI('black', board), board);
 
         if (moves.length === 0) return null;
 
         if (settings.randomMoveChance > 0 && Math.random() < settings.randomMoveChance) {
             return moves[Math.floor(Math.random() * moves.length)];
         }
-
-        moves.sort((a, b) => {
-            const capA = board[a.toRow][a.toCol] ? 10 : 0;
-            const capB = board[b.toRow][b.toCol] ? 10 : 0;
-            return capB - capA;
-        });
 
         const scored = [];
         for (const move of moves) {
@@ -2111,11 +2217,6 @@
             if (blunderPool.length) {
                 return blunderPool[Math.floor(Math.random() * blunderPool.length)].move;
             }
-        }
-
-        if (settings.topPool > 1 && Math.random() < 0.35) {
-            const pool = scored.slice(0, Math.min(settings.topPool, scored.length));
-            return pool[Math.floor(Math.random() * pool.length)].move;
         }
 
         return scored[0].move;
@@ -2147,8 +2248,10 @@
             GameSounds.play('draw');
             showGameOver('Stalemate', 'The game is a draw.');
         } else if (gameMode === '1p' && currentPlayer === 'black') {
-            const label = (AI_SETTINGS[difficulty] || AI_SETTINGS.easy).label;
-            statusEl.textContent = `AI (${label}) is thinking...`;
+            const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+            statusEl.textContent = settings.depth >= 5
+                ? `AI (${settings.label}) is thinking deeply...`
+                : `AI (${settings.label}) is thinking...`;
         } else {
             statusEl.textContent = `${cap(currentPlayer)}'s turn`;
         }
@@ -2369,7 +2472,9 @@
 
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         const thinkMs = settings.thinkMin + Math.random() * (settings.thinkMax - settings.thinkMin);
-        document.getElementById('status').textContent = `AI (${settings.label}) is thinking...`;
+        document.getElementById('status').textContent = settings.depth >= 5
+            ? `AI (${settings.label}) is thinking deeply...`
+            : `AI (${settings.label}) is thinking...`;
 
         setTimeout(() => {
             if (gameOver || !isAtLatestPosition()) return;
