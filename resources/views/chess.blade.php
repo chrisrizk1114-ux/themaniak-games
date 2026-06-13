@@ -1222,10 +1222,11 @@
                 <p class="mode-desc">Pick a difficulty and play against the computer.</p>
                 <div class="difficulty-buttons">
                     <h4>Difficulty</h4>
-                    <button class="diff-btn" type="button" onclick="startSoloGame('easy')">Easy</button>
-                    <button class="diff-btn" type="button" onclick="startSoloGame('medium')">Medium</button>
-                    <button class="diff-btn" type="button" onclick="startSoloGame('hard')">Hard</button>
+                    <button class="diff-btn" type="button" onclick="startSoloGame('easy')" title="Casual — great for learning">Easy</button>
+                    <button class="diff-btn" type="button" onclick="startSoloGame('medium')" title="Smart — plans ahead and protects pieces">Medium</button>
+                    <button class="diff-btn" type="button" onclick="startSoloGame('hard')" title="Expert — deep thinking, sharp tactics">Hard</button>
                 </div>
+                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium &amp; Hard think longer, spot threats, and play to win.</p>
             </div>
             <div class="mode-card">
                 <h3>Two Players</h3>
@@ -1386,28 +1387,30 @@
             quiescenceDepth: 0,
         },
         medium: {
-            depth: 4,
+            maxDepth: 5,
             randomMoveChance: 0,
             blunderChance: 0,
-            topPool: 1,
-            thinkMin: 900,
-            thinkMax: 2200,
+            thinkMin: 1400,
+            thinkMax: 3500,
             label: 'Medium',
             evalLevel: 'standard',
             useQuiescence: true,
-            quiescenceDepth: 3,
+            quiescenceDepth: 4,
+            useIterativeDeepening: true,
+            useMobility: false,
         },
         hard: {
-            depth: 5,
+            maxDepth: 6,
             randomMoveChance: 0,
             blunderChance: 0,
-            topPool: 1,
-            thinkMin: 1600,
-            thinkMax: 3500,
+            thinkMin: 2500,
+            thinkMax: 5500,
             label: 'Hard',
             evalLevel: 'advanced',
             useQuiescence: true,
-            quiescenceDepth: 5,
+            quiescenceDepth: 6,
+            useIterativeDeepening: true,
+            useMobility: true,
         },
     };
 
@@ -1445,10 +1448,12 @@
     let applyingRemote = false;
     let lastWinner = null;
     let pendingInvites = { incoming: [], outgoing: [], active: [] };
+    let aiThinkDeadline = 0;
 
     const FILES = 'abcdefgh';
     const PST_PAWN = [0,5,5,-10,-10,5,5,0, 2,2,2,2,2,2,2,2, 5,5,10,15,15,10,5,5, 10,10,15,20,20,15,10,10, 15,15,20,25,25,20,15,15, 20,25,25,30,30,25,25,20, 30,30,30,35,35,30,30,30, 0,0,0,0,0,0,0,0];
     const PST_KNIGHT = [-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,15,20,20,15,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50];
+    const PST_BISHOP = [-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20];
 
     function playMoveSound({ pieceType, captured, castled }) {
         GameSounds.init();
@@ -1528,8 +1533,77 @@
 
     function pstValue(type, row, col, color) {
         const idx = color === 'white' ? row * 8 + col : (7 - row) * 8 + col;
-        const tables = { p: PST_PAWN, n: PST_KNIGHT };
+        const tables = { p: PST_PAWN, n: PST_KNIGHT, b: PST_BISHOP };
         return (tables[type] || new Array(64).fill(0))[idx] || 0;
+    }
+
+    function countDevelopedMinorPieces(b, color) {
+        const backRank = color === 'white' ? 7 : 0;
+        let developed = 0;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color) continue;
+                const type = piece.toLowerCase();
+                if ((type === 'n' || type === 'b') && r !== backRank) {
+                    developed++;
+                }
+            }
+        }
+        return developed;
+    }
+
+    function developmentScore(b, color) {
+        const backRank = color === 'white' ? 7 : 0;
+        let score = countDevelopedMinorPieces(b, color) * 18;
+        for (let c = 0; c < 8; c++) {
+            const piece = b[backRank][c];
+            if (!piece || getPieceColor(piece) !== color) continue;
+            const type = piece.toLowerCase();
+            if (type === 'n' || type === 'b') score -= 22;
+        }
+        return score;
+    }
+
+    function kingSafetyScore(b, color) {
+        const kingPos = getKingPosition(b, color);
+        if (!kingPos) return 0;
+        const homeRank = color === 'white' ? 7 : 0;
+        let score = kingPos.row === homeRank ? 20 : 0;
+        const pawnShield = color === 'white' ? kingPos.row - 1 : kingPos.row + 1;
+        if (pawnShield >= 0 && pawnShield < 8) {
+            for (let dc = -1; dc <= 1; dc++) {
+                const col = kingPos.col + dc;
+                if (col >= 0 && col < 8) {
+                    const p = b[pawnShield][col];
+                    if (p && getPieceColor(p) === color && p.toLowerCase() === 'p') score += 12;
+                }
+            }
+        }
+        return score;
+    }
+
+    function moveGivesCheck(move, b, color) {
+        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const enemy = color === 'white' ? 'black' : 'white';
+        return isInCheck(newBoard, enemy);
+    }
+
+    function moveCreatesThreat(move, b, color) {
+        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const enemy = color === 'white' ? 'black' : 'white';
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = newBoard[r][c];
+                if (!piece || getPieceColor(piece) !== enemy) continue;
+                if (getSquareThreat(newBoard, r, c, enemy).attacked) return true;
+            }
+        }
+        return false;
+    }
+
+    function searchTimeUp() {
+        return aiThinkDeadline > 0 && Date.now() >= aiThinkDeadline;
     }
 
     function getPieceColor(piece) {
@@ -2123,16 +2197,22 @@
             }
         }
         if (settings.evalLevel !== 'material') {
-            if (isInCheck(b, 'white')) score -= 50;
-            if (isInCheck(b, 'black')) score += 50;
+            if (isInCheck(b, 'white')) score -= 60;
+            if (isInCheck(b, 'black')) score += 60;
             score -= hangingPieceScore(b, 'black');
             score += hangingPieceScore(b, 'white');
+            score += developmentScore(b, 'black');
+            score -= developmentScore(b, 'white');
         }
         if (settings.evalLevel === 'advanced') {
             score += centerControlScore(b, 'black');
             score -= centerControlScore(b, 'white');
-            score += mobilityScore(b, 'black') * 2;
-            score -= mobilityScore(b, 'white') * 2;
+            score += kingSafetyScore(b, 'black');
+            score -= kingSafetyScore(b, 'white');
+            if (settings.useMobility) {
+                score += mobilityScore(b, 'black') * 2;
+                score -= mobilityScore(b, 'white') * 2;
+            }
         }
         return score;
     }
@@ -2179,6 +2259,13 @@
             const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
             return 100000 + victimVal * 12 - attackerVal;
         }
+        if (moveGivesCheck(move, b, color)) {
+            return 85000;
+        }
+        if (moveCreatesThreat(move, b, color)) {
+            const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+            return 60000 + attackerVal;
+        }
         const attackerType = attacker.toLowerCase();
         if (attackerType === 'p' && (move.toRow === 0 || move.toRow === 7)) {
             return 90000;
@@ -2191,7 +2278,10 @@
     }
 
     function getTacticalMoves(color, b) {
-        return getAllMovesForAI(color, b).filter(move => moveOrderingScore(move, b, color) > 0);
+        return getAllMovesForAI(color, b).filter(move => {
+            if (moveOrderingScore(move, b, color) >= 60000) return true;
+            return moveGivesCheck(move, b, color);
+        });
     }
 
     function isSavingMove(move, b, color) {
@@ -2342,6 +2432,39 @@
         return minEval;
     }
 
+    function scoreMove(move, depth, settings) {
+        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        return minimax(newBoard, depth - 1, false, -Infinity, Infinity);
+    }
+
+    function iterativeDeepeningSearch(moves, settings) {
+        let bestMove = moves[0];
+        let bestScore = -Infinity;
+
+        for (let depth = 1; depth <= settings.maxDepth; depth++) {
+            if (searchTimeUp()) break;
+
+            let layerBest = null;
+            let layerScore = -Infinity;
+
+            for (const move of moves) {
+                if (searchTimeUp()) break;
+                const score = scoreMove(move, depth, settings);
+                if (score > layerScore) {
+                    layerScore = score;
+                    layerBest = move;
+                }
+            }
+
+            if (layerBest) {
+                bestMove = layerBest;
+                bestScore = layerScore;
+            }
+        }
+
+        return bestMove;
+    }
+
     function getBestMove() {
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         const moves = orderMoves(getAllMovesForAI('black', board), board, 'black');
@@ -2359,9 +2482,10 @@
                 if (rescueMoves.length > 0) {
                     let bestRescue = null;
                     let bestRescueScore = -Infinity;
+                    const rescueDepth = Math.max(2, settings.maxDepth - 1);
                     for (const move of rescueMoves) {
-                        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
-                        const score = minimax(newBoard, Math.max(1, settings.depth - 2), false, -Infinity, Infinity);
+                        if (searchTimeUp()) break;
+                        const score = scoreMove(move, rescueDepth, settings);
                         if (score > bestRescueScore) {
                             bestRescueScore = score;
                             bestRescue = move;
@@ -2372,10 +2496,14 @@
             }
         }
 
+        if (settings.useIterativeDeepening) {
+            return iterativeDeepeningSearch(moves, settings);
+        }
+
+        const depth = settings.maxDepth || settings.depth || 3;
         const scored = [];
         for (const move of moves) {
-            const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
-            const score = minimax(newBoard, settings.depth - 1, false, -Infinity, Infinity);
+            const score = scoreMove(move, depth, settings);
             scored.push({ move, score });
         }
         scored.sort((a, b) => b.score - a.score);
@@ -2418,9 +2546,13 @@
             showGameOver('Stalemate', 'The game is a draw.');
         } else if (gameMode === '1p' && currentPlayer === 'black') {
             const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
-            statusEl.textContent = settings.depth >= 5
-                ? `AI (${settings.label}) is thinking deeply...`
-                : `AI (${settings.label}) is thinking...`;
+            if (settings.maxDepth >= 6) {
+                statusEl.textContent = `AI (${settings.label}) is calculating...`;
+            } else if (settings.maxDepth >= 5) {
+                statusEl.textContent = `AI (${settings.label}) is thinking deeply...`;
+            } else {
+                statusEl.textContent = `AI (${settings.label}) is thinking...`;
+            }
         } else {
             statusEl.textContent = `${cap(currentPlayer)}'s turn`;
         }
@@ -2641,14 +2773,21 @@
 
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         const thinkMs = settings.thinkMin + Math.random() * (settings.thinkMax - settings.thinkMin);
-        document.getElementById('status').textContent = settings.depth >= 5
-            ? `AI (${settings.label}) is thinking deeply...`
-            : `AI (${settings.label}) is thinking...`;
+        aiThinkDeadline = Date.now() + thinkMs;
+
+        const statusEl = document.getElementById('status');
+        if (settings.maxDepth >= 6) {
+            statusEl.textContent = `AI (${settings.label}) is calculating...`;
+        } else if (settings.maxDepth >= 5) {
+            statusEl.textContent = `AI (${settings.label}) is thinking deeply...`;
+        } else {
+            statusEl.textContent = `AI (${settings.label}) is thinking...`;
+        }
 
         setTimeout(() => {
             if (gameOver || !isAtLatestPosition()) return;
             executeAIMove();
-        }, thinkMs);
+        }, settings.useIterativeDeepening ? 120 : 80);
     }
 
     function executeAIMove() {
