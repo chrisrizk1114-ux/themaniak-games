@@ -976,6 +976,24 @@
         min-width: 200px;
     }
 
+    .ai-difficulty-badge {
+        display: none;
+        font-family: 'Source Sans 3', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid rgba(212,168,83,0.35);
+        background: rgba(212,168,83,0.12);
+        color: var(--royal-gold-light);
+    }
+    .ai-difficulty-badge.show { display: inline-flex; }
+    .ai-difficulty-badge.easy { border-color: rgba(74,222,128,0.45); color: #bbf7d0; background: rgba(74,222,128,0.12); }
+    .ai-difficulty-badge.medium { border-color: rgba(250,204,21,0.45); color: #fde68a; background: rgba(250,204,21,0.12); }
+    .ai-difficulty-badge.hard { border-color: rgba(248,113,113,0.45); color: #fecaca; background: rgba(248,113,113,0.12); }
+
     .chess-turn-row {
         display: flex;
         align-items: center;
@@ -1238,6 +1256,7 @@
             <div class="chess-board-col">
                 <div class="chess-turn-row">
                     <span class="mobile-clock" id="black-timer-mobile" style="color:#fff!important;-webkit-text-fill-color:#fff!important">10:00</span>
+                    <span class="ai-difficulty-badge" id="aiDifficultyBadge">Easy</span>
                     <div class="status" id="status">White's Turn</div>
                     <span class="mobile-clock" id="white-timer-mobile" style="color:#fff!important;-webkit-text-fill-color:#fff!important">10:00</span>
                 </div>
@@ -1351,6 +1370,39 @@
 
     const PIECE_VALUES = {
         'p': 100, 'n': 320, 'b': 330, 'r': 500, 'q': 900, 'k': 20000
+    };
+
+    const AI_SETTINGS = {
+        easy: {
+            depth: 1,
+            randomMoveChance: 0.42,
+            blunderChance: 0.38,
+            topPool: 1,
+            thinkMin: 280,
+            thinkMax: 650,
+            label: 'Easy',
+            materialOnly: true,
+        },
+        medium: {
+            depth: 3,
+            randomMoveChance: 0.06,
+            blunderChance: 0.18,
+            topPool: 4,
+            thinkMin: 500,
+            thinkMax: 1100,
+            label: 'Medium',
+            materialOnly: false,
+        },
+        hard: {
+            depth: 4,
+            randomMoveChance: 0,
+            blunderChance: 0,
+            topPool: 1,
+            thinkMin: 850,
+            thinkMax: 1800,
+            label: 'Hard',
+            materialOnly: false,
+        },
     };
 
     let board = [];
@@ -1915,6 +1967,7 @@
     }
 
     function evaluateBoard(b) {
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         let score = 0;
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
@@ -1922,12 +1975,17 @@
                 if (!p) continue;
                 const type = p.toLowerCase();
                 const color = getPieceColor(p);
-                const val = PIECE_VALUES[type] + pstValue(type, r, c, color);
+                let val = PIECE_VALUES[type];
+                if (!settings.materialOnly) {
+                    val += pstValue(type, r, c, color);
+                }
                 score += color === 'black' ? val : -val;
             }
         }
-        if (isInCheck(b, 'white')) score -= 40;
-        if (isInCheck(b, 'black')) score += 40;
+        if (!settings.materialOnly) {
+            if (isInCheck(b, 'white')) score -= 40;
+            if (isInCheck(b, 'black')) score += 40;
+        }
         return score;
     }
 
@@ -2024,13 +2082,14 @@
     }
 
     function getBestMove() {
-        const originalBoard = board;
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         const moves = getAllMovesForAI('black', board);
-        board = originalBoard;
-        
+
         if (moves.length === 0) return null;
-        
-        let depth = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 3 : 4;
+
+        if (settings.randomMoveChance > 0 && Math.random() < settings.randomMoveChance) {
+            return moves[Math.floor(Math.random() * moves.length)];
+        }
 
         moves.sort((a, b) => {
             const capA = board[a.toRow][a.toCol] ? 10 : 0;
@@ -2038,18 +2097,28 @@
             return capB - capA;
         });
 
-        let bestMove = moves[0];
-        let bestScore = -Infinity;
-
+        const scored = [];
         for (const move of moves) {
             const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
-            const score = minimax(newBoard, depth - 1, false, -Infinity, Infinity);
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = move;
+            const score = minimax(newBoard, settings.depth - 1, false, -Infinity, Infinity);
+            scored.push({ move, score });
+        }
+        scored.sort((a, b) => b.score - a.score);
+
+        if (settings.blunderChance > 0 && Math.random() < settings.blunderChance) {
+            const start = Math.max(1, Math.floor(scored.length * 0.45));
+            const blunderPool = scored.slice(start);
+            if (blunderPool.length) {
+                return blunderPool[Math.floor(Math.random() * blunderPool.length)].move;
             }
         }
-        return bestMove;
+
+        if (settings.topPool > 1 && Math.random() < 0.35) {
+            const pool = scored.slice(0, Math.min(settings.topPool, scored.length));
+            return pool[Math.floor(Math.random() * pool.length)].move;
+        }
+
+        return scored[0].move;
     }
 
     function updateStatus() {
@@ -2078,7 +2147,8 @@
             GameSounds.play('draw');
             showGameOver('Stalemate', 'The game is a draw.');
         } else if (gameMode === '1p' && currentPlayer === 'black') {
-            statusEl.textContent = 'AI is thinking...';
+            const label = (AI_SETTINGS[difficulty] || AI_SETTINGS.easy).label;
+            statusEl.textContent = `AI (${label}) is thinking...`;
         } else {
             statusEl.textContent = `${cap(currentPlayer)}'s turn`;
         }
@@ -2188,7 +2258,7 @@
         if (gameMode === 'online') {
             syncMoveToServer();
         } else if (gameMode === '1p' && currentPlayer === 'black' && !gameOver && isAtLatestPosition()) {
-            setTimeout(makeAIMove, 450);
+            setTimeout(makeAIMove, 80);
         }
     }
 
@@ -2296,6 +2366,18 @@
 
     function makeAIMove() {
         if (gameOver || !isAtLatestPosition()) return;
+
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        const thinkMs = settings.thinkMin + Math.random() * (settings.thinkMax - settings.thinkMin);
+        document.getElementById('status').textContent = `AI (${settings.label}) is thinking...`;
+
+        setTimeout(() => {
+            if (gameOver || !isAtLatestPosition()) return;
+            executeAIMove();
+        }, thinkMs);
+    }
+
+    function executeAIMove() {
         const move = getBestMove();
         if (!move) return;
 
@@ -2954,13 +3036,23 @@
     function updatePlayerLabels() {
         const blackRole = document.getElementById('black-role');
         const whiteRole = document.getElementById('white-role');
-        if (gameMode === 'online') return;
+        const badge = document.getElementById('aiDifficultyBadge');
+        if (gameMode === 'online') {
+            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard');
+            return;
+        }
         if (gameMode === '1p') {
-            blackRole.textContent = 'AI';
+            const label = (AI_SETTINGS[difficulty] || AI_SETTINGS.easy).label;
+            blackRole.textContent = `AI · ${label}`;
             whiteRole.textContent = 'You';
+            if (badge) {
+                badge.textContent = label;
+                badge.className = `ai-difficulty-badge show ${difficulty}`;
+            }
         } else {
             blackRole.textContent = 'Player 2';
             whiteRole.textContent = 'Player 1';
+            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard');
         }
     }
 
