@@ -6,9 +6,8 @@ export PORT="${PORT:-8000}"
 mkdir -p storage/framework/sessions storage/framework/cache/data storage/framework/views storage/logs bootstrap/cache
 chmod -R 777 storage bootstrap/cache
 
-php artisan config:clear 2>/dev/null || true
-php artisan route:clear 2>/dev/null || true
-php artisan view:clear 2>/dev/null || true
+rm -f bootstrap/cache/config.php bootstrap/cache/routes-v7.php bootstrap/cache/events.php 2>/dev/null || true
+php artisan optimize:clear 2>/dev/null || true
 php artisan storage:link 2>/dev/null || true
 
 echo "Waiting for database..."

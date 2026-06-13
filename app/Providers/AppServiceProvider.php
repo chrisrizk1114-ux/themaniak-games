@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         config([
-            'session.driver' => env('SESSION_DRIVER', 'database'),
+            'session.driver' => 'file',
             'session.encrypt' => false,
             'session.domain' => null,
             'session.secure' => true,

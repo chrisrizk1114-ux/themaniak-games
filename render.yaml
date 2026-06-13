@@ -38,7 +38,7 @@ services:
       - key: DB_SSL_RELAXED
         value: true
       - key: SESSION_DRIVER
-        value: database
+        value: file
       - key: SESSION_SECURE_COOKIE
         value: true
       - key: SESSION_ENCRYPT
