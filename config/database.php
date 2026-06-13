@@ -83,14 +83,6 @@ return [
                     }
                 }
 
-                $connectTimeout = (int) env('DB_CONNECT_TIMEOUT', env('RENDER') || $isAiven ? 5 : 10);
-                if ($connectTimeout > 0) {
-                    $connectTimeoutAttr = defined('PDO::MYSQL_ATTR_CONNECT_TIMEOUT')
-                        ? PDO::MYSQL_ATTR_CONNECT_TIMEOUT
-                        : (defined('Pdo\\Mysql::ATTR_CONNECT_TIMEOUT') ? \Pdo\Mysql::ATTR_CONNECT_TIMEOUT : 1002);
-                    $options[$connectTimeoutAttr] = $connectTimeout;
-                }
-
                 return $options;
             })() : [],
         ],
