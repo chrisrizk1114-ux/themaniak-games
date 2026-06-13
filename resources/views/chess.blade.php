@@ -1226,7 +1226,7 @@
                     <button class="diff-btn" type="button" onclick="startSoloGame('medium')" title="Smart — plans ahead and protects pieces">Medium</button>
                     <button class="diff-btn" type="button" onclick="startSoloGame('hard')" title="Expert — deep thinking, sharp tactics">Hard</button>
                 </div>
-                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium &amp; Hard think longer, spot threats, and play to win.</p>
+                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp. Hard is expert-level — thinks up to 7 moves ahead.</p>
             </div>
             <div class="mode-card">
                 <h3>Two Players</h3>
@@ -1387,30 +1387,32 @@
             quiescenceDepth: 0,
         },
         medium: {
-            maxDepth: 5,
-            randomMoveChance: 0,
-            blunderChance: 0,
-            thinkMin: 1400,
-            thinkMax: 3500,
-            label: 'Medium',
-            evalLevel: 'standard',
-            useQuiescence: true,
-            quiescenceDepth: 4,
-            useIterativeDeepening: true,
-            useMobility: false,
-        },
-        hard: {
             maxDepth: 6,
             randomMoveChance: 0,
             blunderChance: 0,
-            thinkMin: 2500,
-            thinkMax: 5500,
+            thinkMin: 1800,
+            thinkMax: 4200,
+            label: 'Medium',
+            evalLevel: 'advanced',
+            useQuiescence: true,
+            quiescenceDepth: 5,
+            useIterativeDeepening: true,
+            useMobility: true,
+            mobilityWeight: 1.5,
+        },
+        hard: {
+            maxDepth: 7,
+            randomMoveChance: 0,
+            blunderChance: 0,
+            thinkMin: 3500,
+            thinkMax: 7000,
             label: 'Hard',
             evalLevel: 'advanced',
             useQuiescence: true,
-            quiescenceDepth: 6,
+            quiescenceDepth: 7,
             useIterativeDeepening: true,
             useMobility: true,
+            mobilityWeight: 3,
         },
     };
 
@@ -1449,11 +1451,15 @@
     let lastWinner = null;
     let pendingInvites = { incoming: [], outgoing: [], active: [] };
     let aiThinkDeadline = 0;
+    let aiTransposition = new Map();
+    let aiBestMoveHint = null;
+    const AI_TT_MAX = 12000;
 
     const FILES = 'abcdefgh';
     const PST_PAWN = [0,5,5,-10,-10,5,5,0, 2,2,2,2,2,2,2,2, 5,5,10,15,15,10,5,5, 10,10,15,20,20,15,10,10, 15,15,20,25,25,20,15,15, 20,25,25,30,30,25,25,20, 30,30,30,35,35,30,30,30, 0,0,0,0,0,0,0,0];
     const PST_KNIGHT = [-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,15,20,20,15,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50];
     const PST_BISHOP = [-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20];
+    const PST_ROOK = [0,0,5,10,10,5,0,0,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,5,10,10,10,10,10,10,5,0,0,0,0,0,0,0,0];
 
     function playMoveSound({ pieceType, captured, castled }) {
         GameSounds.init();
@@ -1533,8 +1539,71 @@
 
     function pstValue(type, row, col, color) {
         const idx = color === 'white' ? row * 8 + col : (7 - row) * 8 + col;
-        const tables = { p: PST_PAWN, n: PST_KNIGHT, b: PST_BISHOP };
+        const tables = { p: PST_PAWN, n: PST_KNIGHT, b: PST_BISHOP, r: PST_ROOK };
         return (tables[type] || new Array(64).fill(0))[idx] || 0;
+    }
+
+    function boardKey(b) {
+        return b.map(row => row.join('')).join('/');
+    }
+
+    function ttLookup(key, depth, alpha, beta) {
+        const entry = aiTransposition.get(key);
+        if (!entry || entry.depth < depth) return null;
+        if (entry.flag === 'exact') return entry.score;
+        if (entry.flag === 'lower' && entry.score >= beta) return entry.score;
+        if (entry.flag === 'upper' && entry.score <= alpha) return entry.score;
+        return null;
+    }
+
+    function ttStore(key, depth, score, alpha, beta) {
+        if (aiTransposition.size > AI_TT_MAX) aiTransposition.clear();
+        const prev = aiTransposition.get(key);
+        if (prev && prev.depth > depth) return;
+        let flag = 'exact';
+        if (score <= alpha) flag = 'upper';
+        else if (score >= beta) flag = 'lower';
+        aiTransposition.set(key, { depth, score, flag });
+    }
+
+    function isFileOpen(b, col) {
+        for (let r = 0; r < 8; r++) {
+            const p = b[r][col];
+            if (p && p.toLowerCase() === 'p') return false;
+        }
+        return true;
+    }
+
+    function rookFileScore(b, color) {
+        let score = 0;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color || piece.toLowerCase() !== 'r') continue;
+                if (isFileOpen(b, c)) score += 22;
+                else if (isSemiOpenFile(b, c, color)) score += 10;
+            }
+        }
+        return score;
+    }
+
+    function isSemiOpenFile(b, col, color) {
+        let ownPawn = false;
+        let enemyPawn = false;
+        for (let r = 0; r < 8; r++) {
+            const p = b[r][col];
+            if (!p || p.toLowerCase() !== 'p') continue;
+            if (getPieceColor(p) === color) ownPawn = true;
+            else enemyPawn = true;
+        }
+        return !ownPawn && enemyPawn;
+    }
+
+    function seeCaptureGain(move, b) {
+        const victim = b[move.toRow][move.toCol];
+        const attacker = b[move.fromRow][move.fromCol];
+        if (!victim || !attacker) return 0;
+        return (PIECE_VALUES[victim.toLowerCase()] || 0) - (PIECE_VALUES[attacker.toLowerCase()] || 0);
     }
 
     function countDevelopedMinorPieces(b, color) {
@@ -2180,7 +2249,7 @@
         return bonus;
     }
 
-    function evaluateBoard(b) {
+    function evaluateBoard(b, heavyEval = false) {
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         let score = 0;
         for (let r = 0; r < 8; r++) {
@@ -2197,8 +2266,8 @@
             }
         }
         if (settings.evalLevel !== 'material') {
-            if (isInCheck(b, 'white')) score -= 60;
-            if (isInCheck(b, 'black')) score += 60;
+            if (isInCheck(b, 'white')) score -= 70;
+            if (isInCheck(b, 'black')) score += 70;
             score -= hangingPieceScore(b, 'black');
             score += hangingPieceScore(b, 'white');
             score += developmentScore(b, 'black');
@@ -2209,9 +2278,12 @@
             score -= centerControlScore(b, 'white');
             score += kingSafetyScore(b, 'black');
             score -= kingSafetyScore(b, 'white');
-            if (settings.useMobility) {
-                score += mobilityScore(b, 'black') * 2;
-                score -= mobilityScore(b, 'white') * 2;
+            score += rookFileScore(b, 'black');
+            score -= rookFileScore(b, 'white');
+            if (heavyEval && settings.useMobility) {
+                const mw = settings.mobilityWeight || 2;
+                score += mobilityScore(b, 'black') * mw;
+                score -= mobilityScore(b, 'white') * mw;
             }
         }
         return score;
@@ -2273,14 +2345,27 @@
         return 0;
     }
 
-    function orderMoves(moves, b, color = 'black') {
-        return moves.slice().sort((a, bMove) => moveOrderingScore(bMove, b, color) - moveOrderingScore(a, b));
+    function orderMoves(moves, b, color = 'black', priorityMove = null) {
+        return moves.slice().sort((a, bMove) => {
+            const scoreB = moveOrderingScore(bMove, b, color)
+                + (priorityMove && movesEqual(bMove, priorityMove) ? 200000 : 0);
+            const scoreA = moveOrderingScore(a, b, color)
+                + (priorityMove && movesEqual(a, priorityMove) ? 200000 : 0);
+            return scoreB - scoreA;
+        });
+    }
+
+    function movesEqual(a, b) {
+        return a.fromRow === b.fromRow && a.fromCol === b.fromCol
+            && a.toRow === b.toRow && a.toCol === b.toCol;
     }
 
     function getTacticalMoves(color, b) {
         return getAllMovesForAI(color, b).filter(move => {
+            if (moveGivesCheck(move, b, color)) return true;
             if (moveOrderingScore(move, b, color) >= 60000) return true;
-            return moveGivesCheck(move, b, color);
+            const gain = seeCaptureGain(move, b);
+            return gain >= -50;
         });
     }
 
@@ -2295,7 +2380,7 @@
     }
 
     function quiescence(b, depth, alpha, beta, maximizing) {
-        const standPat = evaluateBoard(b);
+        const standPat = evaluateBoard(b, true);
         if (depth === 0) {
             return standPat;
         }
@@ -2392,44 +2477,57 @@
         const originalBoard = board;
         board = b;
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        const key = boardKey(b);
+        const cached = ttLookup(key, depth, alpha, beta);
+        if (cached !== null) {
+            board = originalBoard;
+            return cached;
+        }
 
         if (depth === 0) {
             const score = settings.useQuiescence
                 ? quiescence(b, settings.quiescenceDepth, alpha, beta, maximizing)
-                : evaluateBoard(b);
+                : evaluateBoard(b, true);
             board = originalBoard;
             return score;
         }
 
         const color = maximizing ? 'black' : 'white';
-        const moves = orderMoves(getAllMovesForAI(color, b), b, color);
+        const moves = orderMoves(getAllMovesForAI(color, b), b, color, maximizing ? aiBestMoveHint : null);
         board = originalBoard;
 
         if (moves.length === 0) {
-            return maximizing ? -Infinity : Infinity;
+            const mateScore = maximizing ? -999999 + (settings.maxDepth - depth) : 999999 - (settings.maxDepth - depth);
+            return mateScore;
         }
 
+        let score;
         if (maximizing) {
             let maxEval = -Infinity;
             for (const move of moves) {
+                if (searchTimeUp()) break;
                 const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
                 const evalResult = minimax(newBoard, depth - 1, false, alpha, beta);
                 maxEval = Math.max(maxEval, evalResult);
                 alpha = Math.max(alpha, evalResult);
                 if (beta <= alpha) break;
             }
-            return maxEval;
+            score = maxEval;
+        } else {
+            let minEval = Infinity;
+            for (const move of moves) {
+                if (searchTimeUp()) break;
+                const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+                const evalResult = minimax(newBoard, depth - 1, true, alpha, beta);
+                minEval = Math.min(minEval, evalResult);
+                beta = Math.min(beta, evalResult);
+                if (beta <= alpha) break;
+            }
+            score = minEval;
         }
 
-        let minEval = Infinity;
-        for (const move of moves) {
-            const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
-            const evalResult = minimax(newBoard, depth - 1, true, alpha, beta);
-            minEval = Math.min(minEval, evalResult);
-            beta = Math.min(beta, evalResult);
-            if (beta <= alpha) break;
-        }
-        return minEval;
+        ttStore(key, depth, score, alpha, beta);
+        return score;
     }
 
     function scoreMove(move, depth, settings) {
@@ -2439,15 +2537,17 @@
 
     function iterativeDeepeningSearch(moves, settings) {
         let bestMove = moves[0];
-        let bestScore = -Infinity;
+        aiBestMoveHint = null;
+        let orderedMoves = moves.slice();
 
         for (let depth = 1; depth <= settings.maxDepth; depth++) {
             if (searchTimeUp()) break;
 
+            orderedMoves = orderMoves(orderedMoves, board, 'black', aiBestMoveHint);
             let layerBest = null;
             let layerScore = -Infinity;
 
-            for (const move of moves) {
+            for (const move of orderedMoves) {
                 if (searchTimeUp()) break;
                 const score = scoreMove(move, depth, settings);
                 if (score > layerScore) {
@@ -2458,7 +2558,7 @@
 
             if (layerBest) {
                 bestMove = layerBest;
-                bestScore = layerScore;
+                aiBestMoveHint = layerBest;
             }
         }
 
@@ -2467,6 +2567,8 @@
 
     function getBestMove() {
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        aiTransposition.clear();
+        aiBestMoveHint = null;
         const moves = orderMoves(getAllMovesForAI('black', board), board, 'black');
 
         if (moves.length === 0) return null;
@@ -2546,9 +2648,9 @@
             showGameOver('Stalemate', 'The game is a draw.');
         } else if (gameMode === '1p' && currentPlayer === 'black') {
             const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
-            if (settings.maxDepth >= 6) {
+            if (settings.maxDepth >= 7) {
                 statusEl.textContent = `AI (${settings.label}) is calculating...`;
-            } else if (settings.maxDepth >= 5) {
+            } else if (settings.maxDepth >= 6) {
                 statusEl.textContent = `AI (${settings.label}) is thinking deeply...`;
             } else {
                 statusEl.textContent = `AI (${settings.label}) is thinking...`;
@@ -2776,9 +2878,9 @@
         aiThinkDeadline = Date.now() + thinkMs;
 
         const statusEl = document.getElementById('status');
-        if (settings.maxDepth >= 6) {
+        if (settings.maxDepth >= 7) {
             statusEl.textContent = `AI (${settings.label}) is calculating...`;
-        } else if (settings.maxDepth >= 5) {
+        } else if (settings.maxDepth >= 6) {
             statusEl.textContent = `AI (${settings.label}) is thinking deeply...`;
         } else {
             statusEl.textContent = `AI (${settings.label}) is thinking...`;
