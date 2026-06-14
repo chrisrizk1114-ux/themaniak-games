@@ -1267,7 +1267,7 @@
                     <button class="diff-btn" type="button" onclick="startSoloGame('medium')" title="Smart — plans ahead and protects pieces">Medium</button>
                     <button class="diff-btn" type="button" onclick="startSoloGame('hard')" title="Expert — deep thinking, sharp tactics">Hard</button>
                 </div>
-                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp. Hard is expert-level — thinks up to 8 moves ahead.</p>
+                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp (8 moves). Hard is expert-level (9 moves + opening book).</p>
             </div>
             <div class="mode-card">
                 <h3>Two Players</h3>
@@ -1428,32 +1428,40 @@
             quiescenceDepth: 0,
         },
         medium: {
-            maxDepth: 7,
-            randomMoveChance: 0,
-            blunderChance: 0,
-            thinkMin: 2400,
-            thinkMax: 5500,
-            label: 'Medium',
-            evalLevel: 'advanced',
-            useQuiescence: true,
-            quiescenceDepth: 6,
-            useIterativeDeepening: true,
-            useMobility: true,
-            mobilityWeight: 2.5,
-        },
-        hard: {
             maxDepth: 8,
             randomMoveChance: 0,
             blunderChance: 0,
-            thinkMin: 4200,
-            thinkMax: 8500,
-            label: 'Hard',
+            thinkMin: 3200,
+            thinkMax: 6800,
+            label: 'Medium',
             evalLevel: 'advanced',
+            evalTier: 'strong',
             useQuiescence: true,
-            quiescenceDepth: 8,
+            quiescenceDepth: 7,
             useIterativeDeepening: true,
             useMobility: true,
-            mobilityWeight: 4.5,
+            mobilityWeight: 3.2,
+            useNullMove: true,
+            useCheckExtension: true,
+            useOpeningBook: true,
+        },
+        hard: {
+            maxDepth: 9,
+            randomMoveChance: 0,
+            blunderChance: 0,
+            thinkMin: 5500,
+            thinkMax: 11000,
+            label: 'Hard',
+            evalLevel: 'advanced',
+            evalTier: 'expert',
+            useQuiescence: true,
+            quiescenceDepth: 9,
+            useIterativeDeepening: true,
+            useMobility: true,
+            mobilityWeight: 5.5,
+            useNullMove: true,
+            useCheckExtension: true,
+            useOpeningBook: true,
         },
     };
 
@@ -1494,7 +1502,31 @@
     let aiThinkDeadline = 0;
     let aiTransposition = new Map();
     let aiBestMoveHint = null;
-    const AI_TT_MAX = 18000;
+    let aiKillers = [];
+    let aiHistory = new Map();
+    let aiSearchPly = 0;
+    const AI_TT_MAX = 25000;
+
+    const OPENING_BOOK = {
+        medium: {
+            '6,4,4,4': { fromRow: 1, fromCol: 4, toRow: 3, toCol: 4 },
+            '6,3,4,3': { fromRow: 1, fromCol: 3, toRow: 3, toCol: 3 },
+            '6,2,4,2': { fromRow: 1, fromCol: 4, toRow: 3, toCol: 4 },
+            '6,6,5,5': { fromRow: 1, fromCol: 3, toRow: 3, toCol: 3 },
+            '6,5,5,5': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
+            '6,1,4,1': { fromRow: 0, fromCol: 2, toRow: 2, toCol: 3 },
+        },
+        hard: {
+            '6,4,4,4': { fromRow: 1, fromCol: 2, toRow: 3, toCol: 2 },
+            '6,3,4,3': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
+            '6,2,4,2': { fromRow: 1, fromCol: 2, toRow: 3, toCol: 2 },
+            '6,6,5,5': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
+            '6,5,5,5': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
+            '6,1,4,1': { fromRow: 0, fromCol: 2, toRow: 2, toCol: 3 },
+            '4,4,3,4|6,3,4,3': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
+            '3,4,2,4|6,3,5,3': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
+        },
+    };
 
     const FILES = 'abcdefgh';
     const PST_PAWN = [0,5,5,-10,-10,5,5,0, 2,2,2,2,2,2,2,2, 5,5,10,15,15,10,5,5, 10,10,15,20,20,15,10,10, 15,15,20,25,25,20,15,15, 20,25,25,30,30,25,25,20, 30,30,30,35,35,30,30,30, 0,0,0,0,0,0,0,0];
@@ -1691,7 +1723,133 @@
         const victim = b[move.toRow][move.toCol];
         const attacker = b[move.fromRow][move.fromCol];
         if (!victim || !attacker) return 0;
-        return (PIECE_VALUES[victim.toLowerCase()] || 0) - (PIECE_VALUES[attacker.toLowerCase()] || 0);
+        const gain = staticExchangeEval(b, move.toRow, move.toCol, getPieceColor(victim));
+        return gain;
+    }
+
+    function staticExchangeEval(b, row, col, victimColor) {
+        const victim = b[row][col];
+        if (!victim) return 0;
+        let sideToMove = victimColor === 'white' ? 'black' : 'white';
+        let targetVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+        let gain = 0;
+        const scratch = cloneBoard(b);
+        scratch[row][col] = '';
+
+        while (true) {
+            let bestAttacker = null;
+            let bestVal = Infinity;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = scratch[r][c];
+                    if (!p || getPieceColor(p) !== sideToMove) continue;
+                    if (!pieceAttacksSquare(scratch, r, c, row, col)) continue;
+                    const val = PIECE_VALUES[p.toLowerCase()] || 0;
+                    if (val < bestVal) {
+                        bestVal = val;
+                        bestAttacker = { r, c, val, piece: p };
+                    }
+                }
+            }
+            if (!bestAttacker) break;
+
+            gain = targetVal - bestVal;
+            scratch[bestAttacker.r][bestAttacker.c] = '';
+            scratch[row][col] = bestAttacker.piece;
+            targetVal = bestVal;
+            sideToMove = getPieceColor(bestAttacker.piece) === 'white' ? 'black' : 'white';
+        }
+        return gain;
+    }
+
+    function bishopPairScore(b, color) {
+        let bishops = 0;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const p = b[r][c];
+                if (p && getPieceColor(p) === color && p.toLowerCase() === 'b') bishops++;
+            }
+        }
+        return bishops >= 2 ? 35 : 0;
+    }
+
+    function doubledPawnPenalty(b, color) {
+        let penalty = 0;
+        for (let c = 0; c < 8; c++) {
+            let count = 0;
+            for (let r = 0; r < 8; r++) {
+                const p = b[r][c];
+                if (p && getPieceColor(p) === color && p.toLowerCase() === 'p') count++;
+            }
+            if (count > 1) penalty += (count - 1) * 18;
+        }
+        return penalty;
+    }
+
+    function rookOnSeventhScore(b, color) {
+        const rank = color === 'white' ? 1 : 6;
+        let score = 0;
+        for (let c = 0; c < 8; c++) {
+            const p = b[rank][c];
+            if (p && getPieceColor(p) === color && p.toLowerCase() === 'r') score += 28;
+        }
+        return score;
+    }
+
+    function openingMoveKey() {
+        if (positionHistory.length < 2) return '';
+        const parts = [];
+        for (let i = 1; i < positionHistory.length; i++) {
+            const lm = positionHistory[i].lastMove;
+            if (lm) parts.push(`${lm.from.row},${lm.from.col},${lm.to.row},${lm.to.col}`);
+        }
+        return parts.join('|');
+    }
+
+    function lookupOpeningBook(settings) {
+        if (!settings.useOpeningBook || positionHistory.length > 12) return null;
+        const tier = settings.evalTier === 'expert' ? 'hard' : 'medium';
+        const book = OPENING_BOOK[tier];
+        const key = openingMoveKey();
+        const move = book[key];
+        if (!move) return null;
+        const legal = getAllMovesForAI('black', board).some(m =>
+            m.fromRow === move.fromRow && m.fromCol === move.fromCol
+            && m.toRow === move.toRow && m.toCol === move.toCol
+        );
+        return legal ? move : null;
+    }
+
+    function resetSearchState() {
+        aiKillers = Array.from({ length: 32 }, () => [null, null]);
+        aiHistory.clear();
+        aiSearchPly = 0;
+    }
+
+    function killerBonus(move, ply) {
+        const killers = aiKillers[ply];
+        if (!killers) return 0;
+        if (killers[0] && movesEqual(move, killers[0])) return 90000;
+        if (killers[1] && movesEqual(move, killers[1])) return 80000;
+        return 0;
+    }
+
+    function historyBonus(move) {
+        const key = `${move.fromRow},${move.fromCol},${move.toRow},${move.toCol}`;
+        return aiHistory.get(key) || 0;
+    }
+
+    function recordHistory(move, depth) {
+        const key = `${move.fromRow},${move.fromCol},${move.toRow},${move.toCol}`;
+        const prev = aiHistory.get(key) || 0;
+        aiHistory.set(key, prev + depth * depth);
+    }
+
+    function storeKiller(move, ply) {
+        if (!aiKillers[ply]) aiKillers[ply] = [null, null];
+        if (aiKillers[ply][0] && movesEqual(move, aiKillers[ply][0])) return;
+        aiKillers[ply][1] = aiKillers[ply][0];
+        aiKillers[ply][0] = move;
     }
 
     function countDevelopedMinorPieces(b, color) {
@@ -2272,6 +2430,7 @@
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         if (settings.evalLevel === 'material') return 0;
 
+        const threatMult = settings.evalTier === 'expert' ? 1.15 : settings.evalTier === 'strong' ? 1.05 : 1;
         let penalty = 0;
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
@@ -2279,11 +2438,11 @@
                 if (!piece || getPieceColor(piece) !== color) continue;
                 const threat = getSquareThreat(b, r, c, color);
                 if (threat.hanging) {
-                    penalty += threat.victimVal * 0.95;
+                    penalty += threat.victimVal * 0.98 * threatMult;
                 } else if (threat.badTrade) {
-                    penalty += (threat.victimVal - threat.minAttackerVal) * 0.7;
+                    penalty += (threat.victimVal - threat.minAttackerVal) * 0.75 * threatMult;
                 } else if (threat.attacked) {
-                    penalty += Math.min(threat.victimVal * 0.25, 80);
+                    penalty += Math.min(threat.victimVal * 0.28, 90) * threatMult;
                 }
             }
         }
@@ -2362,18 +2521,26 @@
             score -= developmentScore(b, 'white');
         }
         if (settings.evalLevel === 'advanced') {
-            score += centerControlScore(b, 'black');
-            score -= centerControlScore(b, 'white');
-            score += kingSafetyScore(b, 'black');
-            score -= kingSafetyScore(b, 'white');
-            score += rookFileScore(b, 'black');
-            score -= rookFileScore(b, 'white');
-            score += passedPawnScore(b, 'black');
-            score -= passedPawnScore(b, 'white');
-            if (heavyEval && settings.useMobility) {
+            const posMult = settings.evalTier === 'expert' ? 1.2 : settings.evalTier === 'strong' ? 1.08 : 1;
+            score += centerControlScore(b, 'black') * posMult;
+            score -= centerControlScore(b, 'white') * posMult;
+            score += kingSafetyScore(b, 'black') * posMult;
+            score -= kingSafetyScore(b, 'white') * posMult;
+            score += rookFileScore(b, 'black') * posMult;
+            score -= rookFileScore(b, 'white') * posMult;
+            score += passedPawnScore(b, 'black') * posMult;
+            score -= passedPawnScore(b, 'white') * posMult;
+            score += bishopPairScore(b, 'black') * posMult;
+            score -= bishopPairScore(b, 'white') * posMult;
+            score += rookOnSeventhScore(b, 'black') * posMult;
+            score -= rookOnSeventhScore(b, 'white') * posMult;
+            score -= doubledPawnPenalty(b, 'black') * posMult;
+            score += doubledPawnPenalty(b, 'white') * posMult;
+            if (settings.useMobility) {
                 const mw = settings.mobilityWeight || 2;
-                score += mobilityScore(b, 'black') * mw;
-                score -= mobilityScore(b, 'white') * mw;
+                const mobilityFactor = heavyEval ? 1 : (settings.evalTier === 'expert' ? 0.45 : 0.3);
+                score += mobilityScore(b, 'black') * mw * mobilityFactor;
+                score -= mobilityScore(b, 'white') * mw * mobilityFactor;
             }
         }
         return score;
@@ -2410,16 +2577,26 @@
         return count;
     }
 
-    function moveOrderingScore(move, b, color = 'black') {
+    function moveOrderingScore(move, b, color = 'black', ply = 0) {
+        const hist = historyBonus(move);
+        if (hist > 0) return 95000 + hist;
+
+        const killer = killerBonus(move, ply);
+        if (killer > 0) return killer;
+
         const safety = safetyMoveBonus(move, b, color);
         if (safety > 0) return safety;
 
         const victim = b[move.toRow][move.toCol];
         const attacker = b[move.fromRow][move.fromCol];
         if (victim) {
+            const seeGain = staticExchangeEval(b, move.toRow, move.toCol, getPieceColor(victim));
+            if (seeGain >= 0) {
+                return 100000 + seeGain * 12;
+            }
             const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
             const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
-            return 100000 + victimVal * 12 - attackerVal;
+            return 100000 + victimVal * 12 - attackerVal + seeGain;
         }
         if (moveGivesCheck(move, b, color)) {
             return 85000;
@@ -2435,11 +2612,11 @@
         return 0;
     }
 
-    function orderMoves(moves, b, color = 'black', priorityMove = null) {
+    function orderMoves(moves, b, color = 'black', priorityMove = null, ply = 0) {
         return moves.slice().sort((a, bMove) => {
-            const scoreB = moveOrderingScore(bMove, b, color)
+            const scoreB = moveOrderingScore(bMove, b, color, ply)
                 + (priorityMove && movesEqual(bMove, priorityMove) ? 200000 : 0);
-            const scoreA = moveOrderingScore(a, b, color)
+            const scoreA = moveOrderingScore(a, b, color, ply)
                 + (priorityMove && movesEqual(a, priorityMove) ? 200000 : 0);
             return scoreB - scoreA;
         });
@@ -2563,7 +2740,7 @@
         return moves;
     }
 
-    function minimax(b, depth, maximizing, alpha, beta) {
+    function minimax(b, depth, maximizing, alpha, beta, ply = 0) {
         const originalBoard = board;
         board = b;
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
@@ -2574,7 +2751,13 @@
             return cached;
         }
 
-        if (depth === 0) {
+        const color = maximizing ? 'black' : 'white';
+        let searchDepth = depth;
+        if (depth > 0 && settings.useCheckExtension && isInCheck(b, color)) {
+            searchDepth = depth + 1;
+        }
+
+        if (searchDepth === 0) {
             const score = settings.useQuiescence
                 ? quiescence(b, settings.quiescenceDepth, alpha, beta, maximizing)
                 : evaluateBoard(b, true);
@@ -2582,8 +2765,15 @@
             return score;
         }
 
-        const color = maximizing ? 'black' : 'white';
-        const moves = orderMoves(getAllMovesForAI(color, b), b, color, maximizing ? aiBestMoveHint : null);
+        if (settings.useNullMove && searchDepth >= 4 && !isInCheck(b, color)) {
+            const nullScore = minimax(b, searchDepth - 3, !maximizing, -beta, -beta + 1, ply + 1);
+            if (-nullScore >= beta) {
+                board = originalBoard;
+                return beta;
+            }
+        }
+
+        const moves = orderMoves(getAllMovesForAI(color, b), b, color, maximizing ? aiBestMoveHint : null, ply);
         board = originalBoard;
 
         if (moves.length === 0) {
@@ -2592,15 +2782,22 @@
         }
 
         let score;
+        let bestMove = null;
         if (maximizing) {
             let maxEval = -Infinity;
             for (const move of moves) {
                 if (searchTimeUp()) break;
                 const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
-                const evalResult = minimax(newBoard, depth - 1, false, alpha, beta);
-                maxEval = Math.max(maxEval, evalResult);
+                const evalResult = minimax(newBoard, searchDepth - 1, false, alpha, beta, ply + 1);
+                if (evalResult > maxEval) {
+                    maxEval = evalResult;
+                    bestMove = move;
+                }
                 alpha = Math.max(alpha, evalResult);
-                if (beta <= alpha) break;
+                if (beta <= alpha) {
+                    if (!b[move.toRow][move.toCol]) storeKiller(move, ply);
+                    break;
+                }
             }
             score = maxEval;
         } else {
@@ -2608,21 +2805,28 @@
             for (const move of moves) {
                 if (searchTimeUp()) break;
                 const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
-                const evalResult = minimax(newBoard, depth - 1, true, alpha, beta);
-                minEval = Math.min(minEval, evalResult);
+                const evalResult = minimax(newBoard, searchDepth - 1, true, alpha, beta, ply + 1);
+                if (evalResult < minEval) {
+                    minEval = evalResult;
+                    bestMove = move;
+                }
                 beta = Math.min(beta, evalResult);
-                if (beta <= alpha) break;
+                if (beta <= alpha) {
+                    if (!b[move.toRow][move.toCol]) storeKiller(move, ply);
+                    break;
+                }
             }
             score = minEval;
         }
 
+        if (bestMove) recordHistory(bestMove, searchDepth);
         ttStore(key, depth, score, alpha, beta);
         return score;
     }
 
-    function scoreMove(move, depth, settings) {
+    function scoreMove(move, depth, settings, ply = 1) {
         const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
-        return minimax(newBoard, depth - 1, false, -Infinity, Infinity);
+        return minimax(newBoard, depth - 1, false, -Infinity, Infinity, ply + 1);
     }
 
     function iterativeDeepeningSearch(moves, settings) {
@@ -2633,13 +2837,13 @@
         for (let depth = 1; depth <= settings.maxDepth; depth++) {
             if (searchTimeUp()) break;
 
-            orderedMoves = orderMoves(orderedMoves, board, 'black', aiBestMoveHint);
+            orderedMoves = orderMoves(orderedMoves, board, 'black', aiBestMoveHint, 0);
             let layerBest = null;
             let layerScore = -Infinity;
 
             for (const move of orderedMoves) {
                 if (searchTimeUp()) break;
-                const score = scoreMove(move, depth, settings);
+                const score = scoreMove(move, depth, settings, 0);
                 if (score > layerScore) {
                     layerScore = score;
                     layerBest = move;
@@ -2649,6 +2853,7 @@
             if (layerBest) {
                 bestMove = layerBest;
                 aiBestMoveHint = layerBest;
+                recordHistory(layerBest, depth);
             }
         }
 
@@ -2658,10 +2863,14 @@
     function getBestMove() {
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         aiTransposition.clear();
+        resetSearchState();
         aiBestMoveHint = null;
-        const moves = orderMoves(getAllMovesForAI('black', board), board, 'black');
+        const moves = orderMoves(getAllMovesForAI('black', board), board, 'black', null, 0);
 
         if (moves.length === 0) return null;
+
+        const bookMove = lookupOpeningBook(settings);
+        if (bookMove) return bookMove;
 
         if (settings.randomMoveChance > 0 && Math.random() < settings.randomMoveChance) {
             return moves[Math.floor(Math.random() * moves.length)];
@@ -2674,10 +2883,10 @@
                 if (rescueMoves.length > 0) {
                     let bestRescue = null;
                     let bestRescueScore = -Infinity;
-                    const rescueDepth = Math.max(2, settings.maxDepth - 1);
+                    const rescueDepth = settings.maxDepth;
                     for (const move of rescueMoves) {
                         if (searchTimeUp()) break;
-                        const score = scoreMove(move, rescueDepth, settings);
+                        const score = scoreMove(move, rescueDepth, settings, 0);
                         if (score > bestRescueScore) {
                             bestRescueScore = score;
                             bestRescue = move;
@@ -2738,11 +2947,11 @@
             showGameOver('Stalemate', 'The game is a draw.');
         } else if (gameMode === '1p' && currentPlayer === 'black') {
             const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
-            if (settings.maxDepth >= 8) {
+            if (settings.maxDepth >= 9) {
                 statusEl.textContent = isMobileChessLayout()
                     ? 'AI calculating…'
                     : `AI (${settings.label}) is calculating...`;
-            } else if (settings.maxDepth >= 7) {
+            } else if (settings.maxDepth >= 8) {
                 statusEl.textContent = isMobileChessLayout()
                     ? 'AI thinking deeply…'
                     : `AI (${settings.label}) is thinking deeply...`;
@@ -2989,11 +3198,11 @@
         aiThinkDeadline = Date.now() + thinkMs;
 
         const statusEl = document.getElementById('status');
-        if (settings.maxDepth >= 8) {
+        if (settings.maxDepth >= 9) {
             statusEl.textContent = isMobileChessLayout()
                 ? 'AI calculating…'
                 : `AI (${settings.label}) is calculating...`;
-        } else if (settings.maxDepth >= 7) {
+        } else if (settings.maxDepth >= 8) {
             statusEl.textContent = isMobileChessLayout()
                 ? 'AI thinking deeply…'
                 : `AI (${settings.label}) is thinking deeply...`;
