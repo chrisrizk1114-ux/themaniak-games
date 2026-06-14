@@ -6,12 +6,12 @@
 
 @section('content')
 <style>
-    html:has(.chess-page),
-    body:has(.chess-page) {
+    html:has(.chess-page #gameArea.active),
+    body:has(.chess-page #gameArea.active) {
         overflow-x: hidden !important;
         overflow-y: auto !important;
         height: auto !important;
-        overscroll-behavior: auto !important;
+        overscroll-behavior-y: contain;
     }
 
     .main-content:has(.chess-page) {
@@ -613,9 +613,50 @@
             max-width: 400px;
         }
         #gameArea.active .chess-arena {
-            --sq: min(calc((100vw - 24px) / 8), calc((100svh - 320px) / 8), 48px);
+            --sq: min(calc((100vw - 24px) / 8), 48px);
             padding: 0 0.25rem;
         }
+        #gameArea.active .chess-board-col {
+            overflow-anchor: none;
+            flex-shrink: 0;
+            width: 100%;
+        }
+        #gameArea.active .board-pedestal,
+        #gameArea.active .board-frame,
+        #gameArea.active .board-inner-border,
+        #gameArea.active .board {
+            flex-shrink: 0;
+        }
+        #gameArea.active .board-pedestal {
+            padding: 0.35rem 0.5rem 0.5rem;
+            transform: translateZ(0);
+            will-change: transform;
+        }
+        .captured-row {
+            height: 2rem;
+            max-height: 2rem;
+            min-height: 2rem;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .chess-turn-row {
+            min-height: 2.35rem;
+            height: 2.35rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .chess-turn-row .status {
+            min-width: 0;
+            max-width: none;
+            flex: 1 1 auto;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0.35rem 0.45rem;
+            font-size: 0.78rem;
+        }
+        .status { min-width: 0; }
         .chess-panel--left { order: 1; }
         .chess-board-col { order: 2; }
         .chess-panel--right { order: 3; }
@@ -1226,7 +1267,7 @@
                     <button class="diff-btn" type="button" onclick="startSoloGame('medium')" title="Smart — plans ahead and protects pieces">Medium</button>
                     <button class="diff-btn" type="button" onclick="startSoloGame('hard')" title="Expert — deep thinking, sharp tactics">Hard</button>
                 </div>
-                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp. Hard is expert-level — thinks up to 7 moves ahead.</p>
+                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp. Hard is expert-level — thinks up to 8 moves ahead.</p>
             </div>
             <div class="mode-card">
                 <h3>Two Players</h3>
@@ -1387,32 +1428,32 @@
             quiescenceDepth: 0,
         },
         medium: {
-            maxDepth: 6,
-            randomMoveChance: 0,
-            blunderChance: 0,
-            thinkMin: 1800,
-            thinkMax: 4200,
-            label: 'Medium',
-            evalLevel: 'advanced',
-            useQuiescence: true,
-            quiescenceDepth: 5,
-            useIterativeDeepening: true,
-            useMobility: true,
-            mobilityWeight: 1.5,
-        },
-        hard: {
             maxDepth: 7,
             randomMoveChance: 0,
             blunderChance: 0,
-            thinkMin: 3500,
-            thinkMax: 7000,
+            thinkMin: 2400,
+            thinkMax: 5500,
+            label: 'Medium',
+            evalLevel: 'advanced',
+            useQuiescence: true,
+            quiescenceDepth: 6,
+            useIterativeDeepening: true,
+            useMobility: true,
+            mobilityWeight: 2.5,
+        },
+        hard: {
+            maxDepth: 8,
+            randomMoveChance: 0,
+            blunderChance: 0,
+            thinkMin: 4200,
+            thinkMax: 8500,
             label: 'Hard',
             evalLevel: 'advanced',
             useQuiescence: true,
-            quiescenceDepth: 7,
+            quiescenceDepth: 8,
             useIterativeDeepening: true,
             useMobility: true,
-            mobilityWeight: 3,
+            mobilityWeight: 4.5,
         },
     };
 
@@ -1453,13 +1494,15 @@
     let aiThinkDeadline = 0;
     let aiTransposition = new Map();
     let aiBestMoveHint = null;
-    const AI_TT_MAX = 12000;
+    const AI_TT_MAX = 18000;
 
     const FILES = 'abcdefgh';
     const PST_PAWN = [0,5,5,-10,-10,5,5,0, 2,2,2,2,2,2,2,2, 5,5,10,15,15,10,5,5, 10,10,15,20,20,15,10,10, 15,15,20,25,25,20,15,15, 20,25,25,30,30,25,25,20, 30,30,30,35,35,30,30,30, 0,0,0,0,0,0,0,0];
     const PST_KNIGHT = [-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,15,20,20,15,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50];
     const PST_BISHOP = [-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20];
     const PST_ROOK = [0,0,5,10,10,5,0,0,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,5,10,10,10,10,10,10,5,0,0,0,0,0,0,0,0];
+    const PST_QUEEN = [-20,-10,-10,-5,-5,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,5,5,5,0,-10,-5,0,5,5,5,5,0,-5,0,0,5,5,5,5,0,-5,-10,5,5,5,5,5,0,-10,-10,0,5,0,0,0,0,-10,-20,-10,-10,-5,-5,-10,-10,-20];
+    const PST_KING = [-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,20,20,0,0,0,0,20,20,20,30,10,0,0,10,30,20];
 
     function playMoveSound({ pieceType, captured, castled }) {
         GameSounds.init();
@@ -1523,7 +1566,6 @@
         if (!piece) return;
         if (capturerColor === 'white') capturedByWhite.push(piece);
         else capturedByBlack.push(piece);
-        updateCapturedDisplay();
     }
 
     function closeGameOver() {
@@ -1539,8 +1581,54 @@
 
     function pstValue(type, row, col, color) {
         const idx = color === 'white' ? row * 8 + col : (7 - row) * 8 + col;
-        const tables = { p: PST_PAWN, n: PST_KNIGHT, b: PST_BISHOP, r: PST_ROOK };
+        const tables = { p: PST_PAWN, n: PST_KNIGHT, b: PST_BISHOP, r: PST_ROOK, q: PST_QUEEN, k: PST_KING };
         return (tables[type] || new Array(64).fill(0))[idx] || 0;
+    }
+
+    function passedPawnScore(b, color) {
+        let score = 0;
+        const dir = color === 'white' ? -1 : 1;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color || piece.toLowerCase() !== 'p') continue;
+                let blocked = false;
+                for (let dc = -1; dc <= 1; dc++) {
+                    const nc = c + dc;
+                    if (nc < 0 || nc > 7) continue;
+                    for (let nr = r + dir; color === 'white' ? nr >= 0 : nr < 8; nr += dir) {
+                        const p = b[nr][nc];
+                        if (p && p.toLowerCase() === 'p' && getPieceColor(p) !== color) {
+                            blocked = true;
+                            break;
+                        }
+                    }
+                    if (blocked) break;
+                }
+                if (!blocked) {
+                    const rank = color === 'white' ? 7 - r : r;
+                    score += 12 + rank * 8;
+                }
+            }
+        }
+        return score;
+    }
+
+    function lockMobileBoardSize() {
+        const arena = document.querySelector('#gameArea.active .chess-arena');
+        if (!arena) return;
+        const isMobile = window.matchMedia('(max-width: 960px), (hover: none) and (pointer: coarse)').matches;
+        if (!isMobile) {
+            arena.style.removeProperty('--sq');
+            return;
+        }
+        const vw = window.visualViewport?.width ?? document.documentElement.clientWidth;
+        const sq = Math.min(Math.floor((vw - 24) / 8), 48);
+        arena.style.setProperty('--sq', sq + 'px');
+    }
+
+    function isMobileChessLayout() {
+        return window.matchMedia('(max-width: 960px), (hover: none) and (pointer: coarse)').matches;
     }
 
     function boardKey(b) {
@@ -2280,6 +2368,8 @@
             score -= kingSafetyScore(b, 'white');
             score += rookFileScore(b, 'black');
             score -= rookFileScore(b, 'white');
+            score += passedPawnScore(b, 'black');
+            score -= passedPawnScore(b, 'white');
             if (heavyEval && settings.useMobility) {
                 const mw = settings.mobilityWeight || 2;
                 score += mobilityScore(b, 'black') * mw;
@@ -2648,12 +2738,18 @@
             showGameOver('Stalemate', 'The game is a draw.');
         } else if (gameMode === '1p' && currentPlayer === 'black') {
             const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
-            if (settings.maxDepth >= 7) {
-                statusEl.textContent = `AI (${settings.label}) is calculating...`;
-            } else if (settings.maxDepth >= 6) {
-                statusEl.textContent = `AI (${settings.label}) is thinking deeply...`;
+            if (settings.maxDepth >= 8) {
+                statusEl.textContent = isMobileChessLayout()
+                    ? 'AI calculating…'
+                    : `AI (${settings.label}) is calculating...`;
+            } else if (settings.maxDepth >= 7) {
+                statusEl.textContent = isMobileChessLayout()
+                    ? 'AI thinking deeply…'
+                    : `AI (${settings.label}) is thinking deeply...`;
             } else {
-                statusEl.textContent = `AI (${settings.label}) is thinking...`;
+                statusEl.textContent = isMobileChessLayout()
+                    ? 'AI thinking…'
+                    : `AI (${settings.label}) is thinking...`;
             }
         } else {
             statusEl.textContent = `${cap(currentPlayer)}'s turn`;
@@ -2664,6 +2760,11 @@
 
     function renderBoard(skipStatusUpdate = false) {
         const boardEl = document.getElementById('board');
+        const boardAnchor = document.getElementById('boardPedestal');
+        const anchorTop = isMobileChessLayout() && boardAnchor
+            ? boardAnchor.getBoundingClientRect().top
+            : null;
+
         boardEl.innerHTML = '';
 
         const whiteKing = getKingPosition(board, 'white');
@@ -2714,6 +2815,15 @@
             }
         }
         if (!skipStatusUpdate) updateStatus();
+
+        if (anchorTop !== null && boardAnchor) {
+            requestAnimationFrame(() => {
+                const delta = boardAnchor.getBoundingClientRect().top - anchorTop;
+                if (Math.abs(delta) > 1) {
+                    window.scrollBy(0, delta);
+                }
+            });
+        }
     }
 
     function showPromotionModal(color) {
@@ -2756,6 +2866,7 @@
         validMoves = [];
         lastMovedPieceType = null;
         updateTimerDisplay();
+        updateCapturedDisplay();
         renderBoard();
         recordPosition();
 
@@ -2878,12 +2989,18 @@
         aiThinkDeadline = Date.now() + thinkMs;
 
         const statusEl = document.getElementById('status');
-        if (settings.maxDepth >= 7) {
-            statusEl.textContent = `AI (${settings.label}) is calculating...`;
-        } else if (settings.maxDepth >= 6) {
-            statusEl.textContent = `AI (${settings.label}) is thinking deeply...`;
+        if (settings.maxDepth >= 8) {
+            statusEl.textContent = isMobileChessLayout()
+                ? 'AI calculating…'
+                : `AI (${settings.label}) is calculating...`;
+        } else if (settings.maxDepth >= 7) {
+            statusEl.textContent = isMobileChessLayout()
+                ? 'AI thinking deeply…'
+                : `AI (${settings.label}) is thinking deeply...`;
         } else {
-            statusEl.textContent = `AI (${settings.label}) is thinking...`;
+            statusEl.textContent = isMobileChessLayout()
+                ? 'AI thinking…'
+                : `AI (${settings.label}) is thinking...`;
         }
 
         setTimeout(() => {
@@ -2965,6 +3082,7 @@
         validMoves = [];
         lastMovedPieceType = null;
         updateTimerDisplay();
+        updateCapturedDisplay();
         renderBoard();
         recordPosition();
 
@@ -3203,6 +3321,7 @@
         GameSounds.init();
         document.getElementById('playerSelect').style.display = 'none';
         document.getElementById('gameArea').classList.add('active', 'online-friends');
+        lockMobileBoardSize();
         updateRematchVisibility();
         updatePlayerLabelsOnline(gameData);
         updateBoardOrientation();
@@ -3582,6 +3701,7 @@
         document.getElementById('playerSelect').style.display = 'none';
         document.getElementById('gameArea').classList.add('active');
         document.getElementById('gameArea').classList.remove('online-friends');
+        lockMobileBoardSize();
         renderBoard();
         resetHistory();
         updateTimerDisplay();
@@ -3624,6 +3744,10 @@
     document.addEventListener('DOMContentLoaded', async () => {
         updateRematchVisibility();
         await initFriendsList();
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(lockMobileBoardSize, 150);
+        });
 
         const params = new URLSearchParams(window.location.search);
         const gameToken = params.get('game');
