@@ -214,6 +214,11 @@
         @if ($errors->any())
             <div class="auth-alert">
                 {{ $errors->first() }}
+                @if (str_contains($errors->first(), 'Session expired') || str_contains($errors->first(), 'Page expired'))
+                    <div style="margin-top:0.65rem;font-size:0.9rem;">
+                        <a href="{{ url('/reset-session') }}" style="color:#7dd3fc;font-weight:700;">Clear session &amp; try again</a>
+                    </div>
+                @endif
             </div>
         @endif
 
