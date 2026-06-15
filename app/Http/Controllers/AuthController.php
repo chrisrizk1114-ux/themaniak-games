@@ -10,11 +10,13 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function showLogin(): View|RedirectResponse
+    public function showLogin(Request $request): View|RedirectResponse
     {
         if (Auth::check()) {
             return redirect('/');
         }
+
+        $request->session()->regenerateToken();
 
         return view('auth.login');
     }
@@ -47,11 +49,13 @@ class AuthController extends Controller
             ->withErrors(['email' => 'These credentials do not match our records.']);
     }
 
-    public function showRegister(): View|RedirectResponse
+    public function showRegister(Request $request): View|RedirectResponse
     {
         if (Auth::check()) {
             return redirect('/');
         }
+
+        $request->session()->regenerateToken();
 
         return view('auth.register');
     }

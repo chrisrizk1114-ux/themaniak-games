@@ -34,13 +34,26 @@ Route::get('/reset-session', function (Request $request) {
     }
 
     $cookieName = config('session.cookie', 'laravel_session');
-    $domain = config('session.domain');
+    $response = redirect('/login')
+        ->with('status', 'Session cleared. Please sign in again.');
 
-    return redirect('/')
-        ->withCookie(cookie()->forget($cookieName, '/', $domain))
-        ->withCookie(cookie()->forget('XSRF-TOKEN', '/', $domain))
-        ->with('status', 'Session cleared. You can log in again.');
+    $response = $response->withCookie(cookie()->forget($cookieName, '/'));
+    $response = $response->withCookie(cookie()->forget('XSRF-TOKEN', '/'));
+
+    foreach (['.themaniak.online', 'themaniak.online'] as $legacyDomain) {
+        $response = $response->withCookie(cookie()->forget($cookieName, '/', $legacyDomain));
+        $response = $response->withCookie(cookie()->forget('XSRF-TOKEN', '/', $legacyDomain));
+    }
+
+    return $response;
 })->name('reset-session');
+
+Route::get('/csrf-refresh', function (Request $request) {
+    $request->session()->regenerateToken();
+
+    return response()->json(['token' => csrf_token()])
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+})->name('csrf-refresh');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

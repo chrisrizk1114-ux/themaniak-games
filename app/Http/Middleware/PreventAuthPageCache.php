@@ -12,10 +12,11 @@ class PreventAuthPageCache
     {
         $response = $next($request);
 
-        if ($request->isMethod('GET') && $request->is('login', 'register')) {
+        if ($request->isMethod('GET') && $request->is('login', 'register', 'csrf-refresh')) {
             $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
             $response->headers->set('Pragma', 'no-cache');
             $response->headers->set('Expires', '0');
+            $response->headers->set('Vary', 'Cookie');
         }
 
         return $response;
