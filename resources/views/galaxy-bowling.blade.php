@@ -1107,14 +1107,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function isMobileBowling() {
+        return window.innerWidth <= 960 || window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    }
+
     function knockPin(pin, dx, dz, fromBall) {
         if (pin.knocked) return;
         pinsKnockedThisRoll++;
-        const force = fromBall ? Math.min(1.8, Math.sqrt(dx * dx + dz * dz) / 16) : 0.75;
+        const mobileBoost = isMobileBowling() ? 1.18 : 1;
+        const force = (fromBall ? Math.min(1.95, Math.sqrt(dx * dx + dz * dz) / 14) : 0.82) * mobileBoost;
         pin.knocked = true;
-        pin.vx = dx * (fromBall ? 0.74 : 0.5) * force + (Math.random() - 0.5) * 2;
+        pin.vx = dx * (fromBall ? 0.78 : 0.55) * force + (Math.random() - 0.5) * 2;
         pin.vy = fromBall ? -7 - Math.random() * 2 : -5;
-        pin.vz = dz * (fromBall ? 0.74 : 0.5) * force - (fromBall ? 10 : 6);
+        pin.vz = dz * (fromBall ? 0.78 : 0.55) * force - (fromBall ? 11 : 7);
         pin.spin = (Math.random() - 0.5) * 0.35;
         pin.rotation = (Math.random() - 0.5) * 0.4;
         pin.hitAnim = 18;
@@ -1184,9 +1189,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const pullBack = dragEnd.y - dragStart.y; // drag down (toward you) = more power
         const pullDist = Math.sqrt(side * side + pullBack * pullBack);
 
-        if (pullBack < S(15)) return { tooWeak: true, pullDist, power: 0, bp };
+        if (pullBack < (isMobileBowling() ? S(10) : S(15))) return { tooWeak: true, pullDist, power: 0, bp };
 
-        const power = Math.min(pullDist / S(80), 1.55);
+        const powerCap = isMobileBowling() ? 1.65 : 1.55;
+        const power = Math.min(pullDist / S(80), powerCap);
         const vx = (side / S(80)) * power * S(10);
         const vz = -S(7) - (pullBack / S(80)) * power * S(13);
 
@@ -1233,11 +1239,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkCollisions() {
+        const pinHitPad = isMobileBowling() ? S(9) : S(5);
+        const chainDist = isMobileBowling() ? S(52) : S(42);
         pins.forEach(pin => {
             if (pin.knocked || !ball) return;
             const dx = ball.x - pin.x, dz = ball.z - pin.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist < ball.radius + (pin.pinRadius || S(10)) + S(5)) {
+            if (dist < ball.radius + (pin.pinRadius || S(10)) + pinHitPad) {
                 knockPin(pin, dx, dz, true);
             }
         });
@@ -1246,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pins.forEach((p2, j) => {
                 if (i === j || p2.knocked) return;
                 const dx = p1.x - p2.x, dz = p1.z - p2.z;
-                if (Math.sqrt(dx * dx + dz * dz) < S(42)) {
+                if (Math.sqrt(dx * dx + dz * dz) < chainDist) {
                     knockPin(p2, dx, dz, false);
                 }
             });

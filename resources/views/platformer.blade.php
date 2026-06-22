@@ -21,6 +21,9 @@
         width: 100%;
         overflow: hidden;
         background: #080812;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
     }
     .sky-runner-stage {
         position: relative;
@@ -28,6 +31,9 @@
         height: 100%;
         min-height: calc(100svh - var(--nav-h));
         overflow: hidden;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: none;
     }
     #platform-canvas {
         position: absolute;
@@ -35,6 +41,9 @@
         width: 100%;
         height: 100%;
         display: block;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
     }
     .sky-hud {
         pointer-events: none;
@@ -87,10 +96,10 @@
 
         <div class="mobile-touch-controls" id="touchControls" aria-hidden="true">
             <div class="touch-cluster">
-                <button type="button" class="touch-btn" id="touch-left" aria-label="Move left">←</button>
-                <button type="button" class="touch-btn" id="touch-right" aria-label="Move right">→</button>
+                <button type="button" class="touch-btn" id="touch-left" aria-label="Move left" unselectable="on">◀</button>
+                <button type="button" class="touch-btn" id="touch-right" aria-label="Move right" unselectable="on">▶</button>
             </div>
-            <button type="button" class="touch-btn touch-jump" id="touch-jump" aria-label="Jump">↑</button>
+            <button type="button" class="touch-btn touch-jump" id="touch-jump" aria-label="Jump" unselectable="on">⤒</button>
         </div>
     </div>
 </div>
@@ -658,21 +667,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function bindTouchBtn(el, onDown, onUp) {
         if (!el) return;
+        const blockSelect = (e) => e.preventDefault();
+        el.addEventListener('selectstart', blockSelect);
+        el.addEventListener('contextmenu', blockSelect);
         const down = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             el.classList.add('active');
-            if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+            if (el.setPointerCapture && e.pointerId !== undefined) {
+                try { el.setPointerCapture(e.pointerId); } catch (_) {}
+            }
             onDown();
         };
-        const up = () => {
+        const up = (e) => {
+            if (e) e.preventDefault();
             el.classList.remove('active');
             onUp();
         };
-        el.addEventListener('pointerdown', down);
-        el.addEventListener('pointerup', up);
-        el.addEventListener('pointercancel', up);
-        el.addEventListener('pointerleave', up);
+        el.addEventListener('pointerdown', down, { passive: false });
+        el.addEventListener('pointerup', up, { passive: false });
+        el.addEventListener('pointercancel', up, { passive: false });
+        el.addEventListener('pointerleave', up, { passive: false });
+        el.addEventListener('touchstart', blockSelect, { passive: false });
     }
+
+    const touchControls = document.getElementById('touchControls');
+    if (touchControls) {
+        touchControls.addEventListener('contextmenu', (e) => e.preventDefault());
+        touchControls.addEventListener('selectstart', (e) => e.preventDefault());
+    }
+    stage.addEventListener('contextmenu', (e) => e.preventDefault());
 
     bindTouchBtn(document.getElementById('touch-left'), () => { keys['ArrowLeft'] = true; }, () => { keys['ArrowLeft'] = false; });
     bindTouchBtn(document.getElementById('touch-right'), () => { keys['ArrowRight'] = true; }, () => { keys['ArrowRight'] = false; });
