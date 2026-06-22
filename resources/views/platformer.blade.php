@@ -321,10 +321,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const JUMP_POWER = -12.2;
     const COYOTE_FRAMES_DESKTOP = 8;
     const COYOTE_FRAMES_MOBILE = 14;
-    const JUMP_BUFFER_DESKTOP = 10;
-    const JUMP_BUFFER_MOBILE = 20;
-    const DOUBLE_JUMP_BUFFER_DESKTOP = 12;
-    const DOUBLE_JUMP_BUFFER_MOBILE = 18;
+    const MAX_JUMPS = 2;
+    const JUMP_BUFFER_DESKTOP = 14;
+    const JUMP_BUFFER_MOBILE = 28;
+    const LAND_FRAMES_DESKTOP = 5;
+    const LAND_FRAMES_MOBILE = 6;
     const WORLD_MAX = 50000;
     const BEST_KEY = 'sky_runner_best';
     const GEN_AHEAD = 900;
@@ -332,8 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const MILESTONES = [100, 250, 500, 1000, 2000];
 
     const keys = {};
-    let jumpPressed = false;
-    let canDoubleJump = false;
+    let jumpsLeft = MAX_JUMPS;
+    let landTimer = 0;
     let coyoteTimer = 0;
     let animFrame = 0;
 
@@ -345,9 +346,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let canvasToast = { text: '', timer: 0, color: '#fff' };
     let hudCache = { score: -1, dist: -1, lives: -1, combo: -1, speed: '' };
     let jumpBuffer = 0;
-    let doubleJumpBuffer = 0;
-    let groundedStreak = 0;
-    let lastJumpEventMs = 0;
     let bestDistance = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
     bestScoreEl.textContent = String(bestDistance);
 
@@ -357,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         player = {
             x: 80, y: startY, width: 28, height: 42,
             vx: 0, vy: 0, onGround: false, facing: 1,
-            jumpsUsed: 0, runAnim: 0,
+            runAnim: 0,
         };
         platforms = [];
         coins = [];
@@ -376,9 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
         lastMilestone = 0;
         lastSpeedTier = 0;
         jumpBuffer = 0;
-        doubleJumpBuffer = 0;
-        groundedStreak = 0;
-        lastJumpEventMs = 0;
+        jumpsLeft = MAX_JUMPS;
+        landTimer = 0;
         canvasToast = { text: '', timer: 0, color: '#fff' };
         hudCache = { score: -1, dist: -1, lives: -1, combo: -1, speed: '' };
         cameraX = 0;
@@ -388,8 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
         furthestX = 0;
         checkpoint = { x: 80, y: startY };
         coyoteTimer = 0;
-        canDoubleJump = false;
-        jumpPressed = false;
 
         for (let i = 0; i < 40; i++) {
             stars.push({ x: Math.random() * W * 3, y: Math.random() * H * 0.55, r: Math.random() * 1.5 + 0.4, tw: Math.random() * Math.PI * 2 });
@@ -562,58 +557,45 @@ document.addEventListener('DOMContentLoaded', () => {
         return isMobilePlay() ? COYOTE_FRAMES_MOBILE : COYOTE_FRAMES_DESKTOP;
     }
 
+    function landFramesNeeded() {
+        return isMobilePlay() ? LAND_FRAMES_MOBILE : LAND_FRAMES_DESKTOP;
+    }
+
     function queueJump() {
         if (gameOver || paused || !started) return;
-
-        const wantsAirJump = player.jumpsUsed === 1 && canDoubleJump;
-        if (wantsAirJump) {
-            doubleJumpBuffer = isMobilePlay() ? DOUBLE_JUMP_BUFFER_MOBILE : DOUBLE_JUMP_BUFFER_DESKTOP;
-            tryJump();
-            return;
-        }
-
         jumpBuffer = isMobilePlay() ? JUMP_BUFFER_MOBILE : JUMP_BUFFER_DESKTOP;
         tryJump();
     }
 
     function processJumpBuffer() {
-        if (doubleJumpBuffer > 0) {
-            if (tryJump()) {
-                doubleJumpBuffer = 0;
-            } else {
-                doubleJumpBuffer--;
-            }
-        }
         if (jumpBuffer <= 0) return;
         if (tryJump()) {
-            if (player.jumpsUsed !== 1 || !canDoubleJump) {
-                jumpBuffer = 0;
-            }
-            return;
+            if (jumpsLeft <= 0) jumpBuffer = 0;
         }
         jumpBuffer--;
     }
 
     function tryJump() {
         if (gameOver || paused || !started) return false;
-        const canGroundJump = (player.onGround || coyoteTimer > 0) && player.jumpsUsed === 0;
-        if (canGroundJump) {
+        if (jumpsLeft <= 0) return false;
+
+        const grounded = player.onGround || coyoteTimer > 0;
+
+        if (grounded && jumpsLeft >= 1) {
+            if (jumpsLeft !== MAX_JUMPS && landTimer < 2) return false;
             player.vy = JUMP_POWER;
             player.onGround = false;
-            player.jumpsUsed = 1;
+            jumpsLeft = MAX_JUMPS - 1;
             coyoteTimer = 0;
-            groundedStreak = 0;
-            canDoubleJump = true;
+            landTimer = 0;
             GameSounds.play('jump');
             spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
             return true;
         }
-        const canAirJump = canDoubleJump && player.jumpsUsed === 1 && !player.onGround;
-        if (canAirJump) {
+
+        if (!grounded && jumpsLeft > 0 && jumpsLeft < MAX_JUMPS) {
             player.vy = JUMP_POWER * 0.88;
-            player.jumpsUsed = 2;
-            canDoubleJump = false;
-            doubleJumpBuffer = 0;
+            jumpsLeft--;
             GameSounds.play('jump');
             for (let i = 0; i < 6; i++) {
                 particles.push({
@@ -626,6 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return true;
         }
+
         return false;
     }
 
@@ -683,18 +666,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (p.type === 'spring') {
                     player.vy = JUMP_POWER * 1.35;
                     player.onGround = false;
-                    player.jumpsUsed = 1;
-                    canDoubleJump = true;
-                    groundedStreak = 0;
+                    jumpsLeft = 1;
+                    landTimer = 0;
                     coyoteTimer = 0;
                     GameSounds.play('jump');
                     spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
                 } else if (p.type === 'cloud') {
                     player.vy = JUMP_POWER * 0.55;
                     player.onGround = false;
-                    player.jumpsUsed = 0;
-                    canDoubleJump = true;
-                    groundedStreak = 0;
+                    jumpsLeft = MAX_JUMPS;
+                    landTimer = 0;
                     coyoteTimer = coyoteMax();
                     GameSounds.play('jump');
                     spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
@@ -717,15 +698,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!player.onGround && coyoteTimer > 0) coyoteTimer--;
 
-        if (player.onGround) {
-            groundedStreak++;
-            if (groundedStreak >= 2) {
-                player.jumpsUsed = 0;
-                canDoubleJump = false;
-                doubleJumpBuffer = 0;
+        if (player.onGround && player.vy >= 0) {
+            landTimer++;
+            if (landTimer >= landFramesNeeded()) {
+                jumpsLeft = MAX_JUMPS;
             }
         } else {
-            groundedStreak = 0;
+            landTimer = 0;
         }
     }
 
@@ -889,9 +868,8 @@ document.addEventListener('DOMContentLoaded', () => {
             player.y = checkpoint.y;
             player.vx = 0;
             player.vy = JUMP_POWER * 0.7;
-            player.jumpsUsed = 1;
-            canDoubleJump = true;
-            groundedStreak = 0;
+            jumpsLeft = 1;
+            landTimer = 0;
             cameraX = Math.max(0, player.x - W * 0.35);
             breakCombo();
             return;
@@ -907,7 +885,8 @@ document.addEventListener('DOMContentLoaded', () => {
         player.y = checkpoint.y;
         player.vx = 0;
         player.vy = 0;
-        player.jumpsUsed = 0;
+        jumpsLeft = MAX_JUMPS;
+        landTimer = 0;
         cameraX = Math.max(0, player.x - W * 0.35);
         updateHud(true);
     }
@@ -1214,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.globalAlpha = 1;
         }
 
-        if (!player.onGround && player.jumpsUsed >= 2) {
+        if (!player.onGround && jumpsLeft <= 0) {
             ctx.globalAlpha = 0.5 + Math.sin(animFrame * 0.3) * 0.3;
             ctx.fillStyle = '#67e8f9';
             ctx.font = '10px Arial';
@@ -1280,10 +1259,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'a', 's', 'd'].includes(e.key)) e.preventDefault();
-        if (!keys[e.key]) {
-            keys[e.key] = true;
-            if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) queueJump();
-        }
+        keys[e.key] = true;
+        if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key) && !e.repeat) queueJump();
     });
 
     window.addEventListener('keyup', e => { keys[e.key] = false; });
@@ -1325,22 +1302,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const blockSelect = (e) => e.preventDefault();
         el.addEventListener('selectstart', blockSelect);
         el.addEventListener('contextmenu', blockSelect);
-        let pressed = false;
 
         const onPress = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const now = performance.now();
-            if (now - lastJumpEventMs < 32) return;
-            lastJumpEventMs = now;
-            if (pressed) return;
-            pressed = true;
             el.classList.add('active');
             queueJump();
         };
         const onRelease = (e) => {
             if (e) e.preventDefault();
-            pressed = false;
             el.classList.remove('active');
         };
 
