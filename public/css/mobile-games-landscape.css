@@ -491,13 +491,14 @@
         font-size: 0.78rem;
     }
 
-    /* Sky Runner â€” slim HUD, keep touch controls */
-    .sky-runner-page .sky-hud {
+    /* Sky Runner — slim HUD, keep touch controls */
+    .sky-runner-page .sky-hud-inner {
         padding: 0.3rem 0.45rem !important;
         gap: 0.25rem !important;
     }
 
-    .sky-runner-page .plat-title {
+    .sky-runner-page .plat-title,
+    .sky-runner-page .sky-hud-title {
         font-size: 0.95rem !important;
     }
 
@@ -505,9 +506,15 @@
         display: none !important;
     }
 
+    .sky-runner-page .sky-hud.playing .sky-hud-title-wrap {
+        display: none !important;
+    }
+
     .sky-runner-page .hud-pill {
         font-size: 0.62rem !important;
         padding: 0.18rem 0.4rem !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 
     .sky-runner-page .mobile-touch-controls {
