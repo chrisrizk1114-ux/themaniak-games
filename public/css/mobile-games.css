@@ -115,6 +115,7 @@ button,
     border-color: rgba(253, 224, 71, 0.5);
     color: #1a1a1a;
     font-size: 1.5rem;
+    touch-action: none;
 }
 
 @media (max-width: 960px), (hover: none) and (pointer: coarse) {

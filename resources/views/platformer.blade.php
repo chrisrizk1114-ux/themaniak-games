@@ -250,7 +250,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const GRAVITY = 0.52;
     const MOVE_SPEED = 4.8;
     const JUMP_POWER = -12.2;
-    const COYOTE_FRAMES = 8;
+    const COYOTE_FRAMES_DESKTOP = 8;
+    const COYOTE_FRAMES_MOBILE = 14;
+    const JUMP_BUFFER_DESKTOP = 10;
+    const JUMP_BUFFER_MOBILE = 20;
     const WORLD_MAX = 50000;
     const BEST_KEY = 'sky_runner_best';
     const GEN_AHEAD = 900;
@@ -270,6 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let combo = 0, comboTimer = 0, lastMilestone = 0;
     let canvasToast = { text: '', timer: 0, color: '#fff' };
     let hudCache = { score: -1, dist: -1, lives: -1, combo: -1 };
+    let jumpBuffer = 0;
+    let lastJumpTapMs = 0;
     let bestDistance = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
     bestScoreEl.textContent = String(bestDistance);
 
@@ -296,6 +301,8 @@ document.addEventListener('DOMContentLoaded', () => {
         combo = 0;
         comboTimer = 0;
         lastMilestone = 0;
+        jumpBuffer = 0;
+        lastJumpTapMs = 0;
         canvasToast = { text: '', timer: 0, color: '#fff' };
         hudCache = { score: -1, dist: -1, lives: -1, combo: -1 };
         cameraX = 0;
@@ -446,8 +453,35 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHud(true);
     }
 
-    function tryJump() {
+    function isMobilePlay() {
+        return window.innerWidth <= 900
+            || window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    }
+
+    function coyoteMax() {
+        return isMobilePlay() ? COYOTE_FRAMES_MOBILE : COYOTE_FRAMES_DESKTOP;
+    }
+
+    function queueJump() {
         if (gameOver || paused || !started) return;
+        const now = performance.now();
+        if (now - lastJumpTapMs < 45) return;
+        lastJumpTapMs = now;
+        jumpBuffer = isMobilePlay() ? JUMP_BUFFER_MOBILE : JUMP_BUFFER_DESKTOP;
+        tryJump();
+    }
+
+    function processJumpBuffer() {
+        if (jumpBuffer <= 0) return;
+        if (tryJump()) {
+            jumpBuffer = 0;
+            return;
+        }
+        jumpBuffer--;
+    }
+
+    function tryJump() {
+        if (gameOver || paused || !started) return false;
         const canJump = player.onGround || coyoteTimer > 0;
         if (canJump && player.jumpsUsed === 0) {
             player.vy = JUMP_POWER;
@@ -457,7 +491,9 @@ document.addEventListener('DOMContentLoaded', () => {
             canDoubleJump = true;
             GameSounds.play('jump');
             spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
-        } else if (canDoubleJump && player.jumpsUsed === 1) {
+            return true;
+        }
+        if (canDoubleJump && player.jumpsUsed === 1) {
             player.vy = JUMP_POWER * 0.88;
             player.jumpsUsed = 2;
             canDoubleJump = false;
@@ -471,7 +507,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     life: 1, color: '#67e8f9', size: 4,
                 });
             }
+            return true;
         }
+        return false;
     }
 
     function spawnDust(wx, wy) {
@@ -538,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     player.onGround = false;
                     player.jumpsUsed = 0;
                     canDoubleJump = true;
-                    coyoteTimer = COYOTE_FRAMES;
+                    coyoteTimer = coyoteMax();
                     GameSounds.play('jump');
                     spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
                 } else {
@@ -546,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     player.onGround = true;
                     player.jumpsUsed = 0;
                     canDoubleJump = false;
-                    coyoteTimer = COYOTE_FRAMES;
+                    coyoteTimer = coyoteMax();
                 }
             } else if (minOverlap === overlapBottom && player.vy < 0) {
                 player.y = p.y + p.height;
@@ -582,6 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (player.x > WORLD_MAX) player.x = WORLD_MAX;
 
         collidePlatforms();
+        processJumpBuffer();
 
         platforms.forEach(p => {
             if (p.type === 'rainbow') {
@@ -1104,20 +1143,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'a', 's', 'd'].includes(e.key)) e.preventDefault();
         if (!keys[e.key]) {
             keys[e.key] = true;
-            if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) tryJump();
+            if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) queueJump();
         }
     });
 
     window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-    function bindTouchBtn(el, onDown, onUp) {
+    function bindTouchBtn(el, onDown, onUp, releaseOnLeave = true) {
         if (!el) return;
         const blockSelect = (e) => e.preventDefault();
         el.addEventListener('selectstart', blockSelect);
         el.addEventListener('contextmenu', blockSelect);
+        let active = false;
         const down = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (active) return;
+            active = true;
             el.classList.add('active');
             if (el.setPointerCapture && e.pointerId !== undefined) {
                 try { el.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1125,15 +1167,47 @@ document.addEventListener('DOMContentLoaded', () => {
             onDown();
         };
         const up = (e) => {
+            if (!active) return;
             if (e) e.preventDefault();
+            active = false;
             el.classList.remove('active');
             onUp();
         };
         el.addEventListener('pointerdown', down, { passive: false });
         el.addEventListener('pointerup', up, { passive: false });
         el.addEventListener('pointercancel', up, { passive: false });
-        el.addEventListener('pointerleave', up, { passive: false });
-        el.addEventListener('touchstart', blockSelect, { passive: false });
+        if (releaseOnLeave) {
+            el.addEventListener('pointerleave', up, { passive: false });
+        }
+    }
+
+    function bindJumpBtn(el) {
+        if (!el) return;
+        const blockSelect = (e) => e.preventDefault();
+        el.addEventListener('selectstart', blockSelect);
+        el.addEventListener('contextmenu', blockSelect);
+        let pressed = false;
+
+        const onPress = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (pressed) return;
+            pressed = true;
+            el.classList.add('active');
+            queueJump();
+        };
+        const onRelease = (e) => {
+            if (e) e.preventDefault();
+            pressed = false;
+            el.classList.remove('active');
+        };
+
+        el.addEventListener('pointerdown', onPress, { passive: false });
+        el.addEventListener('pointerup', onRelease, { passive: false });
+        el.addEventListener('pointercancel', onRelease, { passive: false });
+        el.addEventListener('touchstart', onPress, { passive: false });
+        el.addEventListener('touchend', onRelease, { passive: false });
+        el.addEventListener('touchcancel', onRelease, { passive: false });
     }
 
     const touchControls = document.getElementById('touchControls');
@@ -1145,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     bindTouchBtn(document.getElementById('touch-left'), () => { keys['ArrowLeft'] = true; }, () => { keys['ArrowLeft'] = false; });
     bindTouchBtn(document.getElementById('touch-right'), () => { keys['ArrowRight'] = true; }, () => { keys['ArrowRight'] = false; });
-    bindTouchBtn(document.getElementById('touch-jump'), () => tryJump(), () => {});
+    bindJumpBtn(document.getElementById('touch-jump'));
 
     let resizeTimer;
     window.addEventListener('resize', () => {
