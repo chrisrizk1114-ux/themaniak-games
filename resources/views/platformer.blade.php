@@ -17,12 +17,24 @@
     .hud-pill strong {
         font-variant-numeric: tabular-nums;
         display: inline-block;
-        min-width: 1.15em;
+        min-width: 2ch;
         text-align: center;
     }
     .hud-pill.hud-combo {
         border-color: rgba(251, 191, 36, 0.45);
         background: rgba(120, 53, 15, 0.88);
+    }
+    .hud-pill.hud-combo.is-off {
+        opacity: 0.28;
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(15, 23, 42, 0.65);
+    }
+    .hud-pill.hud-combo.is-off strong {
+        visibility: hidden;
+    }
+    .hud-pill.hud-speed {
+        border-color: rgba(34, 211, 238, 0.35);
+        background: rgba(8, 47, 73, 0.88);
     }
     .hud-pill.hud-combo.is-hot {
         animation: combo-pulse 0.45s ease-in-out infinite alternate;
@@ -39,9 +51,22 @@
         right: 0;
         z-index: 20;
         pointer-events: none;
-        contain: layout style;
+        contain: strict;
         transform: translateZ(0);
         -webkit-transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+    .sky-hud.playing {
+        position: fixed;
+        top: var(--nav-h);
+        left: 0;
+        right: 0;
+        height: 3.25rem;
+        z-index: 40;
+        background: rgba(8, 8, 18, 0.94);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     }
     .sky-hud-inner {
         display: flex;
@@ -50,6 +75,12 @@
         justify-content: space-between;
         gap: 0.35rem;
         padding: 0.65rem 0.75rem;
+        height: 100%;
+    }
+    .sky-hud.playing .sky-hud-inner {
+        flex-wrap: nowrap;
+        padding: 0 0.4rem;
+        align-items: stretch;
     }
     .sky-hud-stats {
         display: flex;
@@ -63,10 +94,31 @@
         display: none;
     }
     .sky-hud.playing .sky-hud-stats {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.15fr) minmax(0, 0.9fr) minmax(0, 0.85fr) minmax(0, 0.85fr) auto;
         width: 100%;
+        height: 100%;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0.35rem 0;
+        overflow: visible;
+    }
+    .sky-hud.playing .hud-pill {
+        display: flex;
+        align-items: center;
         justify-content: center;
-        flex-wrap: wrap;
-        row-gap: 0.3rem;
+        width: 100%;
+        min-height: 2rem;
+        border-radius: 8px !important;
+        margin: 0;
+        box-shadow: none;
+    }
+    .sky-hud.playing #distance {
+        min-width: 2.5ch;
+    }
+    .sky-hud:not(.playing) #speed-pill,
+    .sky-hud:not(.playing) #combo-pill {
+        display: none !important;
     }
     @media (max-width: 900px), (hover: none) and (pointer: coarse) {
         .hud-pill {
@@ -80,7 +132,20 @@
             padding: 0.45rem 0.5rem;
         }
         .sky-hud.playing .sky-hud-stats {
-            justify-content: space-between;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.85fr) minmax(0, 0.75fr) minmax(0, 0.75fr) auto;
+            gap: 0.15rem;
+            padding: 0.3rem 0.15rem;
+        }
+        .sky-hud.playing {
+            height: 2.85rem;
+        }
+        .sky-hud.playing .hud-pill {
+            font-size: 0.68rem;
+            padding: 0.22rem 0.25rem;
+            min-height: 1.85rem;
+        }
+        .sky-hud.playing .sky-hud-best {
+            display: none !important;
         }
         .sky-runner-page {
             height: calc(100dvh - var(--nav-h));
@@ -153,8 +218,9 @@
                     <span class="hud-pill rounded-full px-2.5 sm:px-3 py-1">💰 <strong id="coin-count">0</strong></span>
                     <span class="hud-pill rounded-full px-2.5 sm:px-3 py-1">🏃 <strong id="distance">0</strong>m</span>
                     <span class="hud-pill rounded-full px-2.5 sm:px-3 py-1">❤️ <strong id="lives">3</strong></span>
-                    <span class="hud-pill hud-combo hidden rounded-full px-2.5 py-1" id="combo-pill">🔥 x<strong id="combo-count">1</strong></span>
-                    <span class="hud-pill rounded-full px-2.5 sm:px-3 py-1 hidden sm:inline-flex">🏆 <strong id="best-score">0</strong></span>
+                    <span class="hud-pill hud-combo hud-combo-slot is-off rounded-full px-2.5 py-1" id="combo-pill">🔥 <strong id="combo-count">0</strong></span>
+                    <span class="hud-pill hud-speed rounded-full px-2.5 py-1" id="speed-pill">⚡ <strong id="speed-tier">1.0×</strong></span>
+                    <span class="hud-pill rounded-full px-2.5 sm:px-3 py-1 sky-hud-best">🏆 <strong id="best-score">0</strong></span>
                     <button id="sound-btn" type="button" class="hud-pill rounded-full px-2.5 sm:px-3 py-1 hover:bg-gray-700" title="Toggle sound">🔊</button>
                 </div>
             </div>
@@ -246,9 +312,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const soundBtn = document.getElementById('sound-btn');
     const comboPill = document.getElementById('combo-pill');
     const comboCountEl = document.getElementById('combo-count');
+    const speedTierEl = document.getElementById('speed-tier');
 
     const GRAVITY = 0.52;
     const MOVE_SPEED = 4.8;
+    const SPEED_PER_100M = 0.08;
+    const MAX_SPEED_TIER = 12;
     const JUMP_POWER = -12.2;
     const COYOTE_FRAMES_DESKTOP = 8;
     const COYOTE_FRAMES_MOBILE = 14;
@@ -270,9 +339,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let score, lives, cameraX, gameOver, paused, started;
     let lastPlatformX, furthestX, checkpoint;
     let shieldHits = 0, magnetTimer = 0, rocketTimer = 0;
-    let combo = 0, comboTimer = 0, lastMilestone = 0;
+    let combo = 0, comboTimer = 0, lastMilestone = 0, lastSpeedTier = 0;
     let canvasToast = { text: '', timer: 0, color: '#fff' };
-    let hudCache = { score: -1, dist: -1, lives: -1, combo: -1 };
+    let hudCache = { score: -1, dist: -1, lives: -1, combo: -1, speed: '' };
     let jumpBuffer = 0;
     let lastJumpTapMs = 0;
     let bestDistance = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
@@ -301,10 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
         combo = 0;
         comboTimer = 0;
         lastMilestone = 0;
+        lastSpeedTier = 0;
         jumpBuffer = 0;
         lastJumpTapMs = 0;
         canvasToast = { text: '', timer: 0, color: '#fff' };
-        hudCache = { score: -1, dist: -1, lives: -1, combo: -1 };
+        hudCache = { score: -1, dist: -1, lives: -1, combo: -1, speed: '' };
         cameraX = 0;
         gameOver = false;
         paused = false;
@@ -386,8 +456,27 @@ document.addEventListener('DOMContentLoaded', () => {
         canvasToast = { text, timer: 110, color };
     }
 
+    function getDistanceM() {
+        return Math.floor(furthestX / 10);
+    }
+
+    function getSpeedTier() {
+        return Math.min(MAX_SPEED_TIER, Math.floor(getDistanceM() / 100));
+    }
+
+    function getSpeedMultiplier() {
+        return 1 + getSpeedTier() * SPEED_PER_100M;
+    }
+
+    function getMoveSpeed() {
+        let speed = MOVE_SPEED * getSpeedMultiplier();
+        if (rocketTimer > 0) speed *= 1.35;
+        return speed;
+    }
+
     function updateHud(force = false) {
-        const dist = Math.floor(furthestX / 10);
+        const dist = getDistanceM();
+        const speedLabel = getSpeedMultiplier().toFixed(1) + '×';
         if (force || hudCache.score !== score) {
             coinCountEl.textContent = String(score);
             hudCache.score = score;
@@ -400,14 +489,19 @@ document.addEventListener('DOMContentLoaded', () => {
             livesEl.textContent = String(lives);
             hudCache.lives = lives;
         }
+        if (force || hudCache.speed !== speedLabel) {
+            if (speedTierEl) speedTierEl.textContent = speedLabel;
+            hudCache.speed = speedLabel;
+        }
         if (force || hudCache.combo !== combo) {
             if (combo >= 2) {
-                comboPill.classList.remove('hidden');
+                comboPill.classList.remove('is-off');
                 comboCountEl.textContent = String(combo);
                 comboPill.classList.toggle('is-hot', combo >= 5);
             } else {
-                comboPill.classList.add('hidden');
+                comboPill.classList.add('is-off');
                 comboPill.classList.remove('is-hot');
+                comboCountEl.textContent = '0';
             }
             hudCache.combo = combo;
         }
@@ -537,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleInput() {
         if (gameOver || paused || !started) return;
 
-        const speed = rocketTimer > 0 ? MOVE_SPEED * 1.45 : MOVE_SPEED;
+        const speed = getMoveSpeed();
         if (keys['ArrowLeft'] || keys['a'] || keys['A']) player.vx = -speed;
         else if (keys['ArrowRight'] || keys['d'] || keys['D']) player.vx = speed;
         else player.vx *= 0.72;
@@ -635,7 +729,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const prevFurthest = furthestX;
         furthestX = Math.max(furthestX, player.x);
-        const distM = Math.floor(furthestX / 10);
+        const distM = getDistanceM();
+        const speedTier = getSpeedTier();
+        if (speedTier > lastSpeedTier) {
+            lastSpeedTier = speedTier;
+            showCanvasToast(`⚡ ${speedTier * 100}m — Speed ${getSpeedMultiplier().toFixed(1)}×!`, '#67e8f9');
+            GameSounds.play('coin');
+            updateHud();
+        }
         if (distM > lastMilestone) {
             const hit = MILESTONES.find(m => m > lastMilestone && m <= distM);
             if (hit) {
@@ -644,12 +745,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 GameSounds.play('coin');
             }
         }
-        if (furthestX - prevFurthest > 0.5 && Math.random() < 0.008) {
+        const pace = getSpeedMultiplier();
+        if (furthestX - prevFurthest > 0.5 && Math.random() < 0.008 * pace) {
             shootingStars.push({
                 x: cameraX + W + 40,
                 y: 30 + Math.random() * H * 0.4,
                 len: 40 + Math.random() * 60,
-                speed: 12 + Math.random() * 8,
+                speed: (12 + Math.random() * 8) * pace,
                 life: 1,
             });
         }
@@ -657,7 +759,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (player.x + GEN_AHEAD > lastPlatformX) extendLevel(player.x + GEN_AHEAD);
         pruneWorld();
 
-        if (player.x > cameraX + W * 0.55) cameraX = player.x - W * 0.55;
+        const camLead = 0.55 + Math.min(0.1, speedTier * 0.008);
+        if (player.x > cameraX + W * camLead) cameraX = player.x - W * camLead;
         if (player.x < cameraX + W * 0.2) cameraX = Math.max(0, player.x - W * 0.2);
 
         if (magnetTimer > 0) {
@@ -734,12 +837,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         clouds.forEach(c => {
-            c.x -= c.s;
+            c.x -= c.s * pace;
             if (c.x + c.w < cameraX * 0.1 - 100) c.x = cameraX * 0.1 + W + Math.random() * 200;
         });
 
-        const dist = Math.floor(furthestX / 10);
-        if (hudCache.dist !== dist) updateHud();
+        if (hudCache.dist !== distM || hudCache.speed !== getSpeedMultiplier().toFixed(1) + '×') {
+            updateHud();
+        }
     }
 
     function loseLife() {
