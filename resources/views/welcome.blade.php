@@ -106,15 +106,6 @@
         100% { background-position: 300% center; }
     }
 
-    .hero-sub {
-        font-size: clamp(1rem, 2.2vw, 1.25rem);
-        color: rgba(255,255,255,0.55);
-        max-width: 36rem;
-        margin: 0 auto 1.75rem;
-        line-height: 1.5;
-        font-weight: 600;
-    }
-
     .hero-stats {
         display: flex;
         flex-wrap: wrap;
@@ -435,10 +426,6 @@
         <section class="hero">
             <div class="hero-badge">🎮 <span>6 Games</span> · Zero Downloads</div>
             <h1 class="hero-title">Mini Games</h1>
-            <p class="hero-sub">
-                Free games at <strong>themaniak.online</strong> — bowling, cards, puzzles, strategy &amp; more in your browser.
-                Every game has sound effects. Hit 🔊 in any game to toggle audio.
-            </p>
             <div class="hero-stats">
                 <span class="hero-stat">🃏 <strong>8</strong> Games</span>
                 <span class="hero-stat">🔊 <strong>Sound</strong> FX</span>
