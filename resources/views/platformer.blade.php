@@ -323,6 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const COYOTE_FRAMES_MOBILE = 14;
     const JUMP_BUFFER_DESKTOP = 10;
     const JUMP_BUFFER_MOBILE = 20;
+    const DOUBLE_JUMP_BUFFER_DESKTOP = 12;
+    const DOUBLE_JUMP_BUFFER_MOBILE = 18;
     const WORLD_MAX = 50000;
     const BEST_KEY = 'sky_runner_best';
     const GEN_AHEAD = 900;
@@ -343,7 +345,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let canvasToast = { text: '', timer: 0, color: '#fff' };
     let hudCache = { score: -1, dist: -1, lives: -1, combo: -1, speed: '' };
     let jumpBuffer = 0;
-    let lastJumpTapMs = 0;
+    let doubleJumpBuffer = 0;
+    let groundedStreak = 0;
+    let lastJumpEventMs = 0;
     let bestDistance = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
     bestScoreEl.textContent = String(bestDistance);
 
@@ -372,7 +376,9 @@ document.addEventListener('DOMContentLoaded', () => {
         lastMilestone = 0;
         lastSpeedTier = 0;
         jumpBuffer = 0;
-        lastJumpTapMs = 0;
+        doubleJumpBuffer = 0;
+        groundedStreak = 0;
+        lastJumpEventMs = 0;
         canvasToast = { text: '', timer: 0, color: '#fff' };
         hudCache = { score: -1, dist: -1, lives: -1, combo: -1, speed: '' };
         cameraX = 0;
@@ -558,17 +564,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function queueJump() {
         if (gameOver || paused || !started) return;
-        const now = performance.now();
-        if (now - lastJumpTapMs < 45) return;
-        lastJumpTapMs = now;
+
+        const wantsAirJump = player.jumpsUsed === 1 && canDoubleJump;
+        if (wantsAirJump) {
+            doubleJumpBuffer = isMobilePlay() ? DOUBLE_JUMP_BUFFER_MOBILE : DOUBLE_JUMP_BUFFER_DESKTOP;
+            tryJump();
+            return;
+        }
+
         jumpBuffer = isMobilePlay() ? JUMP_BUFFER_MOBILE : JUMP_BUFFER_DESKTOP;
         tryJump();
     }
 
     function processJumpBuffer() {
+        if (doubleJumpBuffer > 0) {
+            if (tryJump()) {
+                doubleJumpBuffer = 0;
+            } else {
+                doubleJumpBuffer--;
+            }
+        }
         if (jumpBuffer <= 0) return;
         if (tryJump()) {
-            jumpBuffer = 0;
+            if (player.jumpsUsed !== 1 || !canDoubleJump) {
+                jumpBuffer = 0;
+            }
             return;
         }
         jumpBuffer--;
@@ -576,21 +596,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function tryJump() {
         if (gameOver || paused || !started) return false;
-        const canJump = player.onGround || coyoteTimer > 0;
-        if (canJump && player.jumpsUsed === 0) {
+        const canGroundJump = (player.onGround || coyoteTimer > 0) && player.jumpsUsed === 0;
+        if (canGroundJump) {
             player.vy = JUMP_POWER;
             player.onGround = false;
             player.jumpsUsed = 1;
             coyoteTimer = 0;
+            groundedStreak = 0;
             canDoubleJump = true;
             GameSounds.play('jump');
             spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
             return true;
         }
-        if (canDoubleJump && player.jumpsUsed === 1) {
+        const canAirJump = canDoubleJump && player.jumpsUsed === 1 && !player.onGround;
+        if (canAirJump) {
             player.vy = JUMP_POWER * 0.88;
             player.jumpsUsed = 2;
             canDoubleJump = false;
+            doubleJumpBuffer = 0;
             GameSounds.play('jump');
             for (let i = 0; i < 6; i++) {
                 particles.push({
@@ -662,6 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     player.onGround = false;
                     player.jumpsUsed = 1;
                     canDoubleJump = true;
+                    groundedStreak = 0;
                     coyoteTimer = 0;
                     GameSounds.play('jump');
                     spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
@@ -670,14 +694,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     player.onGround = false;
                     player.jumpsUsed = 0;
                     canDoubleJump = true;
+                    groundedStreak = 0;
                     coyoteTimer = coyoteMax();
                     GameSounds.play('jump');
                     spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
                 } else {
                     player.vy = 0;
                     player.onGround = true;
-                    player.jumpsUsed = 0;
-                    canDoubleJump = false;
                     coyoteTimer = coyoteMax();
                 }
             } else if (minOverlap === overlapBottom && player.vy < 0) {
@@ -693,6 +716,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!player.onGround && coyoteTimer > 0) coyoteTimer--;
+
+        if (player.onGround) {
+            groundedStreak++;
+            if (groundedStreak >= 2) {
+                player.jumpsUsed = 0;
+                canDoubleJump = false;
+                doubleJumpBuffer = 0;
+            }
+        } else {
+            groundedStreak = 0;
+        }
     }
 
     function updatePhysics() {
@@ -857,6 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
             player.vy = JUMP_POWER * 0.7;
             player.jumpsUsed = 1;
             canDoubleJump = true;
+            groundedStreak = 0;
             cameraX = Math.max(0, player.x - W * 0.35);
             breakCombo();
             return;
@@ -1295,6 +1330,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const onPress = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            const now = performance.now();
+            if (now - lastJumpEventMs < 32) return;
+            lastJumpEventMs = now;
             if (pressed) return;
             pressed = true;
             el.classList.add('active');
@@ -1309,7 +1347,6 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('pointerdown', onPress, { passive: false });
         el.addEventListener('pointerup', onRelease, { passive: false });
         el.addEventListener('pointercancel', onRelease, { passive: false });
-        el.addEventListener('touchstart', onPress, { passive: false });
         el.addEventListener('touchend', onRelease, { passive: false });
         el.addEventListener('touchcancel', onRelease, { passive: false });
     }
