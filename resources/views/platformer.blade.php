@@ -324,8 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAX_JUMPS = 2;
     const JUMP_BUFFER_DESKTOP = 14;
     const JUMP_BUFFER_MOBILE = 28;
-    const LAND_FRAMES_DESKTOP = 5;
-    const LAND_FRAMES_MOBILE = 6;
     const WORLD_MAX = 50000;
     const BEST_KEY = 'sky_runner_best';
     const GEN_AHEAD = 900;
@@ -334,7 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const keys = {};
     let jumpsLeft = MAX_JUMPS;
-    let landTimer = 0;
     let coyoteTimer = 0;
     let animFrame = 0;
 
@@ -375,7 +372,6 @@ document.addEventListener('DOMContentLoaded', () => {
         lastSpeedTier = 0;
         jumpBuffer = 0;
         jumpsLeft = MAX_JUMPS;
-        landTimer = 0;
         canvasToast = { text: '', timer: 0, color: '#fff' };
         hudCache = { score: -1, dist: -1, lives: -1, combo: -1, speed: '' };
         cameraX = 0;
@@ -557,10 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return isMobilePlay() ? COYOTE_FRAMES_MOBILE : COYOTE_FRAMES_DESKTOP;
     }
 
-    function landFramesNeeded() {
-        return isMobilePlay() ? LAND_FRAMES_MOBILE : LAND_FRAMES_DESKTOP;
-    }
-
     function queueJump() {
         if (gameOver || paused || !started) return;
         jumpBuffer = isMobilePlay() ? JUMP_BUFFER_MOBILE : JUMP_BUFFER_DESKTOP;
@@ -579,21 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameOver || paused || !started) return false;
         if (jumpsLeft <= 0) return false;
 
-        const grounded = player.onGround || coyoteTimer > 0;
-
-        if (grounded && jumpsLeft >= 1) {
-            if (jumpsLeft !== MAX_JUMPS && landTimer < 2) return false;
-            player.vy = JUMP_POWER;
-            player.onGround = false;
-            jumpsLeft = MAX_JUMPS - 1;
-            coyoteTimer = 0;
-            landTimer = 0;
-            GameSounds.play('jump');
-            spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
-            return true;
-        }
-
-        if (!grounded && jumpsLeft > 0 && jumpsLeft < MAX_JUMPS) {
+        if (!player.onGround && jumpsLeft < MAX_JUMPS) {
             player.vy = JUMP_POWER * 0.88;
             jumpsLeft--;
             GameSounds.play('jump');
@@ -606,6 +584,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     life: 1, color: '#67e8f9', size: 4,
                 });
             }
+            return true;
+        }
+
+        if ((player.onGround || coyoteTimer > 0) && jumpsLeft > 0) {
+            player.vy = JUMP_POWER;
+            player.onGround = false;
+            jumpsLeft--;
+            coyoteTimer = 0;
+            GameSounds.play('jump');
+            spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
             return true;
         }
 
@@ -667,7 +655,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     player.vy = JUMP_POWER * 1.35;
                     player.onGround = false;
                     jumpsLeft = 1;
-                    landTimer = 0;
                     coyoteTimer = 0;
                     GameSounds.play('jump');
                     spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
@@ -675,7 +662,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     player.vy = JUMP_POWER * 0.55;
                     player.onGround = false;
                     jumpsLeft = MAX_JUMPS;
-                    landTimer = 0;
                     coyoteTimer = coyoteMax();
                     GameSounds.play('jump');
                     spawnDust(player.x + player.width / 2 - cameraX, player.y + player.height);
@@ -699,12 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!player.onGround && coyoteTimer > 0) coyoteTimer--;
 
         if (player.onGround && player.vy >= 0) {
-            landTimer++;
-            if (landTimer >= landFramesNeeded()) {
-                jumpsLeft = MAX_JUMPS;
-            }
-        } else {
-            landTimer = 0;
+            jumpsLeft = MAX_JUMPS;
         }
     }
 
@@ -869,7 +850,6 @@ document.addEventListener('DOMContentLoaded', () => {
             player.vx = 0;
             player.vy = JUMP_POWER * 0.7;
             jumpsLeft = 1;
-            landTimer = 0;
             cameraX = Math.max(0, player.x - W * 0.35);
             breakCombo();
             return;
@@ -886,7 +866,6 @@ document.addEventListener('DOMContentLoaded', () => {
         player.vx = 0;
         player.vy = 0;
         jumpsLeft = MAX_JUMPS;
-        landTimer = 0;
         cameraX = Math.max(0, player.x - W * 0.35);
         updateHud(true);
     }
