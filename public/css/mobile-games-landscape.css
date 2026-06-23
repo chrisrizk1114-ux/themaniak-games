@@ -26,15 +26,23 @@
         position: fixed !important;
         inset: 0 !important;
         width: 100vw !important;
-        height: 100svh !important;
-        min-height: 100svh !important;
-        max-height: 100svh !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        max-height: 100dvh !important;
         z-index: 1500;
+        overflow: hidden !important;
     }
 
     .sky-runner-page .sky-runner-stage {
         height: 100% !important;
         min-height: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+    }
+
+    .sky-runner-page .sky-hud.playing {
+        position: absolute !important;
+        top: 0 !important;
     }
 
     .uno-page {
