@@ -188,12 +188,12 @@
     }
 
     @media (orientation: landscape) and (max-height: 520px) {
-        .sky-runner-page:not(.sky-layout-portrait) {
+        .sky-runner-page.sky-layout-landscape {
             --nav-h: 0px;
             height: 100dvh !important;
             min-height: 100dvh !important;
         }
-        .sky-runner-page:not(.sky-layout-portrait) .sky-runner-stage {
+        .sky-runner-page.sky-layout-landscape .sky-runner-stage {
             height: 100% !important;
             min-height: 100% !important;
         }
@@ -304,7 +304,7 @@
     }
 </style>
 
-<div class="sky-runner-page text-white">
+<div class="sky-runner-page text-white sky-layout-portrait">
     <div class="sky-runner-stage">
         <canvas id="platform-canvas" width="980" height="520"></canvas>
 

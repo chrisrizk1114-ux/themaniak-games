@@ -1,6 +1,6 @@
-/* Tablet & iPad (768px–1024px) + touch iPads in landscape */
-@media (min-width: 768px) and (max-width: 1024px),
-       (hover: none) and (pointer: coarse) and (min-width: 861px) and (max-width: 1194px) {
+/* Tablet & iPad (768px–1366px) + all touch iPads in landscape */
+@media (min-width: 768px) and (max-width: 1366px),
+       not ((hover: hover) and (pointer: fine)) and (min-width: 768px) {
 
     :root {
         --touch-min: 52px;
@@ -211,7 +211,6 @@
        (orientation: landscape) and (min-height: 521px) and (max-height: 900px) and (pointer: coarse) {
 
     body:has(.sky-runner-page.sky-layout-landscape) .nav-bar,
-    body:has(.sky-runner-page:not(.sky-layout-portrait)) .nav-bar,
     body:has(.uno-page) .nav-bar {
         display: none !important;
     }
@@ -222,7 +221,7 @@
         max-width: none !important;
     }
 
-    .sky-runner-page:not(.sky-layout-portrait) {
+    .sky-runner-page.sky-layout-landscape {
         --nav-h: 0px;
         position: fixed !important;
         inset: 0 !important;
@@ -233,7 +232,7 @@
         z-index: 1500;
     }
 
-    .sky-runner-page:not(.sky-layout-portrait) .sky-runner-stage {
+    .sky-runner-page.sky-layout-landscape .sky-runner-stage {
         height: 100% !important;
         min-height: 100% !important;
     }

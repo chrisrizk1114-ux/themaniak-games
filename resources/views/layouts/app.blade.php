@@ -29,7 +29,7 @@
         <script src="{{ asset('js/game-sounds.js') }}?v=20260614" defer></script>
     @endif
     <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260613">
-    <link rel="stylesheet" href="{{ asset('css/mobile-games-tablet.css') }}?v=20260615">
+    <link rel="stylesheet" href="{{ asset('css/mobile-games-tablet.css') }}?v=20260616">
     @stack('head')
     <style>
         * {
@@ -196,7 +196,7 @@
             transform: rotate(180deg);
         }
 
-        @media (hover: hover) and (min-width: 861px) {
+        @media (hover: hover) and (pointer: fine) and (min-width: 861px) {
             .nav-dropdown-wrap:hover .nav-chevron {
                 transform: rotate(180deg);
             }
@@ -623,7 +623,7 @@
             display: block;
         }
 
-        @media (hover: hover) and (min-width: 861px) {
+        @media (hover: hover) and (pointer: fine) and (min-width: 861px) {
             .nav-dropdown-wrap:hover .nav-dropdown {
                 display: block;
             }
@@ -737,8 +737,8 @@
             }
         }
 
-        /* Mobile + tablet nav (phones & iPad) */
-        @media (max-width: 1024px) {
+        /* Mobile + tablet nav (phones & all touch iPads, including iPad Pro landscape) */
+        @media (max-width: 1366px), not ((hover: hover) and (pointer: fine)) {
             .nav-toggle {
                 display: flex;
             }
@@ -834,8 +834,8 @@
             }
         }
 
-        /* Mobile performance — blur/animations/fonts are costly on phones */
-        @media (max-width: 1024px), (pointer: coarse) {
+        /* Mobile performance — blur/animations/fonts are costly on phones & iPads */
+        @media (max-width: 1366px), not ((hover: hover) and (pointer: fine)) {
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
@@ -918,7 +918,10 @@
     </div>
     <script>
         (function () {
+            let done = false;
             const hide = () => {
+                if (done) return;
+                done = true;
                 const el = document.getElementById('site-loader');
                 if (!el) return;
                 el.classList.add('hidden');
@@ -930,6 +933,8 @@
             } else {
                 hide();
             }
+            window.addEventListener('load', hide, { once: true });
+            setTimeout(hide, 3500);
         })();
     </script>
     @php
@@ -1169,7 +1174,8 @@
             const navUserOnlineDot = document.getElementById('navUserOnlineDot');
             const pingUrl = @json(route('presence.ping'));
             const csrf = @json(csrf_token());
-            const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || window.matchMedia('(pointer: coarse)').matches;
+            const isMobileDevice = !window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                || window.matchMedia('(max-width: 1366px)').matches;
             const netInfo = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
             const isSlowNetwork = !!(netInfo && (netInfo.saveData || ['slow-2g', '2g', '3g'].includes(netInfo.effectiveType)));
 
