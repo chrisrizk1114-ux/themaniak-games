@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const BEST_KEY = 'mole_mayhem_best';
     const GAME_TIME = 30;
-    const FRENZY_AT = 25;
+    const FRENZY_AT = 5;
 
     let score = 0;
     let timeLeft = GAME_TIME;
