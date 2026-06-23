@@ -522,19 +522,20 @@
     }
 
     .sky-runner-page .mobile-touch-controls {
-        bottom: max(6px, env(safe-area-inset-bottom, 0px));
-        padding: 0 8px 4px;
+        bottom: max(8px, env(safe-area-inset-bottom, 0px));
+        padding: 0 12px 8px;
     }
 
     .sky-runner-page .mobile-touch-controls .touch-btn {
-        min-width: 40px;
-        min-height: 40px;
-        font-size: 1.1rem;
+        min-width: 68px;
+        min-height: 68px;
+        font-size: 1.65rem;
     }
 
     .sky-runner-page .mobile-touch-controls .touch-jump {
-        min-width: 48px;
-        min-height: 48px;
+        min-width: 80px;
+        min-height: 80px;
+        font-size: 1.9rem;
     }
 
     #start-overlay p,

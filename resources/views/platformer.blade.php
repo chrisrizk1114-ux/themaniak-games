@@ -322,8 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const COYOTE_FRAMES_DESKTOP = 8;
     const COYOTE_FRAMES_MOBILE = 14;
     const MAX_JUMPS = 2;
-    const JUMP_BUFFER_DESKTOP = 14;
-    const JUMP_BUFFER_MOBILE = 28;
+    const JUMP_BUFFER_DESKTOP = 16;
+    const JUMP_BUFFER_MOBILE = 36;
     const WORLD_MAX = 50000;
     const BEST_KEY = 'sky_runner_best';
     const GEN_AHEAD = 900;
@@ -598,9 +598,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameOver || paused || !started) return false;
         if (jumpsUsed >= MAX_JUMPS) return false;
 
-        if (jumpsUsed === 1 && !player.onGround) {
+        const firmLanding = player.onGround && player.vy >= 0 && groundFrames >= 2;
+
+        if (jumpsUsed === 1 && !firmLanding) {
             player.vy = JUMP_POWER * 0.92;
+            player.onGround = false;
             jumpsUsed = 2;
+            groundFrames = 0;
             GameSounds.play('jump');
             spawnDoubleJumpBurst();
             return true;
@@ -1197,7 +1201,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.globalAlpha = 1;
         }
 
-        if (!player.onGround && jumpsUsed === 1) {
+        const doubleJumpReady = jumpsUsed === 1 && !(player.onGround && player.vy >= 0 && groundFrames >= 2);
+        if (doubleJumpReady) {
             ctx.globalAlpha = 0.5 + Math.sin(animFrame * 0.28) * 0.35;
             ctx.strokeStyle = '#67e8f9';
             ctx.lineWidth = 2.5;

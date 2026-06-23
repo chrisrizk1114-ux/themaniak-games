@@ -118,6 +118,28 @@ button,
     touch-action: none;
 }
 
+.sky-runner-page .mobile-touch-controls {
+    padding: 0 14px 10px;
+    gap: 12px;
+}
+
+.sky-runner-page .mobile-touch-controls .touch-cluster {
+    gap: 12px;
+}
+
+.sky-runner-page .mobile-touch-controls .touch-btn {
+    min-width: 72px;
+    min-height: 72px;
+    font-size: 1.75rem;
+    border-radius: 18px;
+}
+
+.sky-runner-page .mobile-touch-controls .touch-jump {
+    min-width: 84px;
+    min-height: 84px;
+    font-size: 2rem;
+}
+
 @media (max-width: 960px), (hover: none) and (pointer: coarse) {
     .chess-page .chess-turn-row .mobile-clock,
     .chess-page .chess-turn-row .mobile-clock.active,
