@@ -65,26 +65,6 @@
         margin-bottom: clamp(2rem, 5vw, 3.5rem);
     }
 
-    .hero-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.35rem 1rem;
-        border-radius: 999px;
-        background: rgba(15,23,42,0.7);
-        border: 1px solid rgba(255,255,255,0.12);
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.55);
-        margin-bottom: 1.25rem;
-    }
-
-    .hero-badge span {
-        color: var(--gold);
-    }
-
     .hero-title {
         font-family: 'Orbitron', sans-serif;
         font-size: clamp(2.2rem, 7vw, 4.2rem);
@@ -424,10 +404,9 @@
     <div class="home-inner">
         <!-- Hero -->
         <section class="hero">
-            <div class="hero-badge">🎮 <span>6 Games</span> · Zero Downloads</div>
             <h1 class="hero-title">Mini Games</h1>
             <div class="hero-stats">
-                <span class="hero-stat">🃏 <strong>8</strong> Games</span>
+                <span class="hero-stat">🃏 <strong>7</strong> Games</span>
                 <span class="hero-stat">🔊 <strong>Sound</strong> FX</span>
                 <span class="hero-stat">📱 <strong>Play</strong> Instantly</span>
                 <span class="hero-stat">🏆 <strong>High</strong> Scores</span>
