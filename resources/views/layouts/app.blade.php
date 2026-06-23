@@ -26,7 +26,7 @@
         <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" defer></script>
     @endif
     @if (request()->is('chess', 'platformer', 'tic-tac-toe', 'whack-a-mole', 'board-game', 'uno'))
-        <script src="{{ asset('js/game-sounds.js') }}" defer></script>
+        <script src="{{ asset('js/game-sounds.js') }}?v=20260614" defer></script>
     @endif
     <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260613">
     @stack('head')

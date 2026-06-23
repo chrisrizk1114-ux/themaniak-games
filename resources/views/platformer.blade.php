@@ -451,6 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lockedStageSize = null;
         syncSkyLayout();
         window.scrollTo(0, 0);
+        if (typeof GameSounds !== 'undefined') GameSounds.resume();
 
         const run = () => applyCanvasResize(true);
         requestAnimationFrame(() => {
