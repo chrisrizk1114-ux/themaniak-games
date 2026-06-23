@@ -26,7 +26,7 @@ body:has(.chess-page) {
     height: auto !important;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1024px) {
     .main-content {
         padding: 0 !important;
     }
@@ -183,7 +183,7 @@ button,
     }
 }
 
-@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+@media (max-width: 1024px), (hover: none) and (pointer: coarse) {
     .mobile-touch-controls {
         display: flex;
     }

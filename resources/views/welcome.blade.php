@@ -387,7 +387,7 @@
         }
     }
 
-    @media (max-width: 860px), (pointer: coarse) {
+    @media (max-width: 1024px), (pointer: coarse) {
         .home-stars,
         .hero-title,
         .featured-card,

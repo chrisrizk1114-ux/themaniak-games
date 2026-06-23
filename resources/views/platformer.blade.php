@@ -139,7 +139,7 @@
     .sky-hud:not(.playing) #combo-pill {
         display: none !important;
     }
-    @media (max-width: 900px), (hover: none) and (pointer: coarse) {
+    @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
         .hud-pill {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lockedStageSize = null;
 
     function isSkyLandscape() {
-        const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth <= 900;
+        const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth <= 1024;
         return touch && window.innerWidth > window.innerHeight;
     }
 
@@ -745,7 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function isMobilePlay() {
-        return window.innerWidth <= 900
+        return window.innerWidth <= 1024
             || window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     }
 

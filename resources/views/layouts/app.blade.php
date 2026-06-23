@@ -18,8 +18,8 @@
     @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" media="(min-width: 861px)">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet" media="(min-width: 861px)">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" media="(min-width: 768px)">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet" media="(min-width: 768px)">
     @if (file_exists(public_path('build/manifest.json')))
         @vite(['resources/css/app.css'])
     @else
@@ -29,6 +29,7 @@
         <script src="{{ asset('js/game-sounds.js') }}?v=20260614" defer></script>
     @endif
     <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260613">
+    <link rel="stylesheet" href="{{ asset('css/mobile-games-tablet.css') }}?v=20260615">
     @stack('head')
     <style>
         * {
@@ -736,8 +737,8 @@
             }
         }
 
-        /* Mobile nav */
-        @media (max-width: 860px) {
+        /* Mobile + tablet nav (phones & iPad) */
+        @media (max-width: 1024px) {
             .nav-toggle {
                 display: flex;
             }
@@ -834,7 +835,7 @@
         }
 
         /* Mobile performance — blur/animations/fonts are costly on phones */
-        @media (max-width: 860px), (pointer: coarse) {
+        @media (max-width: 1024px), (pointer: coarse) {
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
@@ -1168,7 +1169,7 @@
             const navUserOnlineDot = document.getElementById('navUserOnlineDot');
             const pingUrl = @json(route('presence.ping'));
             const csrf = @json(csrf_token());
-            const isMobileDevice = window.matchMedia('(max-width: 860px)').matches || window.matchMedia('(pointer: coarse)').matches;
+            const isMobileDevice = window.matchMedia('(max-width: 1024px)').matches || window.matchMedia('(pointer: coarse)').matches;
             const netInfo = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
             const isSlowNetwork = !!(netInfo && (netInfo.saveData || ['slow-2g', '2g', '3g'].includes(netInfo.effectiveType)));
 
