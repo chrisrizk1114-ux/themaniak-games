@@ -614,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const BEST_KEY = 'mole_mayhem_best';
     const GAME_TIME = 30;
+    const FRENZY_AT = 25;
 
     let score = 0;
     let timeLeft = GAME_TIME;
@@ -624,6 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let bestCombo = 0;
     let highScore = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
     let activePeepTimeouts = [];
+    let frenzyWaveDone = false;
 
     highScoreEl.textContent = String(highScore);
 
@@ -683,8 +685,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     }
 
+    function spawnAllMoles() {
+        holes.forEach((hole, i) => {
+            const id = setTimeout(() => {
+                activePeepTimeouts = activePeepTimeouts.filter(t => t !== id);
+                if (!gameRunning) return;
+                spawnMole(parseInt(hole.dataset.hole, 10));
+            }, i * 70);
+            activePeepTimeouts.push(id);
+        });
+    }
+
+    function maybeStartFrenzy() {
+        if (frenzyWaveDone || timeLeft > FRENZY_AT) return;
+        frenzyWaveDone = true;
+        spawnAllMoles();
+    }
+
     function peep() {
         if (!gameRunning) return;
+
+        maybeStartFrenzy();
 
         const [min, max] = getPeepRange();
         const stayTime = randomTime(min, max);
@@ -706,8 +727,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }, stayTime);
         activePeepTimeouts.push(id);
 
-        const progress = (GAME_TIME - timeLeft) / GAME_TIME;
-        const burst = progress > 0.45 && Math.random() < 0.35 ? 1 : 0;
+        const frenzy = timeLeft <= FRENZY_AT;
+        const burst = frenzy && Math.random() < 0.4 ? 2 : 0;
         for (let i = 0; i < burst; i++) schedulePeep(randomTime(80, 220));
 
         schedulePeep(randomTime(180, 420));
@@ -783,6 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
         combo = 0;
         bestCombo = 0;
         lastHole = -1;
+        frenzyWaveDone = false;
 
         scoreEl.textContent = '0';
         bestComboEl.textContent = '0';
@@ -802,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timerInterval = setInterval(() => {
             timeLeft--;
             updateTimerUI();
+            if (timeLeft === FRENZY_AT) maybeStartFrenzy();
             if (timeLeft <= 5 && timeLeft > 0) GameSounds.play('tick');
             if (timeLeft <= 0) endGame();
         }, 1000);
