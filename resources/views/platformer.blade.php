@@ -157,12 +157,12 @@
     }
 
     @media (orientation: landscape) and (max-height: 520px) {
-        .sky-runner-page {
+        .sky-runner-page:not(.sky-layout-portrait) {
             --nav-h: 0px;
             height: 100dvh !important;
             min-height: 100dvh !important;
         }
-        .sky-runner-page .sky-runner-stage {
+        .sky-runner-page:not(.sky-layout-portrait) .sky-runner-stage {
             height: 100% !important;
             min-height: 100% !important;
         }
@@ -174,6 +174,60 @@
         }
     }
 
+    body.sky-runner-immersive {
+        overflow: hidden !important;
+    }
+    body.sky-runner-immersive .nav-bar {
+        display: none !important;
+    }
+    body.sky-runner-immersive .main-content {
+        padding: 0 !important;
+        max-width: none !important;
+    }
+    .sky-runner-page.sky-layout-landscape {
+        position: fixed !important;
+        inset: 0 !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        max-height: 100dvh !important;
+        margin: 0 !important;
+        z-index: 1500;
+        --nav-h: 0px;
+        overflow: hidden !important;
+    }
+    .sky-runner-page.sky-layout-landscape .sky-runner-stage {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+    }
+    .sky-runner-page.sky-layout-portrait {
+        position: relative !important;
+        inset: auto !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        width: 100% !important;
+        height: calc(100dvh - var(--nav-h)) !important;
+        min-height: calc(100dvh - var(--nav-h)) !important;
+        max-height: calc(100dvh - var(--nav-h)) !important;
+        margin: 0 !important;
+        z-index: auto;
+        --nav-h: 76px;
+        overflow: hidden !important;
+    }
+    .sky-runner-page.sky-layout-portrait .sky-runner-stage {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+    }
+
     .main-content:has(.sky-runner-page) {
         max-width: none;
         padding: 0;
@@ -181,8 +235,8 @@
     }
     .sky-runner-page {
         --nav-h: 76px;
-        height: calc(100svh - var(--nav-h));
-        min-height: calc(100svh - var(--nav-h));
+        height: calc(100dvh - var(--nav-h));
+        min-height: calc(100dvh - var(--nav-h));
         width: 100%;
         overflow: hidden;
         background: #080812;
@@ -194,7 +248,7 @@
         position: relative;
         width: 100%;
         height: 100%;
-        min-height: calc(100svh - var(--nav-h));
+        min-height: calc(100dvh - var(--nav-h));
         overflow: hidden;
         -webkit-user-select: none;
         user-select: none;
@@ -285,25 +339,41 @@ document.addEventListener('DOMContentLoaded', () => {
     let H = canvas.height;
     let lockedStageSize = null;
 
-    function isLandscapePhone() {
-        return window.matchMedia('(orientation: landscape) and (max-height: 520px)').matches;
+    function isSkyLandscape() {
+        const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth <= 900;
+        return touch && window.innerWidth > window.innerHeight;
     }
 
-    function measureStage() {
+    function syncSkyLayout(forcePortrait = false) {
+        const immersive = !forcePortrait && started && !gameOver && isSkyLandscape();
+        document.body.classList.toggle('sky-runner-immersive', immersive);
+        skyPage.classList.toggle('sky-layout-landscape', immersive);
+        skyPage.classList.toggle('sky-layout-portrait', !immersive);
+        if (!immersive) window.scrollTo(0, 0);
+    }
+
+    function readCanvasSize() {
+        void stage.offsetHeight;
+        const rect = canvas.getBoundingClientRect();
+        let w = Math.floor(rect.width);
+        let h = Math.floor(rect.height);
+
+        if (w >= 50 && h >= 50) {
+            return { w: Math.max(320, w), h: Math.max(200, h) };
+        }
+
         const vv = window.visualViewport;
         const vw = Math.floor(vv?.width ?? window.innerWidth);
         const vh = Math.floor(vv?.height ?? window.innerHeight);
-
-        if (isLandscapePhone()) {
+        if (isSkyLandscape() && started && !gameOver) {
             return { w: Math.max(320, vw), h: Math.max(200, vh) };
         }
-
         const navH = parseFloat(getComputedStyle(skyPage).getPropertyValue('--nav-h')) || 76;
-        const rect = stage.getBoundingClientRect();
-        return {
-            w: Math.max(320, Math.floor(rect.width) || vw),
-            h: Math.max(200, Math.floor(rect.height) || Math.max(200, vh - navH)),
-        };
+        return { w: Math.max(320, vw), h: Math.max(200, vh - navH) };
+    }
+
+    function measureStage() {
+        return readCanvasSize();
     }
 
     function syncWorldOnResize(oldW, oldH, newW, newH) {
@@ -350,23 +420,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function applyCanvasResize(forceMeasure = false) {
-        const oldW = W;
-        const oldH = H;
-        const next = (started && !gameOver && lockedStageSize && !forceMeasure)
-            ? lockedStageSize
-            : measureStage();
+        syncSkyLayout();
+
+        const useLock = started && !gameOver && lockedStageSize && !forceMeasure && !isMobilePlay();
+        const next = useLock ? lockedStageSize : readCanvasSize();
         if (next.w === W && next.h === H) return false;
 
+        const oldW = W;
+        const oldH = H;
         canvas.width = next.w;
         canvas.height = next.h;
-        if (started && !gameOver && player) {
+        if (started && !gameOver && player && oldW > 0 && oldH > 0) {
             syncWorldOnResize(oldW, oldH, next.w, next.h);
         }
         W = next.w;
         H = next.h;
-        if (started && !gameOver) {
-            lockedStageSize = { w: W, h: H };
-        }
+        lockedStageSize = (started && !gameOver && !isMobilePlay()) ? { w: W, h: H } : null;
         return true;
     }
 
@@ -380,9 +449,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function reflowAfterRotate() {
         lockedStageSize = null;
+        syncSkyLayout();
+        window.scrollTo(0, 0);
+
+        const run = () => applyCanvasResize(true);
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                applyCanvasResize(true);
+                run();
+                requestAnimationFrame(run);
             });
         });
     }
@@ -992,6 +1066,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function endRun() {
         gameOver = true;
         lockedStageSize = null;
+        syncSkyLayout(true);
         skyHud?.classList.remove('playing');
         GameSounds.play('gameOver');
         const dist = Math.floor(furthestX / 10);
@@ -1011,6 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         @endauth
         gameOverEl.classList.remove('hidden');
+        reflowAfterRotate();
     }
 
     /* ── DRAW ── */
@@ -1345,9 +1421,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function startRun() {
         GameSounds.init();
         GameSounds.play('start');
+        started = true;
+        syncSkyLayout();
         lockStageSize();
         resizeCanvas(true);
-        started = true;
         skyHud?.classList.add('playing');
         startOverlay.classList.add('hidden');
         resetRun();
@@ -1356,9 +1433,10 @@ document.addEventListener('DOMContentLoaded', () => {
     startBtn.addEventListener('click', startRun);
     retryBtn.addEventListener('click', () => {
         GameSounds.play('click');
+        started = true;
+        syncSkyLayout();
         lockStageSize();
         resizeCanvas(true);
-        started = true;
         skyHud?.classList.add('playing');
         resetRun();
     });
@@ -1453,12 +1531,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let resizeTimer;
     let rotateTimer2;
+    let rotateTimer3;
     function handleViewportChange() {
         clearTimeout(resizeTimer);
         clearTimeout(rotateTimer2);
+        clearTimeout(rotateTimer3);
         reflowAfterRotate();
-        resizeTimer = setTimeout(reflowAfterRotate, 100);
-        rotateTimer2 = setTimeout(reflowAfterRotate, 350);
+        resizeTimer = setTimeout(reflowAfterRotate, 150);
+        rotateTimer2 = setTimeout(reflowAfterRotate, 400);
+        rotateTimer3 = setTimeout(reflowAfterRotate, 750);
     }
     window.addEventListener('resize', handleViewportChange);
     window.addEventListener('orientationchange', handleViewportChange);
@@ -1468,6 +1549,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (screen.orientation) {
         screen.orientation.addEventListener('change', handleViewportChange);
     }
+
+    skyPage.classList.add('sky-layout-portrait');
+    syncSkyLayout(true);
 
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {

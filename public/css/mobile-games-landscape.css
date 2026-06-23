@@ -5,7 +5,8 @@
     }
 
     /* Sky Runner + UNO — hide nav, use full viewport */
-    body:has(.sky-runner-page) .nav-bar,
+    body:has(.sky-runner-page.sky-layout-landscape) .nav-bar,
+    body:has(.sky-runner-page:not(.sky-layout-portrait)) .nav-bar,
     body:has(.uno-page) .nav-bar {
         display: none !important;
     }
@@ -21,7 +22,7 @@
         overflow: hidden !important;
     }
 
-    .sky-runner-page {
+    .sky-runner-page:not(.sky-layout-portrait) {
         --nav-h: 0px;
         position: fixed !important;
         inset: 0 !important;
@@ -33,7 +34,18 @@
         overflow: hidden !important;
     }
 
-    .sky-runner-page .sky-runner-stage {
+    .sky-runner-page.sky-layout-portrait {
+        position: relative !important;
+        inset: auto !important;
+        width: 100% !important;
+        height: calc(100dvh - var(--nav-h)) !important;
+        min-height: calc(100dvh - var(--nav-h)) !important;
+        max-height: calc(100dvh - var(--nav-h)) !important;
+        z-index: auto !important;
+        --nav-h: 76px;
+    }
+
+    .sky-runner-page:not(.sky-layout-portrait) .sky-runner-stage {
         height: 100% !important;
         min-height: 100% !important;
         max-height: 100% !important;
