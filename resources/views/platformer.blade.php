@@ -156,6 +156,24 @@
         }
     }
 
+    @media (orientation: landscape) and (max-height: 520px) {
+        .sky-runner-page {
+            --nav-h: 0px;
+            height: 100svh !important;
+            min-height: 100svh !important;
+        }
+        .sky-runner-page .sky-runner-stage {
+            height: 100% !important;
+            min-height: 100% !important;
+        }
+        .sky-runner-page .sky-hud.playing {
+            height: 2.35rem !important;
+        }
+        .sky-runner-page .sky-hud-title-wrap p {
+            display: none !important;
+        }
+    }
+
     .main-content:has(.sky-runner-page) {
         max-width: none;
         padding: 0;
@@ -266,34 +284,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let H = canvas.height;
     let lockedStageSize = null;
 
-    function lockStageSize() {
+    function measureStage() {
         const rect = stage.getBoundingClientRect();
+        const vw = window.visualViewport?.width ?? window.innerWidth;
         const vh = window.visualViewport?.height ?? window.innerHeight;
-        lockedStageSize = {
-            w: Math.max(320, Math.floor(rect.width) || window.innerWidth),
-            h: Math.max(400, Math.floor(rect.height) || Math.round(vh - 76)),
+        const navH = parseFloat(getComputedStyle(document.querySelector('.sky-runner-page')).getPropertyValue('--nav-h')) || 76;
+        return {
+            w: Math.max(320, Math.floor(rect.width) || vw),
+            h: Math.max(200, Math.floor(rect.height) || Math.round(vh - navH)),
         };
     }
 
+    function lockStageSize() {
+        lockedStageSize = measureStage();
+    }
+
     function resizeCanvas(force = false) {
-        if (started && !gameOver && lockedStageSize && !force) {
-            const w = lockedStageSize.w;
-            const h = lockedStageSize.h;
-            if (w === W && h === H) return false;
-            canvas.width = w;
-            canvas.height = h;
-            W = w;
-            H = h;
-            return true;
-        }
-        const rect = stage.getBoundingClientRect();
-        const w = Math.max(320, Math.floor(rect.width) || window.innerWidth);
-        const h = Math.max(400, Math.floor(rect.height) || (window.innerHeight - 76));
-        if (w === W && h === H) return false;
-        canvas.width = w;
-        canvas.height = h;
-        W = w;
-        H = h;
+        const next = (started && !gameOver && lockedStageSize && !force)
+            ? lockedStageSize
+            : measureStage();
+        if (next.w === W && next.h === H) return false;
+        canvas.width = next.w;
+        canvas.height = next.h;
+        W = next.w;
+        H = next.h;
         return true;
     }
 
@@ -1362,17 +1376,18 @@ document.addEventListener('DOMContentLoaded', () => {
     bindJumpBtn(document.getElementById('touch-jump'));
 
     let resizeTimer;
-    window.addEventListener('resize', () => {
-        if (started && !gameOver) return;
+    function handleViewportChange() {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => resizeCanvas(), 100);
-    });
+        resizeTimer = setTimeout(() => {
+            if (started && !gameOver) lockStageSize();
+            resizeCanvas(true);
+        }, 120);
+    }
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
     if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => {
-            if (started && !gameOver) return;
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => resizeCanvas(), 100);
-        });
+        window.visualViewport.addEventListener('resize', handleViewportChange);
+        window.visualViewport.addEventListener('scroll', handleViewportChange);
     }
 
     requestAnimationFrame(() => {

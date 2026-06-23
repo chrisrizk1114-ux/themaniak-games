@@ -521,21 +521,15 @@
         -webkit-backdrop-filter: none !important;
     }
 
+    .sky-runner-page {
+        --sky-touch-dir: clamp(44px, 10vh, 50px);
+        --sky-touch-jump: clamp(48px, 11vh, 54px);
+    }
+
     .sky-runner-page .mobile-touch-controls {
-        bottom: max(8px, env(safe-area-inset-bottom, 0px));
-        padding: 0 12px 8px;
-    }
-
-    .sky-runner-page .mobile-touch-controls .touch-btn {
-        min-width: 68px;
-        min-height: 68px;
-        font-size: 1.65rem;
-    }
-
-    .sky-runner-page .mobile-touch-controls .touch-jump {
-        min-width: 80px;
-        min-height: 80px;
-        font-size: 1.9rem;
+        bottom: max(6px, env(safe-area-inset-bottom, 0px));
+        padding: 0 max(12px, env(safe-area-inset-left, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-right, 0px));
+        max-height: 16vh;
     }
 
     #start-overlay p,
