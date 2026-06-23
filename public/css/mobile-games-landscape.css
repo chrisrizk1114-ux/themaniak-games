@@ -531,7 +531,19 @@
     }
 
     .sky-runner-page .sky-hud.playing .sky-hud-stats {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.85fr) minmax(0, 0.75fr) minmax(0, 0.75fr) auto !important;
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr)
+            minmax(0, 0.85fr)
+            minmax(0, 0.7fr)
+            minmax(0, 0.7fr)
+            2.45rem !important;
+    }
+
+    .sky-runner-page .sky-hud.playing #sound-btn {
+        width: 2.45rem !important;
+        min-width: 2.45rem !important;
+        max-width: 2.45rem !important;
     }
 
     .sky-runner-page .hud-pill {

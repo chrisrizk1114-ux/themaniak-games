@@ -51,7 +51,6 @@
         right: 0;
         z-index: 20;
         pointer-events: none;
-        contain: strict;
         transform: translateZ(0);
         -webkit-transform: translateZ(0);
         backface-visibility: hidden;
@@ -79,8 +78,9 @@
     }
     .sky-hud.playing .sky-hud-inner {
         flex-wrap: nowrap;
-        padding: 0 0.4rem;
+        padding: 0 0.5rem 0 0.35rem;
         align-items: stretch;
+        box-sizing: border-box;
     }
     .sky-hud-stats {
         display: flex;
@@ -88,20 +88,28 @@
         align-items: center;
         gap: 0.35rem;
         max-width: 100%;
-        overflow: hidden;
+        overflow: visible;
     }
     .sky-hud.playing .sky-hud-title-wrap {
         display: none;
     }
     .sky-hud.playing .sky-hud-stats {
         display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.15fr) minmax(0, 0.9fr) minmax(0, 0.85fr) minmax(0, 0.85fr) auto;
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr)
+            minmax(0, 0.85fr)
+            minmax(0, 0.72fr)
+            minmax(0, 0.72fr)
+            minmax(0, 0.8fr)
+            2.65rem;
         width: 100%;
         height: 100%;
         align-items: center;
         gap: 0.2rem;
         padding: 0.35rem 0;
         overflow: visible;
+        box-sizing: border-box;
     }
     .sky-hud.playing .hud-pill {
         display: flex;
@@ -112,6 +120,17 @@
         border-radius: 8px !important;
         margin: 0;
         box-shadow: none;
+        min-width: 0;
+    }
+    .sky-hud.playing #sound-btn {
+        width: 2.65rem !important;
+        min-width: 2.65rem !important;
+        max-width: 2.65rem !important;
+        padding: 0 !important;
+        flex-shrink: 0;
+        justify-self: end;
+        font-size: 1rem;
+        line-height: 1;
     }
     .sky-hud.playing #distance {
         min-width: 2.5ch;
@@ -132,9 +151,21 @@
             padding: 0.45rem 0.5rem;
         }
         .sky-hud.playing .sky-hud-stats {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.85fr) minmax(0, 0.75fr) minmax(0, 0.75fr) auto;
+            grid-template-columns:
+                minmax(0, 1fr)
+                minmax(0, 1fr)
+                minmax(0, 0.85fr)
+                minmax(0, 0.7fr)
+                minmax(0, 0.7fr)
+                2.5rem;
             gap: 0.15rem;
-            padding: 0.3rem 0.15rem;
+            padding: 0.3rem 0;
+        }
+        .sky-hud.playing #sound-btn {
+            width: 2.5rem !important;
+            min-width: 2.5rem !important;
+            max-width: 2.5rem !important;
+            font-size: 0.95rem;
         }
         .sky-hud.playing {
             height: 2.85rem;
