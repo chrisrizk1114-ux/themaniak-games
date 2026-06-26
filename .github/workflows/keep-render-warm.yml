@@ -6,18 +6,35 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
+concurrency:
+  group: keep-render-warm
+  cancel-in-progress: false
+
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 6
     steps:
-      - name: Warm themaniak.online
+      - name: Warm Render health endpoints
+        shell: bash
         run: |
-          set -e
-          for path in /up / /board-game /whack-a-mole /login; do
-            curl -fsS --max-time 90 "https://themaniak.online${path}" >/dev/null &
-          done
-          wait
+          set -euo pipefail
 
-      - name: Warm Render direct URL
-        run: curl -fsS --max-time 90 "https://themaniak-games.onrender.com/up" >/dev/null
+          warm() {
+            local url="$1"
+            local attempt
+            for attempt in 1 2 3 4; do
+              echo "Ping ${url} (attempt ${attempt}/4)..."
+              if curl -fsS --max-time 120 "$url" >/dev/null; then
+                echo "OK: ${url}"
+                return 0
+              fi
+              sleep 20
+            done
+            echo "::warning::Could not reach ${url} after 4 attempts (Render may still be waking)."
+            return 1
+          }
+
+          # Hit Render directly first — this is what keeps the free service awake.
+          warm "https://themaniak-games.onrender.com/up"
+          warm "https://themaniak.online/up"
