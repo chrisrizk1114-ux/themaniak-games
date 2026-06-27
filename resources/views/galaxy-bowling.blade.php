@@ -355,7 +355,7 @@
 
         <canvas id="bowling-canvas" width="1100" height="688"></canvas>
 
-        <div class="bowling-mobile-hint" id="bowlingMobileHint">Swipe down on the ball to bowl</div>
+        <div class="bowling-mobile-hint" id="bowlingMobileHint">Slide to position · pull left/right to aim · down for power</div>
 
         <div class="bowling-bottom-bar">
             <div class="bowling-bottom-tools">
@@ -391,6 +391,7 @@
                 <div class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm">
                     Strikes <span class="font-bold text-pink-400" id="strikes">0</span>
                 </div>
+                <button id="theme-btn" class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm hover:bg-white/10 text-cyan-300" title="Lane theme">🌌 Theme</button>
                 <button id="reset-btn" class="hud-panel rounded-full hud-panel-pad-sm hud-text-sm hover:bg-white/10 text-pink-300">↻ New Game</button>
             </div>
         </div>
@@ -402,6 +403,8 @@
 
         <!-- Strike flash -->
         <div id="strike-flash" class="game-overlay-hidden absolute inset-0 z-20 pointer-events-none bg-gradient-to-b from-green-400/25 to-transparent"></div>
+
+        <div id="bowling-toast" class="game-overlay-hidden absolute left-1/2 -translate-x-1/2 z-35 top-[18%] rounded-full border border-cyan-400/40 bg-slate-950/90 backdrop-blur px-5 py-2 text-center font-bold text-cyan-100 shadow-lg shadow-cyan-500/20 text-sm sm:text-base pointer-events-none"></div>
 
         <!-- Pause overlay -->
         <div id="pause-overlay" class="game-overlay-hidden absolute inset-0 z-40 bg-black/60 flex items-center justify-center">
@@ -593,6 +596,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerNameEl = document.getElementById('player-name');
     const stellaCheerEl = document.getElementById('stella-cheer');
     const strikeFlashEl = document.getElementById('strike-flash');
+    const bowlingToastEl = document.getElementById('bowling-toast');
+    const themeBtn = document.getElementById('theme-btn');
 
     const PRO_BOWLERS = [
         { rank: 2, name: 'Marcus Lane', score: 289, strikes: 11, avatar: '🎯', title: 'Pin Crusher' },
@@ -605,11 +610,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const NAME_KEY = 'galaxy_bowling_player';
     const COINS_KEY = 'galaxy_bowling_coins';
     const SKIN_KEY = 'galaxy_bowling_skin';
+    const THEME_KEY = 'galaxy_bowling_theme';
+    const LANE_THEMES = ['cosmic', 'nebula'];
 
     let stars = [], asteroids = [];
     let pins = [], ball = null;
     let isDragging = false, paused = false, soundOn = true;
     let dragStart = { x: 0, y: 0 }, dragEnd = { x: 0, y: 0 };
+    let ballXAtDragStart = 0;
+    let aimLocked = false;
+    let gutterGuardUsed = false;
+    let consecutiveStrikes = 0;
+    let cinematicTimer = 0;
+    let laneTheme = 'cosmic';
+    let canvasToast = { text: '', timer: 0, color: '#fff' };
+    let skinTrailParticles = [];
+    let lastSplitCallout = '';
     let frames = [], currentFrame = 1, currentRoll = 0, totalScore = 0;
     let gameOver = false, particles = [], confetti = [], impacts = [], sparks = [];
     let strikeCount = 0, stellaCheerShown = false, animFrame = 0, strikeFlashTimer = 0;
@@ -767,7 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rollTrail = [];
         ball = {
             x: 0, y: 0, z: BALL_REST_Z, radius: S(24),
-            vx: 0, vy: 0, vz: 0, launchVx: 0, launchVz: 0,
+            vx: 0, vy: 0, vz: 0, launchVx: 0, launchVz: 0, hookSpin: 0,
             rotation: 0, rolling: false, rollRamp: 0, squash: 0,
         };
     }
@@ -856,6 +872,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 playTone(440, 0.15, 'sine', 0.1);
                 playTone(554, 0.2, 'sine', 0.08, 0.08);
                 break;
+            case 'turkey':
+                [523, 659, 784, 988, 1175].forEach((f, i) => playTone(f, 0.22, 'square', 0.11, i * 0.07));
+                playNoise(0.25, 0.09);
+                break;
         }
     }
 
@@ -914,6 +934,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     pinsetter.phase = 'idle';
                     canBowl = standingPinCount() > 0;
+                    if (canBowl && currentRoll === 1) {
+                        const split = getSplitCallout();
+                        if (split && split !== lastSplitCallout) {
+                            lastSplitCallout = split;
+                            showBowlingToast('⚠️ ' + split, '#f472b6', 130);
+                        }
+                    }
                 }
             }
             return;
@@ -946,10 +973,74 @@ document.addEventListener('DOMContentLoaded', () => {
         pinsetter = { phase: 'idle', timer: 0, sweepX: S(-220), placing: [] };
         canBowl = true; needFullRack = false; pinsKnockedThisRoll = 0; standingAtRollStart = 10;
         rollTrail = [];
+        gutterGuardUsed = false;
+        consecutiveStrikes = 0;
+        cinematicTimer = 0;
+        canvasToast = { text: '', timer: 0, color: '#fff' };
+        skinTrailParticles = [];
+        aimLocked = false;
+        lastSplitCallout = '';
         pauseOverlay.classList.add('game-overlay-hidden');
         stellaCheerEl.classList.add('game-overlay-hidden');
         strikeFlashEl.classList.add('game-overlay-hidden');
+        bowlingToastEl?.classList.add('game-overlay-hidden');
         initScoreboard(); initPins(); resetBall(); updateScore(); drawPinMini();
+    }
+
+    function showBowlingToast(text, color = '#fde047', duration = 110) {
+        canvasToast = { text, timer: duration, color };
+        if (bowlingToastEl) {
+            bowlingToastEl.textContent = text;
+            bowlingToastEl.style.color = color;
+            bowlingToastEl.style.borderColor = color + '66';
+            bowlingToastEl.classList.remove('game-overlay-hidden');
+        }
+    }
+
+    function getSkinFxColors() {
+        switch (selectedSkin) {
+            case 'stella': return ['#f472b6', '#fbbf24', '#fbcfe8', '#fff'];
+            case 'flag': return ['#ef4444', '#3b82f6', '#ffffff', '#fbbf24'];
+            case 'polka': return ['#38bdf8', '#ffffff', '#7dd3fc', '#0ea5e9'];
+            default: return ['#4ade80', '#22d3ee', '#fef9c3', '#a7f3d0'];
+        }
+    }
+
+    function getSkinTrailColor() {
+        switch (selectedSkin) {
+            case 'stella': return '#f472b6';
+            case 'flag': return '#60a5fa';
+            case 'polka': return '#7dd3fc';
+            default: return '#4ade80';
+        }
+    }
+
+    function clampBallX(x) {
+        return Math.max(-LANE_W + S(30), Math.min(LANE_W - S(30), x));
+    }
+
+    function getSplitCallout() {
+        const standing = pins.filter(p => !p.knocked).map(p => p.id).sort((a, b) => a - b);
+        if (standing.length < 2) return null;
+        const key = standing.join(',');
+        const named = {
+            '6,9': '7-10 SPLIT!',
+            '3,5': '4-6 SPLIT!',
+            '2,9': '3-10 SPLIT!',
+            '0,7': '1-8 SPLIT!',
+            '1,8': '2-7 SPLIT!',
+            '4,8': '5-9 SPLIT!',
+        };
+        return named[key] || (standing.length === 2 ? 'SPLIT!' : null);
+    }
+
+    function cycleLaneTheme() {
+        const idx = LANE_THEMES.indexOf(laneTheme);
+        laneTheme = LANE_THEMES[(idx + 1) % LANE_THEMES.length];
+        localStorage.setItem(THEME_KEY, laneTheme);
+        if (themeBtn) themeBtn.textContent = laneTheme === 'nebula' ? '🌠 Nebula' : '🌌 Cosmic';
+        showBowlingToast(laneTheme === 'nebula' ? '🌠 Nebula lane!' : '🌌 Cosmic lane!', '#a78bfa', 70);
+        playSound('click');
     }
 
     function calculateScore() {
@@ -1072,25 +1163,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function createParticles(x,y,z,color,count=15) {
-        for (let i=0;i<count;i++) particles.push({
-            x,y,z, vx:(Math.random()-0.5)*12, vy:Math.random()*-6-2, vz:(Math.random()-0.5)*12,
-            radius:Math.random()*5+2, color, life:1
+    function createParticles(x, y, z, color, count = 15) {
+        const palette = color ? [color] : getSkinFxColors();
+        for (let i = 0; i < count; i++) particles.push({
+            x, y, z,
+            vx: (Math.random() - 0.5) * 12,
+            vy: Math.random() * -6 - 2,
+            vz: (Math.random() - 0.5) * 12,
+            radius: Math.random() * 5 + 2,
+            color: palette[i % palette.length],
+            life: 1,
         });
     }
 
     function spawnImpact(x, y, z, type) {
         const p = project(x, y, z);
         const isBall = type === 'ball';
+        const palette = getSkinFxColors();
         impacts.push({
             x: p.x, y: p.y,
             radius: 6 * p.scale,
             maxRadius: (isBall ? 50 : 32) * p.scale,
             life: 1,
-            color: isBall ? '#fbbf24' : '#f87171',
-            width: isBall ? 4 : 2.5
+            color: isBall ? palette[1] : '#f87171',
+            width: isBall ? 4 : 2.5,
         });
-        const sparkColors = isBall ? ['#fef9c3', '#fbbf24', '#ffffff', '#4ade80'] : ['#fecaca', '#f87171', '#fff'];
+        const sparkColors = isBall ? palette : ['#fecaca', '#f87171', '#fff'];
         const count = isBall ? 16 : 10;
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -1125,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pin.hitAnim = 18;
 
         spawnImpact(pin.x, pin.y, pin.z, fromBall ? 'ball' : 'chain');
-        createParticles(pin.x, pin.y, pin.z, fromBall ? '#fbbf24' : '#ef4444', fromBall ? 14 : 8);
+        createParticles(pin.x, pin.y, pin.z, null, fromBall ? 14 : 8);
 
         if (fromBall) {
             if (animFrame - lastBallHitFrame > 2) {
@@ -1182,11 +1280,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
     }
 
+    function updateBallPositionFromDrag() {
+        if (!ball || ball.rolling || !isDragging || aimLocked) return;
+        const pullBack = dragEnd.y - dragStart.y;
+        const threshold = isMobileBowling() ? S(10) : S(15);
+        if (pullBack >= threshold) {
+            aimLocked = true;
+            return;
+        }
+        const laneDelta = (dragEnd.x - dragStart.x) * (LANE_W / Math.max(canvas.width * 0.42, S(120)));
+        ball.x = clampBallX(ballXAtDragStart + laneDelta);
+    }
+
     function computeAim() {
         if (!ball) return null;
         const bp = project(ball.x, ball.y, ball.z);
-        const side = dragEnd.x - dragStart.x;
-        const pullBack = dragEnd.y - dragStart.y; // drag down (toward you) = more power
+        const pullBack = dragEnd.y - dragStart.y;
+        const side = dragStart.x - dragEnd.x;
         const pullDist = Math.sqrt(side * side + pullBack * pullBack);
 
         if (pullBack < (isMobileBowling() ? S(10) : S(15))) return { tooWeak: true, pullDist, power: 0, bp };
@@ -1195,16 +1305,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const power = Math.min(pullDist / S(80), powerCap);
         const vx = (side / S(80)) * power * S(10);
         const vz = -S(7) - (pullBack / S(80)) * power * S(13);
+        const hookSpin = (side / S(80)) * power * S(2.2);
 
-        return { vx, vz, power, pullDist, pullBack, side, tooWeak: false, bp };
+        return { vx, vz, hookSpin, power, pullDist, pullBack, side, tooWeak: false, bp };
     }
 
-    function simulatePath(vx, vz, steps = 36) {
+    function simulatePath(vx, vz, hookSpin = 0, steps = 36) {
         let x = ball.x, z = ball.z;
         let cvx = vx, cvz = vz;
         const pts = [];
         for (let i = 0; i < steps; i++) {
             pts.push(project(x, 0, z));
+            cvx += hookSpin * 0.09;
             x += cvx; z += cvz;
             cvx *= 0.988; cvz *= 0.996;
             if (z < S(25)) break;
@@ -1220,8 +1332,10 @@ document.addEventListener('DOMContentLoaded', () => {
         standingAtRollStart = standingPinCount();
         pinsKnockedThisRoll = 0;
         rollTrail = [];
+        skinTrailParticles = [];
         ball.launchVx = aim.vx;
         ball.launchVz = aim.vz;
+        ball.hookSpin = aim.hookSpin || 0;
         ball.vx = 0;
         ball.vz = 0;
         ball.rollRamp = 0;
@@ -1263,11 +1377,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function update() {
         if (paused || gameOver) return;
+        const slowMo = cinematicTimer > 0 ? 0.42 : 1;
         animFrame++;
-        if (strikeFlashTimer>0) { strikeFlashTimer--; if (!strikeFlashTimer) strikeFlashEl.classList.add('game-overlay-hidden'); }
+        if (strikeFlashTimer > 0) { strikeFlashTimer--; if (!strikeFlashTimer) strikeFlashEl.classList.add('game-overlay-hidden'); }
+        if (cinematicTimer > 0) cinematicTimer--;
+        if (canvasToast.timer > 0) {
+            canvasToast.timer--;
+            if (canvasToast.timer <= 0) bowlingToastEl?.classList.add('game-overlay-hidden');
+        }
 
         if (screenShake > 0) screenShake *= 0.82;
         if (ball && ball.squash > 0) ball.squash--;
+
+        skinTrailParticles = skinTrailParticles.filter(t => {
+            t.life -= 0.04 * slowMo;
+            return t.life > 0;
+        });
 
         particles = particles.filter(p => {
             p.x+=p.vx; p.y+=p.vy; p.z+=p.vz; p.vy+=0.25; p.life-=0.02;
@@ -1291,26 +1416,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (ball && ball.rolling) {
             if (ball.rollRamp < 1) {
-                ball.rollRamp = Math.min(1, ball.rollRamp + 0.028);
+                ball.rollRamp = Math.min(1, ball.rollRamp + 0.028 * slowMo);
                 const ease = 1 - Math.pow(1 - ball.rollRamp, 2.5);
                 ball.vx = ball.launchVx * ease;
                 ball.vz = ball.launchVz * ease;
             } else {
-                ball.vz *= 0.996;
-                ball.vx *= 0.988;
+                ball.vz *= Math.pow(0.996, slowMo);
+                ball.vx *= Math.pow(0.988, slowMo);
             }
 
-            ball.x += ball.vx;
-            ball.z += ball.vz;
+            if (ball.hookSpin) ball.vx += ball.hookSpin * 0.013 * slowMo;
+
+            ball.x += ball.vx * slowMo;
+            ball.z += ball.vz * slowMo;
+
+            if (animFrame % 2 === 0) {
+                skinTrailParticles.push({
+                    x: ball.x, z: ball.z,
+                    color: getSkinTrailColor(),
+                    life: 1,
+                    size: ball.radius * 0.35,
+                });
+            }
 
             const speed = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
-            ball.rotation += speed / ball.radius;
+            ball.rotation += (speed / ball.radius) * slowMo;
 
             rollTrail.push({ x: ball.x, z: ball.z });
             if (rollTrail.length > 14) rollTrail.shift();
 
-            if (ball.x<-LANE_W+S(10)) { ball.x=-LANE_W+S(10); ball.vx*=-0.5; ball.launchVx = ball.vx; if (Math.abs(ball.vx)>1) playSound('gutter'); }
-            if (ball.x>LANE_W-S(10)) { ball.x=LANE_W-S(10); ball.vx*=-0.5; ball.launchVx = ball.vx; if (Math.abs(ball.vx)>1) playSound('gutter'); }
+            const gutterEdge = LANE_W - S(10);
+            if (ball.x < -gutterEdge) {
+                if (!gutterGuardUsed && Math.abs(ball.vx) > 0.8) {
+                    gutterGuardUsed = true;
+                    ball.x = -gutterEdge + S(28);
+                    ball.vx = Math.abs(ball.vx) * 0.45;
+                    ball.launchVx = ball.vx;
+                    showBowlingToast('🛡️ Gutter guard saved you!', '#67e8f9', 90);
+                    playSound('click');
+                } else {
+                    ball.x = -gutterEdge;
+                    ball.vx *= -0.5;
+                    ball.launchVx = ball.vx;
+                    if (Math.abs(ball.vx) > 1) playSound('gutter');
+                }
+            }
+            if (ball.x > gutterEdge) {
+                if (!gutterGuardUsed && Math.abs(ball.vx) > 0.8) {
+                    gutterGuardUsed = true;
+                    ball.x = gutterEdge - S(28);
+                    ball.vx = -Math.abs(ball.vx) * 0.45;
+                    ball.launchVx = ball.vx;
+                    showBowlingToast('🛡️ Gutter guard saved you!', '#67e8f9', 90);
+                    playSound('click');
+                } else {
+                    ball.x = gutterEdge;
+                    ball.vx *= -0.5;
+                    ball.launchVx = ball.vx;
+                    if (Math.abs(ball.vx) > 1) playSound('gutter');
+                }
+            }
             checkCollisions();
         }
 
@@ -1349,14 +1514,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const isStrike = rollBefore === 0 && knocked === 10 && standingAtRollStart === 10;
             if (isStrike) {
                 strikeCount++;
+                consecutiveStrikes++;
+                cinematicTimer = 80;
+                screenShake = Math.max(screenShake, 14);
                 createStellaBurst(0, 0, nearPinZ());
-                createParticles(0, 0, nearPinZ(), '#4ade80', 25);
+                createParticles(0, 0, nearPinZ(), null, 30);
                 flashStrike();
                 addCoins(25);
                 playSound('strike');
-            } else if (rollBefore === 1 && currentRoll === 2) {
+                if (consecutiveStrikes >= 3) {
+                    showBowlingToast('🦃 TURKEY! Three strikes!', '#fde047', 140);
+                    playSound('turkey');
+                    launchConfetti();
+                    launchConfetti();
+                } else {
+                    showBowlingToast('💥 STRIKE!', '#4ade80', 85);
+                }
+            } else {
+                consecutiveStrikes = 0;
+                lastSplitCallout = '';
+            }
+            if (!isStrike && rollBefore === 1 && currentRoll === 2) {
                 const firstRoll = frames[frames.length - 2];
-                if (firstRoll + knocked === 10) playSound('spare');
+                if (firstRoll + knocked === 10) {
+                    playSound('spare');
+                    showBowlingToast('✨ SPARE!', '#a78bfa', 80);
+                }
             }
 
             const roll1 = currentRoll === 1 ? frames[frames.length - 1]
@@ -1410,15 +1593,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawCosmicWindow() {
         const horizon = VANISH_Y() + S(30);
         const winGrad = ctx.createLinearGradient(0, 0, 0, horizon + 80);
-        winGrad.addColorStop(0, '#1e1b4b');
-        winGrad.addColorStop(0.35, '#4c1d95');
-        winGrad.addColorStop(0.65, '#1e3a8a');
-        winGrad.addColorStop(1, '#0f172a');
+        if (laneTheme === 'nebula') {
+            winGrad.addColorStop(0, '#0f0520');
+            winGrad.addColorStop(0.35, '#3b0764');
+            winGrad.addColorStop(0.65, '#701a75');
+            winGrad.addColorStop(1, '#1e1b4b');
+        } else {
+            winGrad.addColorStop(0, '#1e1b4b');
+            winGrad.addColorStop(0.35, '#4c1d95');
+            winGrad.addColorStop(0.65, '#1e3a8a');
+            winGrad.addColorStop(1, '#0f172a');
+        }
         ctx.fillStyle = winGrad;
         ctx.fillRect(0, 0, canvas.width, horizon + 80);
 
-        const t = animFrame*0.004;
-        [[0.35,0.25,80,'#7c3aed'],[0.6,0.2,60,'#2563eb'],[0.45,0.35,90,'#db2777']].forEach(([nx,ny,nr,nc],i) => {
+        const t = animFrame * 0.004;
+        const nebulae = laneTheme === 'nebula'
+            ? [[0.3, 0.22, 90, '#ec4899'], [0.62, 0.18, 70, '#a855f7'], [0.48, 0.38, 100, '#6366f1']]
+            : [[0.35, 0.25, 80, '#7c3aed'], [0.6, 0.2, 60, '#2563eb'], [0.45, 0.35, 90, '#db2777']];
+        nebulae.forEach(([nx, ny, nr, nc], i) => {
             const cx = canvas.width*nx+Math.sin(t+i)*15, cy = canvas.height*ny;
             const g = ctx.createRadialGradient(cx,cy,0,cx,cy,nr);
             g.addColorStop(0, nc+'55'); g.addColorStop(1,'transparent');
@@ -1494,7 +1687,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Wood lane base
         const lg=ctx.createLinearGradient(0,bl.y,0,tl.y);
-        lg.addColorStop(0,'#b8956a'); lg.addColorStop(0.25,'#d4b87a'); lg.addColorStop(0.55,'#c9a66b'); lg.addColorStop(0.8,'#9a7848'); lg.addColorStop(1,'#7a5c30');
+        if (laneTheme === 'nebula') {
+            lg.addColorStop(0, '#6d4c41'); lg.addColorStop(0.25, '#8d6e63'); lg.addColorStop(0.55, '#7e57c2'); lg.addColorStop(0.8, '#5e35b1'); lg.addColorStop(1, '#4527a0');
+        } else {
+            lg.addColorStop(0,'#b8956a'); lg.addColorStop(0.25,'#d4b87a'); lg.addColorStop(0.55,'#c9a66b'); lg.addColorStop(0.8,'#9a7848'); lg.addColorStop(1,'#7a5c30');
+        }
         ctx.beginPath();
         ctx.moveTo(bl.x,bl.y); ctx.lineTo(br.x,br.y); ctx.lineTo(tr.x,tr.y); ctx.lineTo(tl.x,tl.y); ctx.closePath();
         ctx.fillStyle=lg; ctx.fill();
@@ -1523,8 +1720,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle=refl; ctx.fill();
 
         // Lane edge glow
-        ctx.shadowColor='#22d3ee'; ctx.shadowBlur=8;
-        ctx.strokeStyle='rgba(34,211,238,0.5)'; ctx.lineWidth=2;
+        ctx.shadowColor = laneTheme === 'nebula' ? '#e879f9' : '#22d3ee'; ctx.shadowBlur=8;
+        ctx.strokeStyle = laneTheme === 'nebula' ? 'rgba(232,121,249,0.55)' : 'rgba(34,211,238,0.5)'; ctx.lineWidth=2;
         ctx.beginPath(); ctx.moveTo(bl.x,bl.y); ctx.lineTo(tl.x,tl.y); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(br.x,br.y); ctx.lineTo(tr.x,tr.y); ctx.stroke();
         ctx.shadowBlur=0;
@@ -1839,15 +2036,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function drawRollTrail() {
         if (!ball || !ball.rolling || rollTrail.length < 2) return;
+        const c = getSkinTrailColor();
+        const r = parseInt(c.slice(1, 3), 16);
+        const g = parseInt(c.slice(3, 5), 16);
+        const b = parseInt(c.slice(5, 7), 16);
         ctx.save();
         rollTrail.forEach((pt, i) => {
             const p = project(pt.x, 0, pt.z);
             if (p.scale <= 0) return;
-            const alpha = (i / rollTrail.length) * 0.22;
+            const alpha = (i / rollTrail.length) * 0.35;
             const tr = ball.radius * p.scale * (0.35 + i / rollTrail.length * 0.45);
             ctx.beginPath();
             ctx.ellipse(p.x, p.y + tr * 0.2, tr, tr * 0.28, 0, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(186, 230, 253, ${alpha})`;
+            ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+            ctx.fill();
+        });
+        ctx.restore();
+    }
+
+    function drawSkinTrailParticles() {
+        if (!skinTrailParticles.length) return;
+        ctx.save();
+        skinTrailParticles.forEach(t => {
+            const p = project(t.x, 0, t.z);
+            if (p.scale <= 0) return;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, t.size * p.scale * t.life, 0, Math.PI * 2);
+            const c = t.color;
+            const r = parseInt(c.slice(1, 3), 16);
+            const g = parseInt(c.slice(3, 5), 16);
+            const b = parseInt(c.slice(5, 7), 16);
+            ctx.fillStyle = `rgba(${r},${g},${b},${t.life * 0.65})`;
             ctx.fill();
         });
         ctx.restore();
@@ -1967,27 +2186,29 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.setLineDash([]);
         ctx.stroke();
 
-        // Arrowhead on ball
-        const ang = Math.atan2(bp.y - dragEnd.y, bp.x - dragEnd.x);
-        const ah = S(16);
-        ctx.beginPath();
-        ctx.moveTo(bp.x, bp.y);
-        ctx.lineTo(bp.x - Math.cos(ang - 0.45) * ah, bp.y - Math.sin(ang - 0.45) * ah);
-        ctx.lineTo(bp.x - Math.cos(ang + 0.45) * ah, bp.y - Math.sin(ang + 0.45) * ah);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(74,222,128,0.9)';
-        ctx.fill();
-
         if (!aim || aim.tooWeak) {
             ctx.font = `bold ${Fs(13)}px Arial`;
             ctx.fillStyle = 'rgba(251,191,36,0.9)';
             ctx.textAlign = 'center';
-            ctx.fillText('Pull down ↓ for power', bp.x, bp.y + S(55));
+            ctx.fillText('Slide ← → to position · pull down for power', bp.x, bp.y + S(55));
             return;
         }
 
-        // Predicted path dots along lane
-        const path = simulatePath(aim.vx, aim.vz);
+        const path = simulatePath(aim.vx, aim.vz, aim.hookSpin || 0);
+
+        if (path.length > 1) {
+            const ang = Math.atan2(path[1].y - bp.y, path[1].x - bp.x);
+            const ah = S(16);
+            ctx.beginPath();
+            ctx.moveTo(bp.x, bp.y);
+            ctx.lineTo(bp.x + Math.cos(ang) * ah, bp.y + Math.sin(ang) * ah);
+            ctx.lineTo(bp.x + Math.cos(ang - 0.45) * ah * 0.65, bp.y + Math.sin(ang - 0.45) * ah * 0.65);
+            ctx.lineTo(bp.x + Math.cos(ang + 0.45) * ah * 0.65, bp.y + Math.sin(ang + 0.45) * ah * 0.65);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(74,222,128,0.9)';
+            ctx.fill();
+        }
+
         path.forEach((pt, i) => {
             if (i % 2 !== 0) return;
             const alpha = 0.35 + (i / path.length) * 0.55;
@@ -2048,7 +2269,39 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText(`POWER ${pct}%`, bp.x, my + meterH + S(11));
         ctx.font = `${Fs(10)}px Arial`;
         ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.fillText(aim.vx < -0.5 ? '← left' : aim.vx > 0.5 ? 'right →' : 'straight', bp.x, my - 6);
+        ctx.fillText(aim.vx > 0.5 ? 'shot → right' : aim.vx < -0.5 ? '← left shot' : 'straight', bp.x, my - 6);
+        if (Math.abs(aim.hookSpin || 0) > 0.4) {
+            ctx.fillStyle = 'rgba(167,139,250,0.75)';
+            ctx.fillText('↻ curve', bp.x, my - S(18));
+        }
+    }
+
+    function drawSpareHelper() {
+        if (!ball || ball.rolling || gameOver || paused || !canBowl || pinsetter.phase !== 'idle') return;
+        if (currentRoll !== 1 || standingPinCount() === 0 || standingPinCount() === 10) return;
+        const bp = project(ball.x, ball.y, ball.z);
+        const standing = pins.filter(p => !p.knocked);
+        ctx.save();
+        ctx.setLineDash([5, 7]);
+        ctx.lineWidth = 2;
+        standing.forEach(pin => {
+            const pp = project(pin.x, pin.y, pin.z);
+            ctx.strokeStyle = 'rgba(244,114,182,0.45)';
+            ctx.beginPath();
+            ctx.moveTo(bp.x, bp.y);
+            ctx.lineTo(pp.x, pp.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(pp.x, pp.y, S(8), 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(250,204,21,0.7)';
+            ctx.stroke();
+        });
+        ctx.setLineDash([]);
+        ctx.font = `bold ${Fs(11)}px Arial`;
+        ctx.fillStyle = 'rgba(250,204,21,0.9)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Spare aim — pick a pin line', bp.x, bp.y + S(62));
+        ctx.restore();
     }
 
     function drawGameOver() {
@@ -2109,6 +2362,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const shake = screenShake;
             ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
         }
+        if (cinematicTimer > 0) {
+            const zoom = 1.08 + (1 - cinematicTimer / 80) * 0.14;
+            const cx = canvas.width / 2;
+            const cy = canvas.height * 0.52;
+            ctx.translate(cx, cy);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-cx, -cy);
+        }
         ctx.fillStyle = '#0a0a14';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -2130,6 +2391,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ].sort((a, b) => b.z - a.z);
         objs.forEach(o => { if (o.type === 'pin') drawPin(o.obj); else drawBall(); });
 
+        drawSkinTrailParticles();
+        drawSpareHelper();
         drawSparks();
         drawParticles3D();
         drawImpacts();
@@ -2225,18 +2488,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const bp = project(ball.x, ball.y, ball.z);
         dragStart.x = bp.x;
         dragStart.y = bp.y;
+        ballXAtDragStart = ball.x;
+        aimLocked = false;
         dragEnd = getCanvasPos(e.clientX, e.clientY);
         isDragging = true;
     });
     canvas.addEventListener('mousemove', e => {
         if (!isDragging) return;
         dragEnd = getCanvasPos(e.clientX, e.clientY);
+        updateBallPositionFromDrag();
     });
     canvas.addEventListener('mouseup', () => {
         if (isDragging && ball && !ball.rolling && !gameOver && !paused && canBowl) rollBall();
-        isDragging=false;
+        isDragging = false;
+        aimLocked = false;
     });
-    canvas.addEventListener('mouseleave', () => { isDragging=false; });
+    canvas.addEventListener('mouseleave', () => { isDragging = false; aimLocked = false; });
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -2245,6 +2512,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const bp = project(ball.x, ball.y, ball.z);
         dragStart.x = bp.x;
         dragStart.y = bp.y;
+        ballXAtDragStart = ball.x;
+        aimLocked = false;
         dragEnd = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
         isDragging = true;
     }, {passive:false});
@@ -2252,10 +2521,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if (!isDragging) return;
         dragEnd = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
+        updateBallPositionFromDrag();
     }, {passive:false});
     canvas.addEventListener('touchend', () => {
         if (isDragging && ball && !ball.rolling && !gameOver && !paused && canBowl) rollBall();
-        isDragging=false;
+        isDragging = false;
+        aimLocked = false;
     });
 
     document.querySelectorAll('.ball-skin-btn').forEach(btn => {
@@ -2280,6 +2551,7 @@ document.addEventListener('DOMContentLoaded', () => {
     menuBtn.addEventListener('click', () => { initAudio(); playSound('click'); leaderboardPanel.classList.remove('game-overlay-hidden'); });
     closeLeaderboard.addEventListener('click', () => { playSound('click'); leaderboardPanel.classList.add('game-overlay-hidden'); });
     resetBtn.addEventListener('click', () => { initAudio(); playSound('click'); resetGame(); });
+    themeBtn?.addEventListener('click', () => { initAudio(); cycleLaneTheme(); });
 
     const savedSkin = localStorage.getItem(SKIN_KEY);
     if (savedSkin) {
@@ -2287,6 +2559,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.ball-skin-btn').forEach(b => {
             b.classList.toggle('active', b.dataset.skin === savedSkin);
         });
+    }
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    if (savedTheme && LANE_THEMES.includes(savedTheme)) {
+        laneTheme = savedTheme;
+        if (themeBtn) themeBtn.textContent = laneTheme === 'nebula' ? '🌠 Nebula' : '🌌 Cosmic';
     }
 
     loadPlayerName();
