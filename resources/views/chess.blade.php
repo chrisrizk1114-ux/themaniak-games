@@ -199,6 +199,15 @@
         letter-spacing: 0.06em;
         text-align: center;
     }
+    .diff-btn.brutal {
+        background: linear-gradient(180deg, #4a1f3d, #2d1224);
+        border-color: rgba(192,132,252,0.45);
+        color: #f3e8ff;
+    }
+    .diff-btn.brutal:hover {
+        border-color: rgba(216,180,254,0.75);
+        box-shadow: 0 0 18px rgba(168,85,247,0.35);
+    }
     .diff-btn {
         background: linear-gradient(180deg, #3d5a3a, #2a3d28);
         color: var(--royal-ivory);
@@ -1034,6 +1043,7 @@
     .ai-difficulty-badge.easy { border-color: rgba(74,222,128,0.45); color: #bbf7d0; background: rgba(74,222,128,0.12); }
     .ai-difficulty-badge.medium { border-color: rgba(250,204,21,0.45); color: #fde68a; background: rgba(250,204,21,0.12); }
     .ai-difficulty-badge.hard { border-color: rgba(248,113,113,0.45); color: #fecaca; background: rgba(248,113,113,0.12); }
+    .ai-difficulty-badge.brutal { border-color: rgba(192,132,252,0.55); color: #e9d5ff; background: rgba(126,34,206,0.22); }
 
     .chess-turn-row {
         display: flex;
@@ -1266,8 +1276,9 @@
                     <button class="diff-btn" type="button" onclick="startSoloGame('easy')" title="Casual — great for learning">Easy</button>
                     <button class="diff-btn" type="button" onclick="startSoloGame('medium')" title="Smart — plans ahead and protects pieces">Medium</button>
                     <button class="diff-btn" type="button" onclick="startSoloGame('hard')" title="Expert — deep thinking, sharp tactics">Hard</button>
+                    <button class="diff-btn brutal" type="button" onclick="startSoloGame('brutal')" title="Brutal — maximum depth, long thinks, ruthless tactics">Brutal</button>
                 </div>
-                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp (8 moves). Hard is expert-level (9 moves + opening book).</p>
+                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp (8-ply). Hard is expert (10–15 ply). Brutal goes all-out (11–18 ply, up to 22s think).</p>
             </div>
             <div class="mode-card">
                 <h3>Two Players</h3>
@@ -1446,22 +1457,47 @@
             useOpeningBook: true,
         },
         hard: {
-            maxDepth: 9,
+            maxDepth: 10,
+            maxSearchDepth: 15,
+            searchUntilTimeUp: true,
             randomMoveChance: 0,
             blunderChance: 0,
-            thinkMin: 5500,
-            thinkMax: 11000,
+            thinkMin: 8000,
+            thinkMax: 16000,
             label: 'Hard',
             evalLevel: 'advanced',
             evalTier: 'expert',
             useQuiescence: true,
-            quiescenceDepth: 9,
+            quiescenceDepth: 12,
             useIterativeDeepening: true,
             useMobility: true,
-            mobilityWeight: 5.5,
+            mobilityWeight: 8,
             useNullMove: true,
+            nullMoveReduction: 3,
             useCheckExtension: true,
             useOpeningBook: true,
+        },
+        brutal: {
+            maxDepth: 11,
+            maxSearchDepth: 18,
+            searchUntilTimeUp: true,
+            randomMoveChance: 0,
+            blunderChance: 0,
+            thinkMin: 12000,
+            thinkMax: 22000,
+            label: 'Brutal',
+            evalLevel: 'advanced',
+            evalTier: 'brutal',
+            useQuiescence: true,
+            quiescenceDepth: 14,
+            useIterativeDeepening: true,
+            useMobility: true,
+            mobilityWeight: 10.5,
+            useNullMove: true,
+            nullMoveReduction: 3,
+            useCheckExtension: true,
+            useOpeningBook: true,
+            openingBookPlies: 18,
         },
     };
 
@@ -1505,7 +1541,7 @@
     let aiKillers = [];
     let aiHistory = new Map();
     let aiSearchPly = 0;
-    const AI_TT_MAX = 25000;
+    const AI_TT_MAX = 80000;
 
     const OPENING_BOOK = {
         medium: {
@@ -1525,6 +1561,20 @@
             '6,1,4,1': { fromRow: 0, fromCol: 2, toRow: 2, toCol: 3 },
             '4,4,3,4|6,3,4,3': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
             '3,4,2,4|6,3,5,3': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
+        },
+        brutal: {
+            '6,4,4,4': { fromRow: 1, fromCol: 2, toRow: 3, toCol: 2 },
+            '6,3,4,3': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
+            '6,2,4,2': { fromRow: 1, fromCol: 2, toRow: 3, toCol: 2 },
+            '6,6,5,5': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
+            '6,5,5,5': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
+            '6,1,4,1': { fromRow: 0, fromCol: 2, toRow: 2, toCol: 3 },
+            '4,4,3,4|6,3,4,3': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
+            '3,4,2,4|6,3,5,3': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
+            '4,4,3,4|6,3,4,3|0,1,2,2': { fromRow: 0, fromCol: 5, toRow: 1, toCol: 4 },
+            '3,4,2,4|6,3,5,3|0,6,2,5': { fromRow: 1, fromCol: 6, toRow: 2, toCol: 5 },
+            '4,4,3,4|6,2,4,2': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
+            '4,4,3,4|6,6,5,5': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
         },
     };
 
@@ -1807,8 +1857,8 @@
     }
 
     function lookupOpeningBook(settings) {
-        if (!settings.useOpeningBook || positionHistory.length > 12) return null;
-        const tier = settings.evalTier === 'expert' ? 'hard' : 'medium';
+        if (!settings.useOpeningBook || positionHistory.length > (settings.openingBookPlies || 12)) return null;
+        const tier = settings.evalTier === 'brutal' ? 'brutal' : settings.evalTier === 'expert' ? 'hard' : 'medium';
         const book = OPENING_BOOK[tier];
         const key = openingMoveKey();
         const move = book[key];
@@ -2094,9 +2144,8 @@
         }
         
         if (type === 'p' && (toRow === 0 || toRow === 7)) {
-            if (promotionPiece) {
-                newBoard[toRow][toCol] = color === 'white' ? promotionPiece.toUpperCase() : promotionPiece.toLowerCase();
-            }
+            const promo = promotionPiece || 'q';
+            newBoard[toRow][toCol] = color === 'white' ? promo.toUpperCase() : promo.toLowerCase();
         }
         
         return newBoard;
@@ -2430,7 +2479,7 @@
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         if (settings.evalLevel === 'material') return 0;
 
-        const threatMult = settings.evalTier === 'expert' ? 1.15 : settings.evalTier === 'strong' ? 1.05 : 1;
+        const threatMult = settings.evalTier === 'brutal' ? 1.28 : settings.evalTier === 'expert' ? 1.15 : settings.evalTier === 'strong' ? 1.05 : 1;
         let penalty = 0;
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
@@ -2521,7 +2570,7 @@
             score -= developmentScore(b, 'white');
         }
         if (settings.evalLevel === 'advanced') {
-            const posMult = settings.evalTier === 'expert' ? 1.2 : settings.evalTier === 'strong' ? 1.08 : 1;
+            const posMult = settings.evalTier === 'brutal' ? 1.38 : settings.evalTier === 'expert' ? 1.2 : settings.evalTier === 'strong' ? 1.08 : 1;
             score += centerControlScore(b, 'black') * posMult;
             score -= centerControlScore(b, 'white') * posMult;
             score += kingSafetyScore(b, 'black') * posMult;
@@ -2538,7 +2587,7 @@
             score += doubledPawnPenalty(b, 'white') * posMult;
             if (settings.useMobility) {
                 const mw = settings.mobilityWeight || 2;
-                const mobilityFactor = heavyEval ? 1 : (settings.evalTier === 'expert' ? 0.45 : 0.3);
+                const mobilityFactor = heavyEval ? 1 : (settings.evalTier === 'brutal' ? 1 : settings.evalTier === 'expert' ? 0.92 : 0.3);
                 score += mobilityScore(b, 'black') * mw * mobilityFactor;
                 score -= mobilityScore(b, 'white') * mw * mobilityFactor;
             }
@@ -2669,6 +2718,7 @@
         if (maximizing) {
             let maxEval = standPat;
             for (const move of moves) {
+                if (searchTimeUp()) break;
                 const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
                 const evalResult = quiescence(newBoard, depth - 1, alpha, beta, false);
                 maxEval = Math.max(maxEval, evalResult);
@@ -2680,6 +2730,7 @@
 
         let minEval = standPat;
         for (const move of moves) {
+            if (searchTimeUp()) break;
             const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
             const evalResult = quiescence(newBoard, depth - 1, alpha, beta, true);
             minEval = Math.min(minEval, evalResult);
@@ -2766,7 +2817,8 @@
         }
 
         if (settings.useNullMove && searchDepth >= 4 && !isInCheck(b, color)) {
-            const nullScore = minimax(b, searchDepth - 3, !maximizing, -beta, -beta + 1, ply + 1);
+            const nullReduction = settings.nullMoveReduction || 3;
+            const nullScore = minimax(b, searchDepth - nullReduction, !maximizing, -beta, -beta + 1, ply + 1);
             if (-nullScore >= beta) {
                 board = originalBoard;
                 return beta;
@@ -2833,9 +2885,12 @@
         let bestMove = moves[0];
         aiBestMoveHint = null;
         let orderedMoves = moves.slice();
+        const depthCap = settings.maxSearchDepth || settings.maxDepth;
 
-        for (let depth = 1; depth <= settings.maxDepth; depth++) {
-            if (searchTimeUp()) break;
+        for (let depth = 1; depth <= depthCap; depth++) {
+            if (settings.searchUntilTimeUp && depth > settings.maxDepth && searchTimeUp()) break;
+            if (!settings.searchUntilTimeUp && depth > settings.maxDepth) break;
+            if (searchTimeUp() && depth > 1) break;
 
             orderedMoves = orderMoves(orderedMoves, board, 'black', aiBestMoveHint, 0);
             let layerBest = null;
@@ -3198,11 +3253,16 @@
         aiThinkDeadline = Date.now() + thinkMs;
 
         const statusEl = document.getElementById('status');
-        if (settings.maxDepth >= 9) {
+        const searchDepth = settings.maxSearchDepth || settings.maxDepth;
+        if (settings.evalTier === 'brutal' || searchDepth >= 16) {
+            statusEl.textContent = isMobileChessLayout()
+                ? 'AI grinding…'
+                : `AI (${settings.label}) is grinding through lines...`;
+        } else if (searchDepth >= 10) {
             statusEl.textContent = isMobileChessLayout()
                 ? 'AI calculating…'
                 : `AI (${settings.label}) is calculating...`;
-        } else if (settings.maxDepth >= 8) {
+        } else if (searchDepth >= 8) {
             statusEl.textContent = isMobileChessLayout()
                 ? 'AI thinking deeply…'
                 : `AI (${settings.label}) is thinking deeply...`;
@@ -3881,7 +3941,7 @@
         const whiteRole = document.getElementById('white-role');
         const badge = document.getElementById('aiDifficultyBadge');
         if (gameMode === 'online') {
-            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard');
+            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard', 'brutal');
             return;
         }
         if (gameMode === '1p') {
@@ -3895,7 +3955,7 @@
         } else {
             blackRole.textContent = 'Player 2';
             whiteRole.textContent = 'Player 1';
-            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard');
+            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard', 'brutal');
         }
     }
 
