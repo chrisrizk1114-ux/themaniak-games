@@ -8,10 +8,11 @@
 <style>
     html:has(.chess-page #gameArea.active),
     body:has(.chess-page #gameArea.active) {
-        overflow-x: hidden !important;
-        overflow-y: auto !important;
-        height: auto !important;
-        overscroll-behavior-y: contain;
+        overflow: hidden !important;
+        height: 100% !important;
+        width: 100%;
+        overscroll-behavior: none;
+        touch-action: manipulation;
     }
 
     .main-content:has(.chess-page) {
@@ -198,15 +199,6 @@
         font-family: Cinzel, serif;
         letter-spacing: 0.06em;
         text-align: center;
-    }
-    .diff-btn.brutal {
-        background: linear-gradient(180deg, #4a1f3d, #2d1224);
-        border-color: rgba(192,132,252,0.45);
-        color: #f3e8ff;
-    }
-    .diff-btn.brutal:hover {
-        border-color: rgba(216,180,254,0.75);
-        box-shadow: 0 0 18px rgba(168,85,247,0.35);
     }
     .diff-btn {
         background: linear-gradient(180deg, #3d5a3a, #2a3d28);
@@ -788,11 +780,20 @@
 
     .captured-row {
         min-height: 36px;
+        height: 36px;
+        max-height: 36px;
         font-size: 1.4rem;
         line-height: 1.5;
         color: #c9b896;
         letter-spacing: 0.15em;
-        word-break: break-all;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    #gameArea.active .captured-row {
+        height: 2rem;
+        max-height: 2rem;
+        min-height: 2rem;
     }
     .chess-board-col {
         display: flex;
@@ -804,6 +805,21 @@
     #gameArea.active .chess-board-col {
         flex: 0 1 auto;
         justify-content: center;
+        overflow-anchor: none;
+    }
+    #gameArea.active .chess-turn-row {
+        min-height: 2.5rem;
+        height: 2.5rem;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    #gameArea.active .status {
+        min-width: 10.5rem;
+        max-width: 10.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-shrink: 0;
     }
 
     .board-pedestal {
@@ -1025,6 +1041,12 @@
         border-radius: 2px;
         min-width: 200px;
     }
+    #gameArea.active .board-pedestal,
+    #gameArea.active .board-frame,
+    #gameArea.active .board-inner-border,
+    #gameArea.active .board {
+        flex-shrink: 0;
+    }
 
     .ai-difficulty-badge {
         display: none;
@@ -1043,7 +1065,6 @@
     .ai-difficulty-badge.easy { border-color: rgba(74,222,128,0.45); color: #bbf7d0; background: rgba(74,222,128,0.12); }
     .ai-difficulty-badge.medium { border-color: rgba(250,204,21,0.45); color: #fde68a; background: rgba(250,204,21,0.12); }
     .ai-difficulty-badge.hard { border-color: rgba(248,113,113,0.45); color: #fecaca; background: rgba(248,113,113,0.12); }
-    .ai-difficulty-badge.brutal { border-color: rgba(192,132,252,0.55); color: #e9d5ff; background: rgba(126,34,206,0.22); }
 
     .chess-turn-row {
         display: flex;
@@ -1149,6 +1170,11 @@
         font-family: Cinzel, serif;
         letter-spacing: 0.05em;
         margin: -0.25rem 0 0.15rem;
+        min-height: 1.1rem;
+    }
+    #gameArea.active .move-review-label {
+        min-height: 1.1rem;
+        margin: 0 0 0.1rem;
     }
     .move-review-label.reviewing {
         color: var(--royal-gold-light);
@@ -1275,10 +1301,9 @@
                     <h4>Difficulty</h4>
                     <button class="diff-btn" type="button" onclick="startSoloGame('easy')" title="Casual — great for learning">Easy</button>
                     <button class="diff-btn" type="button" onclick="startSoloGame('medium')" title="Smart — plans ahead and protects pieces">Medium</button>
-                    <button class="diff-btn" type="button" onclick="startSoloGame('hard')" title="Expert — deep thinking, sharp tactics">Hard</button>
-                    <button class="diff-btn brutal" type="button" onclick="startSoloGame('brutal')" title="Brutal — maximum depth, long thinks, ruthless tactics">Brutal</button>
+                    <button class="diff-btn" type="button" onclick="startSoloGame('hard')" title="Expert — deep search, sharp tactics, long thinks">Hard</button>
                 </div>
-                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp (8-ply). Hard is expert (10–15 ply). Brutal goes all-out (11–18 ply, up to 22s think).</p>
+                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp (8-ply). Hard is expert-level (11–18 ply, up to 22s think).</p>
             </div>
             <div class="mode-card">
                 <h3>Two Players</h3>
@@ -1457,27 +1482,6 @@
             useOpeningBook: true,
         },
         hard: {
-            maxDepth: 10,
-            maxSearchDepth: 15,
-            searchUntilTimeUp: true,
-            randomMoveChance: 0,
-            blunderChance: 0,
-            thinkMin: 8000,
-            thinkMax: 16000,
-            label: 'Hard',
-            evalLevel: 'advanced',
-            evalTier: 'expert',
-            useQuiescence: true,
-            quiescenceDepth: 12,
-            useIterativeDeepening: true,
-            useMobility: true,
-            mobilityWeight: 8,
-            useNullMove: true,
-            nullMoveReduction: 3,
-            useCheckExtension: true,
-            useOpeningBook: true,
-        },
-        brutal: {
             maxDepth: 11,
             maxSearchDepth: 18,
             searchUntilTimeUp: true,
@@ -1485,7 +1489,7 @@
             blunderChance: 0,
             thinkMin: 12000,
             thinkMax: 22000,
-            label: 'Brutal',
+            label: 'Hard',
             evalLevel: 'advanced',
             evalTier: 'brutal',
             useQuiescence: true,
@@ -1553,16 +1557,6 @@
             '6,1,4,1': { fromRow: 0, fromCol: 2, toRow: 2, toCol: 3 },
         },
         hard: {
-            '6,4,4,4': { fromRow: 1, fromCol: 2, toRow: 3, toCol: 2 },
-            '6,3,4,3': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
-            '6,2,4,2': { fromRow: 1, fromCol: 2, toRow: 3, toCol: 2 },
-            '6,6,5,5': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
-            '6,5,5,5': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
-            '6,1,4,1': { fromRow: 0, fromCol: 2, toRow: 2, toCol: 3 },
-            '4,4,3,4|6,3,4,3': { fromRow: 0, fromCol: 1, toRow: 2, toCol: 2 },
-            '3,4,2,4|6,3,5,3': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
-        },
-        brutal: {
             '6,4,4,4': { fromRow: 1, fromCol: 2, toRow: 3, toCol: 2 },
             '6,3,4,3': { fromRow: 0, fromCol: 6, toRow: 2, toCol: 5 },
             '6,2,4,2': { fromRow: 1, fromCol: 2, toRow: 3, toCol: 2 },
@@ -1699,14 +1693,27 @@
     function lockMobileBoardSize() {
         const arena = document.querySelector('#gameArea.active .chess-arena');
         if (!arena) return;
-        const isMobile = window.matchMedia('(max-width: 960px), (hover: none) and (pointer: coarse)').matches;
-        if (!isMobile) {
-            arena.style.removeProperty('--sq');
-            return;
-        }
         const vw = window.visualViewport?.width ?? document.documentElement.clientWidth;
-        const sq = Math.min(Math.floor((vw - 24) / 8), 48);
+        const vh = window.visualViewport?.height ?? window.innerHeight;
+        const isMobile = isMobileChessLayout();
+        const sq = isMobile
+            ? Math.min(Math.floor((vw - 24) / 8), 48)
+            : Math.min(
+                Math.floor((vh - 210) / 8),
+                Math.floor((vw - 540) / 8),
+                Math.floor(12 * Math.min(vw, vh) / 100)
+            );
         arena.style.setProperty('--sq', sq + 'px');
+    }
+
+    function unlockBoardSize() {
+        document.querySelector('.chess-arena')?.style.removeProperty('--sq');
+    }
+
+    function aiStatusText(settings) {
+        return isMobileChessLayout()
+            ? 'AI thinking…'
+            : `AI (${settings.label}) is thinking…`;
     }
 
     function isMobileChessLayout() {
@@ -1858,7 +1865,7 @@
 
     function lookupOpeningBook(settings) {
         if (!settings.useOpeningBook || positionHistory.length > (settings.openingBookPlies || 12)) return null;
-        const tier = settings.evalTier === 'brutal' ? 'brutal' : settings.evalTier === 'expert' ? 'hard' : 'medium';
+        const tier = settings.evalTier === 'strong' ? 'medium' : 'hard';
         const book = OPENING_BOOK[tier];
         const key = openingMoveKey();
         const move = book[key];
@@ -3002,19 +3009,7 @@
             showGameOver('Stalemate', 'The game is a draw.');
         } else if (gameMode === '1p' && currentPlayer === 'black') {
             const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
-            if (settings.maxDepth >= 9) {
-                statusEl.textContent = isMobileChessLayout()
-                    ? 'AI calculating…'
-                    : `AI (${settings.label}) is calculating...`;
-            } else if (settings.maxDepth >= 8) {
-                statusEl.textContent = isMobileChessLayout()
-                    ? 'AI thinking deeply…'
-                    : `AI (${settings.label}) is thinking deeply...`;
-            } else {
-                statusEl.textContent = isMobileChessLayout()
-                    ? 'AI thinking…'
-                    : `AI (${settings.label}) is thinking...`;
-            }
+            statusEl.textContent = aiStatusText(settings);
         } else {
             statusEl.textContent = `${cap(currentPlayer)}'s turn`;
         }
@@ -3024,10 +3019,6 @@
 
     function renderBoard(skipStatusUpdate = false) {
         const boardEl = document.getElementById('board');
-        const boardAnchor = document.getElementById('boardPedestal');
-        const anchorTop = isMobileChessLayout() && boardAnchor
-            ? boardAnchor.getBoundingClientRect().top
-            : null;
 
         boardEl.innerHTML = '';
 
@@ -3079,15 +3070,6 @@
             }
         }
         if (!skipStatusUpdate) updateStatus();
-
-        if (anchorTop !== null && boardAnchor) {
-            requestAnimationFrame(() => {
-                const delta = boardAnchor.getBoundingClientRect().top - anchorTop;
-                if (Math.abs(delta) > 1) {
-                    window.scrollBy(0, delta);
-                }
-            });
-        }
     }
 
     function showPromotionModal(color) {
@@ -3253,24 +3235,7 @@
         aiThinkDeadline = Date.now() + thinkMs;
 
         const statusEl = document.getElementById('status');
-        const searchDepth = settings.maxSearchDepth || settings.maxDepth;
-        if (settings.evalTier === 'brutal' || searchDepth >= 16) {
-            statusEl.textContent = isMobileChessLayout()
-                ? 'AI grinding…'
-                : `AI (${settings.label}) is grinding through lines...`;
-        } else if (searchDepth >= 10) {
-            statusEl.textContent = isMobileChessLayout()
-                ? 'AI calculating…'
-                : `AI (${settings.label}) is calculating...`;
-        } else if (searchDepth >= 8) {
-            statusEl.textContent = isMobileChessLayout()
-                ? 'AI thinking deeply…'
-                : `AI (${settings.label}) is thinking deeply...`;
-        } else {
-            statusEl.textContent = isMobileChessLayout()
-                ? 'AI thinking…'
-                : `AI (${settings.label}) is thinking...`;
-        }
+        statusEl.textContent = aiStatusText(settings);
 
         setTimeout(() => {
             if (gameOver || !isAtLatestPosition()) return;
@@ -3482,7 +3447,6 @@
             history.replaceState({}, '', data.play_url || ('/chess?game=' + data.token));
             enterOnlineGameUI(data);
             showChessToast(`Joined ${friendOpponentName}'s room! You play as Black.`);
-            document.getElementById('gameArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (e) {
             showChessToast('Could not join room. Check the code and try again.', true);
         }
@@ -3495,7 +3459,6 @@
         history.replaceState({}, '', createdRoomData.play_url || ('/chess?game=' + createdRoomData.token));
         enterOnlineGameUI(createdRoomData);
         showChessToast(`Room ready! Share code ${createdRoomData.room_code} with your friend.`);
-        document.getElementById('gameArea')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function updateWaitingOverlay(gameData = null) {
@@ -3941,7 +3904,7 @@
         const whiteRole = document.getElementById('white-role');
         const badge = document.getElementById('aiDifficultyBadge');
         if (gameMode === 'online') {
-            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard', 'brutal');
+            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard');
             return;
         }
         if (gameMode === '1p') {
@@ -3955,7 +3918,7 @@
         } else {
             blackRole.textContent = 'Player 2';
             whiteRole.textContent = 'Player 1';
-            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard', 'brutal');
+            if (badge) badge.classList.remove('show', 'easy', 'medium', 'hard');
         }
     }
 
@@ -3989,6 +3952,7 @@
         gameMode = '2p';
         document.getElementById('playerSelect').style.display = 'block';
         document.getElementById('gameArea').classList.remove('active');
+        unlockBoardSize();
         updateRematchVisibility();
         const label = document.getElementById('moveReviewLabel');
         if (label) {
