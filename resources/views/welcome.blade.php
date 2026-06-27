@@ -61,59 +61,11 @@
 
     /* ── Hero ── */
     .hero {
+        text-align: center;
         margin-bottom: clamp(2rem, 5vw, 3.5rem);
     }
 
-    .hero-grid {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: clamp(1.5rem, 4vw, 3rem);
-        align-items: center;
-    }
-
-    .hero-content {
-        text-align: left;
-    }
-
-    .hero-mascot-wrap {
-        display: flex;
-        justify-content: center;
-        align-items: flex-end;
-    }
-
-    .hero-tagline {
-        font-size: clamp(1rem, 2.2vw, 1.2rem);
-        color: rgba(255, 255, 255, 0.72);
-        margin: 0 0 1.1rem;
-        max-width: 28rem;
-        line-height: 1.45;
-        font-weight: 600;
-    }
-
-    .hero-cta {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        margin-top: 1.15rem;
-        padding: 0.7rem 1.35rem;
-        border-radius: 999px;
-        font-weight: 800;
-        font-size: 0.95rem;
-        letter-spacing: 0.04em;
-        text-decoration: none;
-        color: #050510;
-        background: linear-gradient(90deg, var(--cyan), #7dd3fc);
-        box-shadow: 0 0 24px rgba(0, 240, 255, 0.35);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .hero-cta:hover {
-        transform: translateY(-2px) scale(1.02);
-        box-shadow: 0 0 32px rgba(0, 240, 255, 0.5);
-    }
-
     .hero-title {
-        text-align: left;
         font-family: 'Orbitron', sans-serif;
         font-size: clamp(2.2rem, 7vw, 4.2rem);
         font-weight: 800;
@@ -137,7 +89,7 @@
     .hero-stats {
         display: flex;
         flex-wrap: wrap;
-        justify-content: flex-start;
+        justify-content: center;
         gap: clamp(0.5rem, 2vw, 1rem);
     }
 
@@ -157,61 +109,6 @@
     .hero-stat strong {
         color: var(--gold);
         font-family: 'Orbitron', sans-serif;
-    }
-
-    /* ── Home leaderboard ── */
-    .home-leaderboards {
-        margin-bottom: clamp(2rem, 4vw, 3rem);
-    }
-
-    .home-lb-panel {
-        border-radius: 20px;
-        padding: clamp(1rem, 2.5vw, 1.35rem);
-        background: rgba(8, 12, 28, 0.88);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-        max-width: 440px;
-    }
-
-    .home-lb-tabs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
-        margin-bottom: 0.85rem;
-    }
-
-    .home-lb-tab {
-        padding: 0.38rem 0.7rem;
-        border-radius: 999px;
-        font-size: 0.76rem;
-        font-weight: 800;
-        letter-spacing: 0.02em;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.05);
-        color: rgba(255, 255, 255, 0.65);
-        cursor: pointer;
-        font-family: 'Rajdhani', sans-serif;
-        transition: border-color 0.2s, background 0.2s, color 0.2s;
-    }
-
-    .home-lb-tab:hover {
-        border-color: rgba(0, 240, 255, 0.3);
-        color: #e0f2fe;
-    }
-
-    .home-lb-tab.is-active {
-        border-color: rgba(0, 240, 255, 0.5);
-        background: rgba(0, 240, 255, 0.12);
-        color: #e0f2fe;
-    }
-
-    .home-lb-panel .game-lb {
-        max-width: none;
-        margin: 0;
-        padding: 0;
-        background: transparent;
-        border: none;
-        box-shadow: none;
     }
 
     /* ── Featured ── */
@@ -482,38 +379,6 @@
         font-family: 'Orbitron', sans-serif;
     }
 
-    @media (max-width: 768px) {
-        .hero-grid {
-            grid-template-columns: 1fr;
-            text-align: center;
-        }
-
-        .hero-content {
-            text-align: center;
-        }
-
-        .hero-title {
-            text-align: center;
-        }
-
-        .hero-stats {
-            justify-content: center;
-        }
-
-        .hero-tagline {
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .hero-mascot-wrap {
-            order: -1;
-        }
-
-        .home-lb-panel {
-            max-width: none;
-        }
-    }
-
     @media (max-width: 640px) {
         .featured-cta {
             margin-left: 0;
@@ -527,18 +392,11 @@
         .hero-title,
         .featured-card,
         .featured-card .game-icon,
-        .game-card:hover .game-icon,
-        .maniak-mascot--hero,
-        .maniak-mascot--loader {
+        .game-card:hover .game-icon {
             animation: none !important;
         }
     }
 </style>
-
-@push('head')
-    <link rel="stylesheet" href="{{ asset('css/game-leaderboard.css') }}?v=20260608">
-    <script src="{{ asset('js/game-leaderboard.js') }}?v=20260608" defer></script>
-@endpush
 
 <div class="home-page">
     <div class="home-stars"></div>
@@ -546,35 +404,12 @@
     <div class="home-inner">
         <!-- Hero -->
         <section class="hero">
-            <div class="hero-grid">
-                <div class="hero-content">
-                    <h1 class="hero-title">Mini Games</h1>
-                    <p class="hero-tagline">Free browser games — play instantly in your browser. No download, no install.</p>
-                    <div class="hero-stats">
-                        <span class="hero-stat">🃏 <strong>7</strong> Games</span>
-                        <span class="hero-stat">🔊 <strong>Sound</strong> FX</span>
-                        <span class="hero-stat">📱 <strong>Play</strong> Instantly</span>
-                        <span class="hero-stat">🏆 <strong>High</strong> Scores</span>
-                    </div>
-                    <a href="#games" class="hero-cta">Browse Games ↓</a>
-                </div>
-                <div class="hero-mascot-wrap">
-                    @include('partials.maniak-mascot', ['size' => 'hero', 'speech' => 'Pick a game!', 'wave' => true])
-                </div>
-            </div>
-        </section>
-
-        <!-- Leaderboard preview -->
-        <section class="home-leaderboards" id="leaderboards" aria-label="Top players">
-            <p class="section-label">Hall of Fame</p>
-            <div class="home-lb-panel">
-                <div class="home-lb-tabs" role="tablist" aria-label="Leaderboard games">
-                    <button type="button" class="home-lb-tab is-active" role="tab" aria-selected="true" data-game="galaxy-bowling">🎳 Bowling</button>
-                    <button type="button" class="home-lb-tab" role="tab" aria-selected="false" data-game="platformer">🏃 Sky Runner</button>
-                    <button type="button" class="home-lb-tab" role="tab" aria-selected="false" data-game="whack-a-mole">🔨 Mole Mayhem</button>
-                    <button type="button" class="home-lb-tab" role="tab" aria-selected="false" data-game="tic-tac-toe">✕○ Neon Grid</button>
-                </div>
-                <div id="homeLeaderboard" class="game-lb game-lb--inline" data-game="galaxy-bowling"></div>
+            <h1 class="hero-title">Mini Games</h1>
+            <div class="hero-stats">
+                <span class="hero-stat">🃏 <strong>7</strong> Games</span>
+                <span class="hero-stat">🔊 <strong>Sound</strong> FX</span>
+                <span class="hero-stat">📱 <strong>Play</strong> Instantly</span>
+                <span class="hero-stat">🏆 <strong>High</strong> Scores</span>
             </div>
         </section>
 
@@ -652,41 +487,4 @@
         </footer>
     </div>
 </div>
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const panel = document.getElementById('homeLeaderboard');
-    const tabs = document.querySelectorAll('.home-lb-tab');
-    if (!panel || !tabs.length) return;
-
-    const mountHomeLb = (game) => {
-        if (typeof GameLeaderboard === 'undefined') return;
-        panel.dataset.game = game;
-        GameLeaderboard.mount('#homeLeaderboard', game);
-    };
-
-    const init = () => {
-        mountHomeLb('galaxy-bowling');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const game = tab.dataset.game;
-                if (!game || tab.classList.contains('is-active')) return;
-                tabs.forEach(t => {
-                    t.classList.toggle('is-active', t === tab);
-                    t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
-                });
-                mountHomeLb(game);
-            });
-        });
-    };
-
-    if (typeof GameLeaderboard !== 'undefined') {
-        init();
-    } else {
-        document.querySelector('script[src*="game-leaderboard.js"]')?.addEventListener('load', init, { once: true });
-    }
-});
-</script>
-@endpush
 @endsection
