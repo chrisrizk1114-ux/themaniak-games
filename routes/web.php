@@ -18,6 +18,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/portfolio', function () {
+    return response()
+        ->view('portfolio')
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+});
+
 Route::get('/db-ping', function () {
     try {
         DB::select('SELECT 1 AS ok');

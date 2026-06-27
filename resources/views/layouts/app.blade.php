@@ -30,6 +30,7 @@
     @endif
     <link rel="stylesheet" href="{{ asset('css/mobile-games.css') }}?v=20260613">
     <link rel="stylesheet" href="{{ asset('css/mobile-games-tablet.css') }}?v=20260616">
+    <link rel="stylesheet" href="{{ asset('css/maniak-mascot.css') }}?v=20260627">
     @stack('head')
     <style>
         * {
@@ -95,16 +96,10 @@
         }
 
         .nav-logo-icon {
-            font-size: 1.65rem;
+            display: inline-flex;
+            align-items: center;
             line-height: 1;
             flex-shrink: 0;
-            filter: drop-shadow(0 0 10px rgba(255,45,106,0.5));
-            animation: logo-pulse 3s ease-in-out infinite;
-        }
-
-        @keyframes logo-pulse {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            50% { transform: scale(1.08) rotate(-4deg); }
         }
 
         .nav-logo-text {
@@ -722,8 +717,9 @@
                 display: none !important;
             }
 
-            .nav-logo-icon {
-                font-size: 1.3rem;
+            .nav-logo-icon .maniak-mascot--sm {
+                width: 30px !important;
+                height: 37px !important;
             }
 
             .nav-logo-text {
@@ -893,9 +889,10 @@
             pointer-events: none;
         }
 
-        #site-loader-icon {
-            font-size: 2.5rem;
-            animation: loader-pulse 1.2s ease-in-out infinite;
+        #site-loader-mascot {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #site-loader-text {
@@ -905,15 +902,13 @@
             color: rgba(255,255,255,0.85);
         }
 
-        @keyframes loader-pulse {
-            0%, 100% { transform: scale(1); opacity: 0.85; }
-            50% { transform: scale(1.08); opacity: 1; }
-        }
     </style>
 </head>
 <body>
     <div id="site-loader" aria-live="polite" aria-busy="true">
-        <span id="site-loader-icon">🎮</span>
+        <div id="site-loader-mascot">
+            @include('partials.maniak-mascot', ['size' => 'loader', 'wave' => true])
+        </div>
         <span id="site-loader-text">Loading Mini Games…</span>
     </div>
     <script>
@@ -952,7 +947,7 @@
     <nav class="nav-bar">
         <div class="nav-inner">
             <a href="{{ url('/') }}" class="nav-logo">
-                <span class="nav-logo-icon">🎮</span>
+                <span class="nav-logo-icon">@include('partials.maniak-mascot', ['size' => 'sm'])</span>
                 <span class="nav-logo-text">Mini Games</span>
             </a>
 
