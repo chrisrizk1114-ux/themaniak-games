@@ -1805,10 +1805,65 @@
         return victimVal - attackerVal;
     }
 
+    function isCheapWinsExpensiveCapture(move, b, color) {
+        const victim = b[move.toRow][move.toCol];
+        const attacker = b[move.fromRow][move.fromCol];
+        if (!victim || !attacker || getPieceColor(victim) === color) return false;
+
+        const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+        const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+        const grossGain = victimVal - attackerVal;
+        if (grossGain < 150) return false;
+
+        const net = captureNetGain(move, b, color);
+        if (net >= 100) return true;
+        if (grossGain >= 400 && net >= grossGain * 0.3) return true;
+        return attackerVal <= 330 && victimVal >= 500 && net >= 0;
+    }
+
+    function findBestCheapCapture(moves, b, color) {
+        let bestMove = null;
+        let bestScore = -Infinity;
+
+        for (const move of moves) {
+            if (!isCheapWinsExpensiveCapture(move, b, color)) continue;
+            if (!isMoveSafeOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol)) continue;
+
+            const victim = b[move.toRow][move.toCol];
+            const attacker = b[move.fromRow][move.fromCol];
+            const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+            const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+            const net = captureNetGain(move, b, color);
+            const score = net * 4 + (victimVal - attackerVal);
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+
+        return bestMove;
+    }
+
+    function filterWhenCheapCaptureAvailable(moves, b, color) {
+        const cheapCapture = findBestCheapCapture(moves, b, color);
+        if (!cheapCapture) return moves;
+
+        return moves.filter(move => {
+            if (isCheapWinsExpensiveCapture(move, b, color)) return true;
+            const piece = b[move.fromRow][move.fromCol];
+            if (!piece || getPieceColor(piece) !== color) return true;
+            const type = piece.toLowerCase();
+            if (type === 'p' && !b[move.toRow][move.toCol]) return false;
+            return true;
+        });
+    }
+
     function isAcceptableCapture(move, b, color) {
         const victim = b[move.toRow][move.toCol];
         if (!victim || getPieceColor(victim) === color) return true;
         if (moveGivesCheck(move, b, color)) return true;
+        if (isCheapWinsExpensiveCapture(move, b, color)) return true;
         return captureNetGain(move, b, color) >= 0;
     }
 
@@ -1851,6 +1906,7 @@
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         if (settings.evalLevel === 'material') return true;
         if (moveGivesCheck(move, b, color)) return true;
+        if (isCheapWinsExpensiveCapture(move, b, color)) return true;
         if (leavesPieceEnPrise(move, b, color)) return false;
 
         const piece = b[move.fromRow][move.fromCol];
@@ -2808,6 +2864,11 @@
         const attacker = b[move.fromRow][move.fromCol];
         if (victim) {
             const net = captureNetGain(move, b, color);
+            const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+            const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+            if (isCheapWinsExpensiveCapture(move, b, color)) {
+                return 135000 + net * 25 + (victimVal - attackerVal);
+            }
             if (net >= 0) {
                 return 100000 + net * 15;
             }
@@ -2851,7 +2912,9 @@
             if (moveGivesCheck(move, b, color)) return true;
             const victim = b[move.toRow][move.toCol];
             if (victim && getPieceColor(victim) !== color) {
-                return captureNetGain(move, b, color) >= 0;
+                if (captureNetGain(move, b, color) >= 0) return true;
+                if (isCheapWinsExpensiveCapture(move, b, color)) return true;
+                return false;
             }
             if (moveOrderingScore(move, b, color) >= 85000) return true;
             return false;
@@ -3126,11 +3189,17 @@
                     if (bestRescue) return bestRescue;
                 }
             }
+
+            const cheapCapture = findBestCheapCapture(moves, board, 'black');
+            if (cheapCapture) return cheapCapture;
         }
 
-        const searchMoves = settings.evalLevel !== 'material'
+        let searchMoves = settings.evalLevel !== 'material'
             ? moves.filter(move => isAcceptableMove(move, board, 'black'))
             : moves;
+        if (settings.evalLevel !== 'material') {
+            searchMoves = filterWhenCheapCaptureAvailable(searchMoves, board, 'black');
+        }
         const candidateMoves = searchMoves.length > 0 ? searchMoves : moves;
 
         if (settings.useIterativeDeepening) {
