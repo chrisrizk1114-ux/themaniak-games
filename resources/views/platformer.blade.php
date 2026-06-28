@@ -534,13 +534,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     const SLIDE_HEIGHT = 22;
     const SLIDE_WIDTH = 36;
-    const WORLD_SIGN_INTERVAL = 500;
-    const TUTORIAL_SIGNS = [
-        { x: 550, text: '⤒ Double jump!', sub: 'Jump again mid-air' },
-        { x: 1100, text: '⬆ Spring ahead!', sub: 'Purple pads boost you' },
-        { x: 1800, text: '🧲 Power-ups!', sub: 'Shield · Magnet · Rocket' },
-        { x: 2500, text: '↓ Slide!', sub: 'Duck under tight gaps' },
-    ];
     const PLAYER_NAME = @json(auth()->check() ? auth()->user()->name : null);
 
     const keys = {};
@@ -561,7 +554,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let bestDistance = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
     bestScoreEl.textContent = String(bestDistance);
 
-    let worldSigns = [];
     let blinkTimer = 120;
     let blinkPhase = 0;
     let hurtFlash = 0;
@@ -612,7 +604,6 @@ document.addEventListener('DOMContentLoaded', () => {
         furthestX = 0;
         checkpoint = { x: 80, y: startY };
         coyoteTimer = 0;
-        worldSigns = [];
         blinkTimer = 120;
         blinkPhase = 0;
         hurtFlash = 0;
@@ -625,8 +616,6 @@ document.addEventListener('DOMContentLoaded', () => {
         runTrailTimer = 0;
         idleTimer = 0;
         magnetArcs = [];
-
-        initWorldSigns();
 
         for (let i = 0; i < 40; i++) {
             stars.push({ x: Math.random() * W * 3, y: Math.random() * H * 0.55, r: Math.random() * 1.5 + 0.4, tw: Math.random() * Math.PI * 2 });
@@ -651,13 +640,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dist >= s.unlock) skin = s;
         }
         return skin;
-    }
-
-    function initWorldSigns() {
-        worldSigns = TUTORIAL_SIGNS.map(s => ({ ...s, kind: 'tutorial' }));
-        for (let m = WORLD_SIGN_INTERVAL; m < WORLD_MAX; m += WORLD_SIGN_INTERVAL) {
-            worldSigns.push({ x: m * 10, text: `${m}m`, sub: m >= 1000 ? 'Keep going!' : 'Milestone ahead', kind: 'distance' });
-        }
     }
 
     function getPlayerRect() {
@@ -1555,46 +1537,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function drawWorldSigns() {
-        worldSigns.forEach(sign => {
-            const sx = sign.x - cameraX;
-            if (sx < -120 || sx > W + 120) return;
-            let sy = H * 0.42;
-            for (const p of platforms) {
-                if (sign.x >= p.x - 20 && sign.x <= p.x + p.width + 20) {
-                    sy = p.y - 72;
-                    break;
-                }
-            }
-            const bob = Math.sin(animFrame * 0.04 + sign.x * 0.01) * 3;
-            const boardW = sign.kind === 'distance' ? 72 : 110;
-            const boardH = sign.kind === 'distance' ? 36 : 44;
-
-            ctx.save();
-            ctx.fillStyle = '#78350f';
-            ctx.fillRect(sx - 3, sy + boardH - 4 + bob, 6, 48);
-
-            ctx.fillStyle = sign.kind === 'distance' ? '#fef3c7' : '#e0f2fe';
-            ctx.strokeStyle = sign.kind === 'distance' ? '#d97706' : '#0284c7';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.roundRect(sx - boardW / 2, sy + bob, boardW, boardH, 6);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = '#0f172a';
-            ctx.font = `bold ${sign.kind === 'distance' ? 14 : 11}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.fillText(sign.text, sx, sy + bob + (sign.sub ? 16 : 22));
-            if (sign.sub) {
-                ctx.font = '9px Arial';
-                ctx.fillStyle = '#475569';
-                ctx.fillText(sign.sub, sx, sy + bob + 32);
-            }
-            ctx.restore();
-        });
-    }
-
     function drawNameTag() {
         if (!PLAYER_NAME || !started || gameOver || !player) return;
         const sx = player.x - cameraX + player.width / 2;
@@ -1865,7 +1807,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         drawBackground();
         drawShootingStars();
-        drawWorldSigns();
         drawPlatforms();
         drawCoins();
         drawPowerups();
