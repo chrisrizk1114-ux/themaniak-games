@@ -1303,7 +1303,6 @@
                     <button class="diff-btn" type="button" onclick="startSoloGame('medium')" title="Smart — plans ahead and protects pieces">Medium</button>
                     <button class="diff-btn" type="button" onclick="startSoloGame('hard')" title="Expert — deep search, sharp tactics, long thinks">Hard</button>
                 </div>
-                <p class="mode-desc" style="margin-top:0.65rem;font-size:0.88rem;opacity:0.75;">Easy is relaxed. Medium is sharp (8-ply). Hard is expert-level (11–18 ply, up to 22s think).</p>
             </div>
             <div class="mode-card">
                 <h3>Two Players</h3>
@@ -1777,19 +1776,52 @@
     }
 
     function seeCaptureGain(move, b) {
-        const victim = b[move.toRow][move.toCol];
-        const attacker = b[move.fromRow][move.fromCol];
-        if (!victim || !attacker) return 0;
-        const gain = staticExchangeEval(b, move.toRow, move.toCol, getPieceColor(victim));
-        return gain;
+        return captureNetGain(move, b, getPieceColor(b[move.fromRow][move.fromCol]));
     }
 
-    function staticExchangeEval(b, row, col, victimColor) {
-        const victim = b[row][col];
-        if (!victim) return 0;
-        let sideToMove = victimColor === 'white' ? 'black' : 'white';
-        let targetVal = PIECE_VALUES[victim.toLowerCase()] || 0;
-        let gain = 0;
+    function captureNetGain(move, b, color) {
+        const victim = b[move.toRow][move.toCol];
+        const attacker = b[move.fromRow][move.fromCol];
+        if (!victim || !attacker || getPieceColor(victim) === color) return 0;
+
+        const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+        const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+        const after = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(after, move.toRow, move.toCol, color);
+
+        if (!toThreat.attacked) return victimVal;
+        if (toThreat.minAttackerVal !== null && toThreat.minAttackerVal > attackerVal) {
+            return victimVal - toThreat.minAttackerVal;
+        }
+        return victimVal - attackerVal;
+    }
+
+    function isAcceptableCapture(move, b, color) {
+        const victim = b[move.toRow][move.toCol];
+        if (!victim || getPieceColor(victim) === color) return true;
+        if (moveGivesCheck(move, b, color)) return true;
+        return captureNetGain(move, b, color) >= 0;
+    }
+
+    function isAcceptableMove(move, b, color) {
+        if (!isAcceptableCapture(move, b, color)) return false;
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        if (settings.evalLevel === 'material') return true;
+        if (moveGivesCheck(move, b, color)) return true;
+
+        const piece = b[move.fromRow][move.fromCol];
+        const type = piece ? piece.toLowerCase() : '';
+        const risk = moveRiskPenalty(move, b, color);
+        const riskLimit = type === 'q' ? 200 : type === 'r' ? 300 : type === 'b' || type === 'n' ? 360 : 500;
+        return risk < riskLimit;
+    }
+
+    function staticExchangeEval(b, row, col, sideToMove) {
+        const occupant = b[row][col];
+        if (!occupant) return 0;
+
+        let balance = PIECE_VALUES[occupant.toLowerCase()] || 0;
+        let side = sideToMove;
         const scratch = cloneBoard(b);
         scratch[row][col] = '';
 
@@ -1799,7 +1831,7 @@
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
                     const p = scratch[r][c];
-                    if (!p || getPieceColor(p) !== sideToMove) continue;
+                    if (!p || getPieceColor(p) !== side) continue;
                     if (!pieceAttacksSquare(scratch, r, c, row, col)) continue;
                     const val = PIECE_VALUES[p.toLowerCase()] || 0;
                     if (val < bestVal) {
@@ -1810,13 +1842,13 @@
             }
             if (!bestAttacker) break;
 
-            gain = targetVal - bestVal;
+            balance = bestAttacker.val - balance;
             scratch[bestAttacker.r][bestAttacker.c] = '';
             scratch[row][col] = bestAttacker.piece;
-            targetVal = bestVal;
-            sideToMove = getPieceColor(bestAttacker.piece) === 'white' ? 'black' : 'white';
+            side = side === 'white' ? 'black' : 'white';
         }
-        return gain;
+
+        return balance;
     }
 
     function bishopPairScore(b, color) {
@@ -2476,10 +2508,13 @@
         }
 
         const attacked = minAttackerVal !== null;
-        const hanging = attacked && (!defended || minAttackerVal < victimVal);
+        const enemySeeGain = attacked
+            ? Math.max(0, -staticExchangeEval(b, row, col, enemyColor))
+            : 0;
+        const hanging = attacked && (!defended || minAttackerVal < victimVal || enemySeeGain >= victimVal * 0.85);
         const badTrade = attacked && defended && minAttackerVal < victimVal;
 
-        return { attacked, defended, hanging, badTrade, minAttackerVal, victimVal, attackerCount };
+        return { attacked, defended, hanging, badTrade, minAttackerVal, minDefenderVal, victimVal, attackerCount, enemySeeGain };
     }
 
     function hangingPieceScore(b, color) {
@@ -2494,9 +2529,11 @@
                 if (!piece || getPieceColor(piece) !== color) continue;
                 const threat = getSquareThreat(b, r, c, color);
                 if (threat.hanging) {
-                    penalty += threat.victimVal * 0.98 * threatMult;
+                    penalty += threat.victimVal * 1.05 * threatMult;
                 } else if (threat.badTrade) {
-                    penalty += (threat.victimVal - threat.minAttackerVal) * 0.75 * threatMult;
+                    penalty += (threat.victimVal - threat.minAttackerVal) * 0.95 * threatMult;
+                } else if (threat.enemySeeGain > 0) {
+                    penalty += threat.enemySeeGain * 0.85 * threatMult;
                 } else if (threat.attacked) {
                     penalty += Math.min(threat.victimVal * 0.28, 90) * threatMult;
                 }
@@ -2518,6 +2555,70 @@
             }
         }
         return pieces;
+    }
+
+    function moveRiskPenalty(move, b, color) {
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        if (settings.evalLevel === 'material') return 0;
+
+        const piece = b[move.fromRow][move.fromCol];
+        if (!piece || getPieceColor(piece) !== color) return 0;
+        const type = piece.toLowerCase();
+        if (type === 'k' || type === 'p') return 0;
+
+        const pieceVal = PIECE_VALUES[type] || 0;
+        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
+        let risk = 0;
+
+        if (toThreat.hanging) {
+            risk += pieceVal;
+        } else if (toThreat.badTrade) {
+            risk += (pieceVal - toThreat.minAttackerVal) * 0.95;
+        } else if (toThreat.attacked && toThreat.minAttackerVal !== null && toThreat.minAttackerVal < pieceVal) {
+            risk += (pieceVal - toThreat.minAttackerVal) * 0.6;
+        }
+
+        const gamePly = positionHistory.length;
+        const backRank = color === 'white' ? 7 : 0;
+        if (type === 'q' && gamePly <= 28 && move.toRow !== backRank) {
+            if (countDevelopedMinorPieces(b, color) < 2) risk += 220;
+            if (toThreat.attacked) risk += 280;
+        }
+        if ((type === 'q' || type === 'r') && toThreat.attacked && moveCreatesThreat(move, b, color)) {
+            if (toThreat.minAttackerVal !== null && toThreat.minAttackerVal < pieceVal) {
+                risk += pieceVal * 0.5;
+            }
+        }
+
+        return risk;
+    }
+
+    function earlyMajorExposureScore(b, color) {
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        if (settings.evalLevel === 'material' || positionHistory.length > 32) return 0;
+
+        let penalty = 0;
+        const backRank = color === 'white' ? 7 : 0;
+        const minors = countDevelopedMinorPieces(b, color);
+
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color) continue;
+                const type = piece.toLowerCase();
+                if (type !== 'q' && type !== 'r') continue;
+                if (r === backRank) continue;
+
+                const threat = getSquareThreat(b, r, c, color);
+                if (type === 'q' && minors < 2) penalty += 160;
+                if (threat.hanging) penalty += PIECE_VALUES[type] * 0.35;
+                else if (threat.attacked && threat.minAttackerVal !== null && threat.minAttackerVal < PIECE_VALUES[type]) {
+                    penalty += (PIECE_VALUES[type] - threat.minAttackerVal) * 0.4;
+                }
+            }
+        }
+        return penalty;
     }
 
     function safetyMoveBonus(move, b, color) {
@@ -2543,11 +2644,13 @@
 
         const victim = b[move.toRow][move.toCol];
         if (victim && getPieceColor(victim) !== color && fromThreat.attacked) {
-            const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
-            if (victimVal <= fromThreat.victimVal) {
-                bonus += 90000 + victimVal;
-            }
+            const net = captureNetGain(move, b, color);
+            if (net >= 0) bonus += 90000 + net;
+            else bonus -= 120000 + Math.abs(net);
         }
+
+        const risk = moveRiskPenalty(move, b, color);
+        if (risk > 0) bonus -= risk * 2.5;
 
         return bonus;
     }
@@ -2575,6 +2678,8 @@
             score += hangingPieceScore(b, 'white');
             score += developmentScore(b, 'black');
             score -= developmentScore(b, 'white');
+            score -= earlyMajorExposureScore(b, 'black');
+            score += earlyMajorExposureScore(b, 'white');
         }
         if (settings.evalLevel === 'advanced') {
             const posMult = settings.evalTier === 'brutal' ? 1.38 : settings.evalTier === 'expert' ? 1.2 : settings.evalTier === 'strong' ? 1.08 : 1;
@@ -2608,7 +2713,13 @@
         for (const [r, c] of center) {
             const piece = b[r][c];
             if (piece && getPieceColor(piece) === color) {
-                score += piece.toLowerCase() === 'p' ? 8 : 14;
+                const type = piece.toLowerCase();
+                if (type === 'p') score += 8;
+                else if (type === 'q') {
+                    const threat = getSquareThreat(b, r, c, color);
+                    if (!threat.attacked) score += 8;
+                    else score -= threat.hanging ? 90 : 45;
+                } else score += 14;
             }
         }
         return score;
@@ -2646,20 +2757,23 @@
         const victim = b[move.toRow][move.toCol];
         const attacker = b[move.fromRow][move.fromCol];
         if (victim) {
-            const seeGain = staticExchangeEval(b, move.toRow, move.toCol, getPieceColor(victim));
-            if (seeGain >= 0) {
-                return 100000 + seeGain * 12;
+            const net = captureNetGain(move, b, color);
+            if (net >= 0) {
+                return 100000 + net * 15;
             }
-            const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
-            const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
-            return 100000 + victimVal * 12 - attackerVal + seeGain;
+            return 5000 + net;
         }
         if (moveGivesCheck(move, b, color)) {
             return 85000;
         }
-        if (moveCreatesThreat(move, b, color)) {
-            const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
-            return 60000 + attackerVal;
+        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
+        const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+        if (!toThreat.hanging && !toThreat.badTrade && moveCreatesThreat(move, b, color)) {
+            const safeThreat = !toThreat.attacked
+                || (toThreat.minAttackerVal !== null && toThreat.minAttackerVal >= attackerVal);
+            if (safeThreat) return 60000 + attackerVal;
+            return 4000 - moveRiskPenalty(move, b, color);
         }
         const attackerType = attacker.toLowerCase();
         if (attackerType === 'p' && (move.toRow === 0 || move.toRow === 7)) {
@@ -2686,9 +2800,12 @@
     function getTacticalMoves(color, b) {
         return getAllMovesForAI(color, b).filter(move => {
             if (moveGivesCheck(move, b, color)) return true;
-            if (moveOrderingScore(move, b, color) >= 60000) return true;
-            const gain = seeCaptureGain(move, b);
-            return gain >= -50;
+            const victim = b[move.toRow][move.toCol];
+            if (victim && getPieceColor(victim) !== color) {
+                return captureNetGain(move, b, color) >= 0;
+            }
+            if (moveOrderingScore(move, b, color) >= 85000) return true;
+            return false;
         });
     }
 
@@ -2699,7 +2816,10 @@
         const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
         if (!toThreat.hanging && !toThreat.badTrade) return true;
         const victim = b[move.toRow][move.toCol];
-        return !!(victim && getPieceColor(victim) !== color);
+        if (victim && getPieceColor(victim) !== color) {
+            return captureNetGain(move, b, color) >= 0;
+        }
+        return false;
     }
 
     function quiescence(b, depth, alpha, beta, maximizing) {
@@ -2959,13 +3079,18 @@
             }
         }
 
+        const searchMoves = settings.evalLevel !== 'material'
+            ? moves.filter(move => isAcceptableMove(move, board, 'black'))
+            : moves;
+        const candidateMoves = searchMoves.length > 0 ? searchMoves : moves;
+
         if (settings.useIterativeDeepening) {
-            return iterativeDeepeningSearch(moves, settings);
+            return iterativeDeepeningSearch(candidateMoves, settings);
         }
 
         const depth = settings.maxDepth || settings.depth || 3;
         const scored = [];
-        for (const move of moves) {
+        for (const move of candidateMoves) {
             const score = scoreMove(move, depth, settings);
             scored.push({ move, score });
         }
