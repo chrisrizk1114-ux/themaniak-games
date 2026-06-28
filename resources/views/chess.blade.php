@@ -1795,7 +1795,7 @@
 
         const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
         const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
-        const after = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
         const toThreat = getSquareThreat(after, move.toRow, move.toCol, color);
 
         if (!toThreat.attacked) return victimVal;
@@ -1812,11 +1812,46 @@
         return captureNetGain(move, b, color) >= 0;
     }
 
+    function isMoveSafeOnBoard(b, fromRow, fromCol, toRow, toCol) {
+        const piece = b[fromRow][fromCol];
+        if (!piece) return false;
+        const testBoard = makeMoveOnBoard(b, fromRow, fromCol, toRow, toCol);
+        return !isInCheck(testBoard, getPieceColor(piece));
+    }
+
+    function enemyCaptureNetGain(b, row, col, color) {
+        const victim = b[row][col];
+        if (!victim || getPieceColor(victim) !== color) return 0;
+
+        const enemy = color === 'white' ? 'black' : 'white';
+        let best = -Infinity;
+
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const p = b[r][c];
+                if (!p || getPieceColor(p) !== enemy) continue;
+                if (!pieceAttacksSquare(b, r, c, row, col)) continue;
+                if (!isMoveSafeOnBoard(b, r, c, row, col)) continue;
+                const move = { fromRow: r, fromCol: c, toRow: row, toCol: col };
+                const net = captureNetGain(move, b, enemy);
+                if (net > best) best = net;
+            }
+        }
+
+        return best === -Infinity ? 0 : best;
+    }
+
+    function leavesPieceEnPrise(move, b, color) {
+        const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
+        return enemyCaptureNetGain(after, move.toRow, move.toCol, color) > 0;
+    }
+
     function isAcceptableMove(move, b, color) {
         if (!isAcceptableCapture(move, b, color)) return false;
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
         if (settings.evalLevel === 'material') return true;
         if (moveGivesCheck(move, b, color)) return true;
+        if (leavesPieceEnPrise(move, b, color)) return false;
 
         const piece = b[move.fromRow][move.fromCol];
         const type = piece ? piece.toLowerCase() : '';
@@ -2161,18 +2196,18 @@
         return b.map(row => row.slice());
     }
 
-    function makeMoveNoCheck(fromRow, fromCol, toRow, toCol, promotionPiece = null, epTarget = enPassantTarget) {
-        const newBoard = cloneBoard(board);
+    function makeMoveOnBoard(b, fromRow, fromCol, toRow, toCol, promotionPiece = null, epTarget = enPassantTarget) {
+        const newBoard = cloneBoard(b);
         const piece = newBoard[fromRow][fromCol];
-        
+
         if (!piece) return newBoard;
-        
+
         newBoard[toRow][toCol] = piece;
         newBoard[fromRow][fromCol] = '';
-        
+
         const type = piece.toLowerCase();
         const color = getPieceColor(piece);
-        
+
         if (type === 'k' && Math.abs(toCol - fromCol) === 2) {
             if (toCol > fromCol) {
                 newBoard[fromRow][5] = newBoard[fromRow][7];
@@ -2182,7 +2217,7 @@
                 newBoard[fromRow][0] = '';
             }
         }
-        
+
         if (type === 'p' && epTarget && toRow === epTarget.row && toCol === epTarget.col) {
             if (color === 'white') {
                 newBoard[toRow + 1][toCol] = '';
@@ -2190,13 +2225,17 @@
                 newBoard[toRow - 1][toCol] = '';
             }
         }
-        
+
         if (type === 'p' && (toRow === 0 || toRow === 7)) {
             const promo = promotionPiece || 'q';
             newBoard[toRow][toCol] = color === 'white' ? promo.toUpperCase() : promo.toLowerCase();
         }
-        
+
         return newBoard;
+    }
+
+    function makeMoveNoCheck(fromRow, fromCol, toRow, toCol, promotionPiece = null, epTarget = enPassantTarget) {
+        return makeMoveOnBoard(board, fromRow, fromCol, toRow, toCol, promotionPiece, epTarget);
     }
 
     function getKingPosition(b, color) {
@@ -2517,10 +2556,11 @@
         }
 
         const attacked = minAttackerVal !== null;
+        const attackedByMoreValuable = attacked && !defended && minAttackerVal !== null && minAttackerVal > victimVal;
         const enemySeeGain = attacked
             ? Math.max(0, -staticExchangeEval(b, row, col, enemyColor))
             : 0;
-        const hanging = attacked && (!defended || minAttackerVal < victimVal || enemySeeGain >= victimVal * 0.85);
+        const hanging = attacked && (!defended || minAttackerVal < victimVal) || attackedByMoreValuable;
         const badTrade = attacked && defended && minAttackerVal < victimVal;
 
         return { attacked, defended, hanging, badTrade, minAttackerVal, minDefenderVal, victimVal, attackerCount, enemySeeGain };
@@ -2576,9 +2616,12 @@
         if (type === 'k' || type === 'p') return 0;
 
         const pieceVal = PIECE_VALUES[type] || 0;
-        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const newBoard = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
         const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
         let risk = 0;
+
+        const enemyProfit = enemyCaptureNetGain(newBoard, move.toRow, move.toCol, color);
+        if (enemyProfit > 0) risk += pieceVal + enemyProfit;
 
         if (toThreat.hanging) {
             risk += pieceVal;
@@ -2594,10 +2637,8 @@
             if (countDevelopedMinorPieces(b, color) < 2) risk += 220;
             if (toThreat.attacked) risk += 280;
         }
-        if ((type === 'q' || type === 'r') && toThreat.attacked && moveCreatesThreat(move, b, color)) {
-            if (toThreat.minAttackerVal !== null && toThreat.minAttackerVal < pieceVal) {
-                risk += pieceVal * 0.5;
-            }
+        if ((type === 'q' || type === 'r' || type === 'b' || type === 'n') && moveCreatesThreat(move, b, color) && enemyProfit > 0) {
+            risk += pieceVal * 0.85;
         }
 
         return risk;
@@ -2775,14 +2816,13 @@
         if (moveGivesCheck(move, b, color)) {
             return 85000;
         }
-        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const newBoard = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
         const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
         const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+        const enemyProfit = enemyCaptureNetGain(newBoard, move.toRow, move.toCol, color);
         if (!toThreat.hanging && !toThreat.badTrade && moveCreatesThreat(move, b, color)) {
-            const safeThreat = !toThreat.attacked
-                || (toThreat.minAttackerVal !== null && toThreat.minAttackerVal >= attackerVal);
-            if (safeThreat) return 60000 + attackerVal;
-            return 4000 - moveRiskPenalty(move, b, color);
+            if (enemyProfit <= 0) return 60000 + attackerVal;
+            return 2000 - enemyProfit;
         }
         const attackerType = attacker.toLowerCase();
         if (attackerType === 'p' && (move.toRow === 0 || move.toRow === 7)) {
