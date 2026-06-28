@@ -8,11 +8,20 @@
 <style>
     html:has(.chess-page #gameArea.active),
     body:has(.chess-page #gameArea.active) {
-        overflow: hidden !important;
-        height: 100% !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        height: auto !important;
         width: 100%;
-        overscroll-behavior: none;
-        touch-action: manipulation;
+    }
+
+    @media (max-width: 960px), (hover: none) and (pointer: coarse) {
+        html:has(.chess-page #gameArea.active),
+        body:has(.chess-page #gameArea.active) {
+            overflow: hidden !important;
+            height: 100% !important;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+        }
     }
 
     .main-content:has(.chess-page) {
