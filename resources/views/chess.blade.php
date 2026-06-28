@@ -2653,13 +2653,81 @@
             for (let c = 0; c < 8; c++) {
                 const piece = b[r][c];
                 if (!piece || getPieceColor(piece) !== color) continue;
+                const type = piece.toLowerCase();
                 const threat = getSquareThreat(b, r, c, color);
-                if (threat.hanging || threat.badTrade) {
-                    pieces.push({ row: r, col: c, threat, type: piece.toLowerCase() });
+                const minorAttacked = (type === 'n' || type === 'b') && (threat.attacked || threat.enemySeeGain > 0);
+                if (threat.hanging || threat.badTrade || minorAttacked) {
+                    pieces.push({ row: r, col: c, threat, type });
                 }
             }
         }
         return pieces;
+    }
+
+    function findAttackedMinors(b, color) {
+        const pieces = [];
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color) continue;
+                const type = piece.toLowerCase();
+                if (type !== 'n' && type !== 'b') continue;
+                const threat = getSquareThreat(b, r, c, color);
+                if (threat.attacked || threat.hanging || threat.enemySeeGain > 0) {
+                    pieces.push({ row: r, col: c, threat, type });
+                }
+            }
+        }
+        return pieces;
+    }
+
+    function minorSafetyDanger(b, color) {
+        let danger = 0;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color) continue;
+                const type = piece.toLowerCase();
+                if (type !== 'n' && type !== 'b') continue;
+                const threat = getSquareThreat(b, r, c, color);
+                if (!threat.attacked && !threat.hanging && threat.enemySeeGain <= 0) continue;
+                let pieceDanger = threat.hanging
+                    ? threat.victimVal
+                    : threat.enemySeeGain > 0
+                        ? threat.enemySeeGain + threat.victimVal * 0.45
+                        : threat.victimVal * 0.55;
+                if (type === 'n') pieceDanger *= 1.2;
+                danger += pieceDanger;
+            }
+        }
+        return danger;
+    }
+
+    function isProtectingMinorMove(move, b, color) {
+        const before = minorSafetyDanger(b, color);
+        if (before === 0) return false;
+
+        const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const afterDanger = minorSafetyDanger(after, color);
+        if (afterDanger >= before) return false;
+
+        const piece = b[move.fromRow][move.fromCol];
+        if (piece && getPieceColor(piece) === color) {
+            const type = piece.toLowerCase();
+            const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
+            if ((type === 'n' || type === 'b') && fromThreat.attacked) {
+                const toThreat = getSquareThreat(after, move.toRow, move.toCol, color);
+                if (!toThreat.hanging && toThreat.enemySeeGain <= 0) return true;
+            }
+        }
+
+        return before - afterDanger >= 80;
+    }
+
+    function isSafeCheapCapture(move, b, color) {
+        if (!isCheapWinsExpensiveCapture(move, b, color)) return false;
+        const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
+        return minorSafetyDanger(after, color) <= minorSafetyDanger(b, color);
     }
 
     function moveRiskPenalty(move, b, color) {
@@ -2735,7 +2803,7 @@
         if (!piece || getPieceColor(piece) !== color) return 0;
 
         const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
-        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const newBoard = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
         const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
         let bonus = 0;
 
@@ -2743,6 +2811,7 @@
             bonus += 120000 + fromThreat.victimVal;
         } else if (fromThreat.attacked && !toThreat.attacked) {
             bonus += 70000 + fromThreat.victimVal * 0.5;
+            if (piece.toLowerCase() === 'n') bonus += 45000;
         } else if (fromThreat.attacked && toThreat.minAttackerVal !== null && fromThreat.minAttackerVal !== null
             && toThreat.minAttackerVal > fromThreat.minAttackerVal) {
             bonus += 40000;
@@ -2782,6 +2851,8 @@
             if (isInCheck(b, 'black')) score += 70;
             score -= hangingPieceScore(b, 'black');
             score += hangingPieceScore(b, 'white');
+            score -= minorSafetyDanger(b, 'black') * 0.35;
+            score += minorSafetyDanger(b, 'white') * 0.35;
             score += developmentScore(b, 'black');
             score -= developmentScore(b, 'white');
             score -= earlyMajorExposureScore(b, 'black');
@@ -2922,14 +2993,16 @@
     }
 
     function isSavingMove(move, b, color) {
+        if (isProtectingMinorMove(move, b, color)) return true;
+
         const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
         if (!fromThreat.attacked) return false;
-        const newBoard = makeMoveNoCheck(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const newBoard = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
         const toThreat = getSquareThreat(newBoard, move.toRow, move.toCol, color);
-        if (!toThreat.hanging && !toThreat.badTrade) return true;
+        if (!toThreat.hanging && !toThreat.badTrade && toThreat.enemySeeGain <= 0) return true;
         const victim = b[move.toRow][move.toCol];
         if (victim && getPieceColor(victim) !== color) {
-            return captureNetGain(move, b, color) >= 0;
+            return captureNetGain(move, b, color) >= 0 && minorSafetyDanger(newBoard, color) < minorSafetyDanger(b, color);
         }
         return false;
     }
@@ -3171,6 +3244,25 @@
         }
 
         if (settings.evalLevel !== 'material') {
+            const attackedMinors = findAttackedMinors(board, 'black');
+            if (attackedMinors.length > 0) {
+                const protectMoves = moves.filter(move => isProtectingMinorMove(move, board, 'black'));
+                if (protectMoves.length > 0) {
+                    let bestProtect = null;
+                    let bestImprovement = -1;
+                    for (const move of protectMoves) {
+                        if (searchTimeUp()) break;
+                        const after = makeMoveOnBoard(board, move.fromRow, move.fromCol, move.toRow, move.toCol);
+                        const improvement = minorSafetyDanger(board, 'black') - minorSafetyDanger(after, 'black');
+                        if (improvement > bestImprovement) {
+                            bestImprovement = improvement;
+                            bestProtect = move;
+                        }
+                    }
+                    if (bestProtect) return bestProtect;
+                }
+            }
+
             const hanging = findHangingPieces(board, 'black');
             if (hanging.length > 0) {
                 const rescueMoves = moves.filter(move => isSavingMove(move, board, 'black'));
@@ -3191,7 +3283,9 @@
             }
 
             const cheapCapture = findBestCheapCapture(moves, board, 'black');
-            if (cheapCapture) return cheapCapture;
+            if (cheapCapture && (minorSafetyDanger(board, 'black') === 0 || isSafeCheapCapture(cheapCapture, board, 'black'))) {
+                return cheapCapture;
+            }
         }
 
         let searchMoves = settings.evalLevel !== 'material'
