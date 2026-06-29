@@ -1510,6 +1510,34 @@
             useCheckExtension: true,
             useOpeningBook: true,
             openingBookPlies: 18,
+            usePieceRoles: true,
+        },
+    };
+
+    const HARD_PIECE_ROLES = {
+        p: {
+            offense: 'Advance chains, push passed pawns, win safe pawn fights',
+            defense: 'Hold structure, block attackers, shield the king',
+        },
+        n: {
+            offense: 'Fork threats, occupy outposts, attack weak pawns',
+            defense: 'Escape when threatened, defend key squares, counter-attack to safety',
+        },
+        b: {
+            offense: 'Pressure long diagonals, pin and target weak squares',
+            defense: 'Guard diagonals, protect the king, support pawn chains',
+        },
+        r: {
+            offense: 'Seize open files, invade the 7th rank, support breakthroughs',
+            defense: 'Defend the back rank, hold files, protect pawns',
+        },
+        q: {
+            offense: 'Coordinate safely, strike when the position is stable',
+            defense: 'Avoid unnecessary risk, stay protected, support other pieces',
+        },
+        k: {
+            offense: 'Activate in the endgame, support passed pawns',
+            defense: 'Stay safe in the middlegame, keep a pawn shield, avoid exposure',
         },
     };
 
@@ -3094,6 +3122,10 @@
                 score += mobilityScore(b, 'black') * mw * mobilityFactor;
                 score -= mobilityScore(b, 'white') * mw * mobilityFactor;
             }
+            if (settings.usePieceRoles) {
+                score += hardPieceRoleBoardScore(b, 'black');
+                score -= hardPieceRoleBoardScore(b, 'white');
+            }
         }
         return score;
     }
@@ -3133,6 +3165,126 @@
         }
         board = originalBoard;
         return count;
+    }
+
+    function usesHardPieceRoles() {
+        const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
+        return settings.usePieceRoles === true && settings.evalLevel === 'advanced';
+    }
+
+    function countBoardPieces(b) {
+        let total = 0;
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                if (b[r][c]) total++;
+            }
+        }
+        return total;
+    }
+
+    function hardPieceRoleMoveScore(move, b, color) {
+        if (!usesHardPieceRoles()) return 0;
+
+        const piece = b[move.fromRow][move.fromCol];
+        if (!piece || getPieceColor(piece) !== color) return 0;
+
+        const type = piece.toLowerCase();
+        const victim = b[move.toRow][move.toCol];
+        const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(after, move.toRow, move.toCol, color);
+        const forward = color === 'black' ? move.toRow < move.fromRow : move.toRow > move.fromRow;
+        let score = 0;
+
+        switch (type) {
+            case 'p':
+                if (victim && isSafePawnCapture(move, b, color)) score += 55;
+                else if (!victim && forward) score += 22;
+                if (move.toRow === 0 || move.toRow === 7) score += 280;
+                if (!victim && moveCreatesThreat(move, b, color)) score += 12;
+                break;
+            case 'n':
+                if (isKnightAttackEscape(move, b, color)) score += 95;
+                else if (isKnightEscapeMove(move, b, color)) score += 75;
+                if (victim && captureNetGain(move, b, color) >= 0) score += 40;
+                if (!victim && !toThreat.attacked && toThreat.enemySeeGain <= 0) score += 28;
+                break;
+            case 'b':
+                if (victim && captureNetGain(move, b, color) >= 0) score += 38;
+                if (!toThreat.attacked && toThreat.enemySeeGain <= 0) score += 24;
+                if (moveGivesCheck(move, b, color)) score += 30;
+                break;
+            case 'r': {
+                const seventh = color === 'black' ? 1 : 6;
+                if (move.toRow === seventh) score += 60;
+                if (isFileOpen(after, move.toCol) || isSemiOpenFile(after, move.toCol, color)) score += 34;
+                if (victim && captureNetGain(move, b, color) >= 0) score += 32;
+                const homeRank = color === 'black' ? 0 : 7;
+                if (move.toRow === homeRank && !victim) score += 26;
+                break;
+            }
+            case 'q':
+                if (isRiskyQueenMove(move, b, color)) score -= 220;
+                else if (!toThreat.attacked && toThreat.enemySeeGain <= 0) score += 30;
+                if (victim && captureNetGain(move, b, color) >= 200) score += 55;
+                if (moveGivesCheck(move, b, color) && !isRiskyQueenMove(move, b, color)) score += 35;
+                break;
+            case 'k': {
+                const pieces = countBoardPieces(b);
+                const homeRank = color === 'black' ? 0 : 7;
+                if (pieces > 20 && move.fromRow === homeRank && !victim) score -= 45;
+                if (pieces <= 12 && !toThreat.attacked) score += 20;
+                break;
+            }
+        }
+
+        return score;
+    }
+
+    function hardPieceRoleBoardScore(b, color) {
+        if (!usesHardPieceRoles()) return 0;
+
+        let score = passedPawnScore(b, color) * 0.08;
+        const pieces = countBoardPieces(b);
+        const homeRank = color === 'black' ? 0 : 7;
+        const seventh = color === 'black' ? 1 : 6;
+
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color) continue;
+                const type = piece.toLowerCase();
+                const threat = getSquareThreat(b, r, c, color);
+
+                switch (type) {
+                    case 'p':
+                        if (r === (color === 'black' ? 1 : 6)) score += 6;
+                        break;
+                    case 'n':
+                        if (!threat.attacked && threat.enemySeeGain <= 0) score += 14;
+                        else if (threat.attacked) score -= 18;
+                        break;
+                    case 'b':
+                        if (!threat.attacked) score += 10;
+                        score += bishopPairScore(b, color) * 0.15;
+                        break;
+                    case 'r':
+                        if (r === seventh) score += 22;
+                        if (isFileOpen(b, c) || isSemiOpenFile(b, c, color)) score += 16;
+                        if (r === homeRank) score += 12;
+                        break;
+                    case 'q':
+                        if (!threat.attacked && !threat.hanging) score += 12;
+                        else score -= threat.hanging ? 55 : 28;
+                        break;
+                    case 'k':
+                        if (pieces > 20 && r === homeRank) score += 18;
+                        if (pieces <= 12) score += kingSafetyScore(b, color) * 0.2;
+                        break;
+                }
+            }
+        }
+
+        return score;
     }
 
     function moveOrderingScore(move, b, color = 'black', ply = 0) {
@@ -3186,6 +3338,8 @@
         if (attackerType === 'p' && (move.toRow === 0 || move.toRow === 7)) {
             return 90000;
         }
+        const roleScore = hardPieceRoleMoveScore(move, b, color);
+        if (roleScore !== 0) return 56000 + roleScore;
         return 0;
     }
 
