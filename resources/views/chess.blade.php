@@ -1821,6 +1821,38 @@
         return attackerVal <= 330 && victimVal >= 500 && net >= 0;
     }
 
+    function isSafePawnCapture(move, b, color) {
+        const victim = b[move.toRow][move.toCol];
+        const attacker = b[move.fromRow][move.fromCol];
+        if (!victim || !attacker || getPieceColor(victim) === color) return false;
+        if (victim.toLowerCase() !== 'p') return false;
+        if (!isMoveSafeOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol)) return false;
+        return captureNetGain(move, b, color) >= 0;
+    }
+
+    function findBestSafePawnCapture(moves, b, color) {
+        let bestMove = null;
+        let bestScore = -Infinity;
+
+        for (const move of moves) {
+            if (!isSafePawnCapture(move, b, color)) continue;
+
+            const victim = b[move.toRow][move.toCol];
+            const attacker = b[move.fromRow][move.fromCol];
+            const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+            const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
+            const net = captureNetGain(move, b, color);
+            const score = net * 4 + victimVal - attackerVal * 0.15;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+
+        return bestMove;
+    }
+
     function findBestCheapCapture(moves, b, color) {
         let bestMove = null;
         let bestScore = -Infinity;
@@ -1847,14 +1879,15 @@
 
     function filterWhenCheapCaptureAvailable(moves, b, color) {
         const cheapCapture = findBestCheapCapture(moves, b, color);
-        if (!cheapCapture) return moves;
+        const pawnCapture = findBestSafePawnCapture(moves, b, color);
+        if (!cheapCapture && !pawnCapture) return moves;
 
         return moves.filter(move => {
             if (isCheapWinsExpensiveCapture(move, b, color)) return true;
+            if (isSafePawnCapture(move, b, color)) return true;
             const piece = b[move.fromRow][move.fromCol];
             if (!piece || getPieceColor(piece) !== color) return true;
-            const type = piece.toLowerCase();
-            if (type === 'p' && !b[move.toRow][move.toCol]) return false;
+            if (!b[move.toRow][move.toCol]) return false;
             return true;
         });
     }
@@ -1864,6 +1897,7 @@
         if (!victim || getPieceColor(victim) === color) return true;
         if (moveGivesCheck(move, b, color)) return true;
         if (isCheapWinsExpensiveCapture(move, b, color)) return true;
+        if (isSafePawnCapture(move, b, color)) return true;
         return captureNetGain(move, b, color) >= 0;
     }
 
@@ -1907,6 +1941,7 @@
         if (settings.evalLevel === 'material') return true;
         if (moveGivesCheck(move, b, color)) return true;
         if (isCheapWinsExpensiveCapture(move, b, color)) return true;
+        if (isSafePawnCapture(move, b, color)) return true;
         if (leavesPieceEnPrise(move, b, color)) return false;
 
         const piece = b[move.fromRow][move.fromCol];
@@ -2940,6 +2975,9 @@
             if (isCheapWinsExpensiveCapture(move, b, color)) {
                 return 135000 + net * 25 + (victimVal - attackerVal);
             }
+            if (victim.toLowerCase() === 'p' && net >= 0) {
+                return 125000 + net * 22 + (500 - attackerVal) * 0.05;
+            }
             if (net >= 0) {
                 return 100000 + net * 15;
             }
@@ -3285,6 +3323,11 @@
             const cheapCapture = findBestCheapCapture(moves, board, 'black');
             if (cheapCapture && (minorSafetyDanger(board, 'black') === 0 || isSafeCheapCapture(cheapCapture, board, 'black'))) {
                 return cheapCapture;
+            }
+
+            const safePawnCapture = findBestSafePawnCapture(moves, board, 'black');
+            if (safePawnCapture) {
+                return safePawnCapture;
             }
         }
 
