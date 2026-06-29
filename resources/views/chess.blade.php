@@ -1464,8 +1464,8 @@
             randomMoveChance: 0.42,
             blunderChance: 0.38,
             topPool: 1,
-            thinkMin: 280,
-            thinkMax: 650,
+            thinkMin: 2000,
+            thinkMax: 5000,
             label: 'Easy',
             evalLevel: 'material',
             useQuiescence: false,
@@ -1475,8 +1475,8 @@
             maxDepth: 8,
             randomMoveChance: 0,
             blunderChance: 0,
-            thinkMin: 3200,
-            thinkMax: 6800,
+            thinkMin: 2000,
+            thinkMax: 5000,
             label: 'Medium',
             evalLevel: 'advanced',
             evalTier: 'strong',
@@ -1495,8 +1495,8 @@
             searchUntilTimeUp: true,
             randomMoveChance: 0,
             blunderChance: 0,
-            thinkMin: 12000,
-            thinkMax: 22000,
+            thinkMin: 2000,
+            thinkMax: 5000,
             label: 'Hard',
             evalLevel: 'advanced',
             evalTier: 'brutal',
@@ -1548,6 +1548,8 @@
     let lastWinner = null;
     let pendingInvites = { incoming: [], outgoing: [], active: [] };
     let aiThinkDeadline = 0;
+    let aiThinkStartedAt = 0;
+    let aiThinkDuration = 0;
     let aiTransposition = new Map();
     let aiBestMoveHint = null;
     let aiKillers = [];
@@ -1935,6 +1937,43 @@
         return enemyCaptureNetGain(after, move.toRow, move.toCol, color) > 0;
     }
 
+    function isRiskyQueenMove(move, b, color) {
+        const piece = b[move.fromRow][move.fromCol];
+        if (!piece || piece.toLowerCase() !== 'q' || getPieceColor(piece) !== color) return false;
+
+        const victim = b[move.toRow][move.toCol];
+        if (moveGivesCheck(move, b, color)) return false;
+        if (victim && getPieceColor(victim) !== color) {
+            const net = captureNetGain(move, b, color);
+            if (net >= 150) return false;
+            if (isCheapWinsExpensiveCapture(move, b, color)) return false;
+        }
+
+        const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
+        const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(after, move.toRow, move.toCol, color);
+        const enemyProfit = enemyCaptureNetGain(after, move.toRow, move.toCol, color);
+
+        if ((fromThreat.hanging || fromThreat.enemySeeGain > 0)
+            && !toThreat.hanging && toThreat.enemySeeGain <= 0 && enemyProfit <= 0) {
+            return false;
+        }
+
+        if (toThreat.hanging && enemyProfit > 0) return true;
+        if (enemyProfit > 40) return true;
+        if (toThreat.enemySeeGain > 60) return true;
+        if (toThreat.badTrade && (!victim || captureNetGain(move, b, color) < 0)) return true;
+
+        if (toThreat.attacked && !victim) {
+            if (toThreat.minAttackerVal !== null && toThreat.minAttackerVal <= 330) return true;
+            if (!toThreat.defended) return true;
+        }
+
+        if (victim && captureNetGain(move, b, color) < 0) return true;
+
+        return moveRiskPenalty(move, b, color) >= 120;
+    }
+
     function isAcceptableMove(move, b, color) {
         if (!isAcceptableCapture(move, b, color)) return false;
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
@@ -1942,12 +1981,15 @@
         if (moveGivesCheck(move, b, color)) return true;
         if (isCheapWinsExpensiveCapture(move, b, color)) return true;
         if (isSafePawnCapture(move, b, color)) return true;
-        if (leavesPieceEnPrise(move, b, color)) return false;
 
         const piece = b[move.fromRow][move.fromCol];
         const type = piece ? piece.toLowerCase() : '';
+        if (type === 'q' && isRiskyQueenMove(move, b, color)) return false;
+
+        if (leavesPieceEnPrise(move, b, color)) return false;
+
         const risk = moveRiskPenalty(move, b, color);
-        const riskLimit = type === 'q' ? 200 : type === 'r' ? 300 : type === 'b' || type === 'n' ? 360 : 500;
+        const riskLimit = type === 'q' ? 80 : type === 'r' ? 300 : type === 'b' || type === 'n' ? 360 : 500;
         return risk < riskLimit;
     }
 
@@ -2792,9 +2834,16 @@
 
         const gamePly = positionHistory.length;
         const backRank = color === 'white' ? 7 : 0;
-        if (type === 'q' && gamePly <= 28 && move.toRow !== backRank) {
-            if (countDevelopedMinorPieces(b, color) < 2) risk += 220;
-            if (toThreat.attacked) risk += 280;
+        if (type === 'q') {
+            if (toThreat.hanging) risk += pieceVal * 0.75;
+            if (enemyProfit > 0) risk += pieceVal * 0.45 + enemyProfit;
+            if (toThreat.enemySeeGain > 0) risk += toThreat.enemySeeGain * 1.15;
+            if (toThreat.attacked && !b[move.toRow][move.toCol]) risk += 160;
+            if (toThreat.attackerCount >= 2 && toThreat.attacked) risk += 140;
+            if (gamePly <= 28 && move.toRow !== backRank) {
+                if (countDevelopedMinorPieces(b, color) < 2) risk += 220;
+                if (toThreat.attacked) risk += 280;
+            }
         }
         if ((type === 'q' || type === 'r' || type === 'b' || type === 'n') && moveCreatesThreat(move, b, color) && enemyProfit > 0) {
             risk += pieceVal * 0.85;
@@ -2821,6 +2870,7 @@
 
                 const threat = getSquareThreat(b, r, c, color);
                 if (type === 'q' && minors < 2) penalty += 160;
+                if (type === 'q' && threat.attacked) penalty += 220;
                 if (threat.hanging) penalty += PIECE_VALUES[type] * 0.35;
                 else if (threat.attacked && threat.minAttackerVal !== null && threat.minAttackerVal < PIECE_VALUES[type]) {
                     penalty += (PIECE_VALUES[type] - threat.minAttackerVal) * 0.4;
@@ -2957,6 +3007,11 @@
     }
 
     function moveOrderingScore(move, b, color = 'black', ply = 0) {
+        const attacker = b[move.fromRow][move.fromCol];
+        if (attacker && attacker.toLowerCase() === 'q' && isRiskyQueenMove(move, b, color)) {
+            return -100000;
+        }
+
         const hist = historyBonus(move);
         if (hist > 0) return 95000 + hist;
 
@@ -2967,7 +3022,6 @@
         if (safety > 0) return safety;
 
         const victim = b[move.toRow][move.toCol];
-        const attacker = b[move.fromRow][move.fromCol];
         if (victim) {
             const net = captureNetGain(move, b, color);
             const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
@@ -3611,20 +3665,30 @@
         if (gameOver || !isAtLatestPosition()) return;
 
         const settings = AI_SETTINGS[difficulty] || AI_SETTINGS.easy;
-        const thinkMs = settings.thinkMin + Math.random() * (settings.thinkMax - settings.thinkMin);
-        aiThinkDeadline = Date.now() + thinkMs;
+        aiThinkDuration = settings.thinkMin + Math.random() * (settings.thinkMax - settings.thinkMin);
+        aiThinkStartedAt = Date.now();
+        aiThinkDeadline = aiThinkStartedAt + aiThinkDuration;
 
         const statusEl = document.getElementById('status');
         statusEl.textContent = aiStatusText(settings);
 
         setTimeout(() => {
             if (gameOver || !isAtLatestPosition()) return;
-            executeAIMove();
-        }, settings.useIterativeDeepening ? 120 : 80);
+
+            const move = getBestMove();
+            if (!move) return;
+
+            const elapsed = Date.now() - aiThinkStartedAt;
+            const remaining = Math.max(0, aiThinkDuration - elapsed);
+
+            setTimeout(() => {
+                if (gameOver || !isAtLatestPosition()) return;
+                applyAIMove(move);
+            }, remaining);
+        }, 40);
     }
 
-    function executeAIMove() {
-        const move = getBestMove();
+    function applyAIMove(move) {
         if (!move) return;
 
         const movingPiece = board[move.fromRow][move.fromCol];
