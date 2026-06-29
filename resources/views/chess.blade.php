@@ -2758,6 +2758,130 @@
         return pieces;
     }
 
+    function knightSquareRisk(b, row, col, color) {
+        const piece = b[row][col];
+        if (!piece || getPieceColor(piece) !== color || piece.toLowerCase() !== 'n') return 0;
+        const threat = getSquareThreat(b, row, col, color);
+        if (!threat.attacked && !threat.hanging && threat.enemySeeGain <= 0) return 0;
+        if (threat.hanging) return threat.victimVal * 2;
+        if (threat.enemySeeGain > 0) return threat.enemySeeGain + threat.victimVal * 0.5;
+        return threat.victimVal * 0.65;
+    }
+
+    function findAttackedKnights(b, color) {
+        const knights = [];
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = b[r][c];
+                if (!piece || getPieceColor(piece) !== color || piece.toLowerCase() !== 'n') continue;
+                const threat = getSquareThreat(b, r, c, color);
+                if (threat.attacked || threat.hanging || threat.enemySeeGain > 0) {
+                    knights.push({ row: r, col: c, threat, danger: knightSquareRisk(b, r, c, color) });
+                }
+            }
+        }
+        return knights.sort((a, b) => b.danger - a.danger);
+    }
+
+    function isKnightAttackEscape(move, b, color) {
+        const victim = b[move.toRow][move.toCol];
+        if (!victim || getPieceColor(victim) === color) return false;
+
+        const piece = b[move.fromRow][move.fromCol];
+        if (!piece || piece.toLowerCase() !== 'n' || getPieceColor(piece) !== color) return false;
+
+        const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
+        if (!fromThreat.attacked && !fromThreat.hanging && fromThreat.enemySeeGain <= 0) return false;
+        if (!isMoveSafeOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol)) return false;
+
+        const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(after, move.toRow, move.toCol, color);
+        const beforeRisk = knightSquareRisk(b, move.fromRow, move.fromCol, color);
+        const afterRisk = knightSquareRisk(after, move.toRow, move.toCol, color);
+        const net = captureNetGain(move, b, color);
+
+        if (afterRisk >= beforeRisk) return false;
+
+        if (!toThreat.attacked && !toThreat.hanging && toThreat.enemySeeGain <= 0) return true;
+        if (beforeRisk - afterRisk >= 100 && net >= -120) return true;
+        if (!toThreat.hanging && toThreat.enemySeeGain <= 0 && net >= 0) return true;
+
+        return false;
+    }
+
+    function isKnightEscapeMove(move, b, color) {
+        const piece = b[move.fromRow][move.fromCol];
+        if (!piece || piece.toLowerCase() !== 'n' || getPieceColor(piece) !== color) return false;
+
+        const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
+        if (!fromThreat.attacked && !fromThreat.hanging && fromThreat.enemySeeGain <= 0) return false;
+        if (!isMoveSafeOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol)) return false;
+
+        if (isKnightAttackEscape(move, b, color)) return true;
+
+        const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
+        const toThreat = getSquareThreat(after, move.toRow, move.toCol, color);
+        const beforeRisk = knightSquareRisk(b, move.fromRow, move.fromCol, color);
+        const afterRisk = knightSquareRisk(after, move.toRow, move.toCol, color);
+
+        if (!toThreat.attacked && !toThreat.hanging && toThreat.enemySeeGain <= 0) return true;
+        return afterRisk + 60 < beforeRisk;
+    }
+
+    function findBestKnightEscape(moves, b, color) {
+        if (!findAttackedKnights(b, color).length) return null;
+
+        let bestMove = null;
+        let bestScore = -Infinity;
+
+        for (const move of moves) {
+            if (!isKnightEscapeMove(move, b, color)) continue;
+
+            const fromThreat = getSquareThreat(b, move.fromRow, move.fromCol, color);
+            const after = makeMoveOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol);
+            const toThreat = getSquareThreat(after, move.toRow, move.toCol, color);
+            const beforeRisk = knightSquareRisk(b, move.fromRow, move.fromCol, color);
+            const afterRisk = knightSquareRisk(after, move.toRow, move.toCol, color);
+            const victim = b[move.toRow][move.toCol];
+            const isAttack = victim && getPieceColor(victim) !== color;
+            let score = (beforeRisk - afterRisk) * 4;
+
+            if (!toThreat.attacked && toThreat.enemySeeGain <= 0) score += 600;
+            if (fromThreat.hanging) score += 400;
+            if (isAttack) {
+                score += 250;
+                score += captureNetGain(move, b, color);
+                if (isKnightAttackEscape(move, b, color)) score += 300;
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+
+        return bestMove;
+    }
+
+    function filterWhenKnightInDanger(moves, b, color) {
+        if (!findAttackedKnights(b, color).length) return moves;
+
+        const filtered = moves.filter(move => {
+            if (isKnightEscapeMove(move, b, color)) return true;
+            if (isProtectingMinorMove(move, b, color)) return true;
+            if (isSavingMove(move, b, color)) return true;
+            return false;
+        });
+
+        if (filtered.length > 0) return filtered;
+
+        const knightMoves = moves.filter(move => {
+            const piece = b[move.fromRow][move.fromCol];
+            return piece && piece.toLowerCase() === 'n' && getPieceColor(piece) === color;
+        });
+        return knightMoves.length > 0 ? knightMoves : moves;
+    }
+
     function minorSafetyDanger(b, color) {
         let danger = 0;
         for (let r = 0; r < 8; r++) {
@@ -2896,7 +3020,10 @@
             bonus += 120000 + fromThreat.victimVal;
         } else if (fromThreat.attacked && !toThreat.attacked) {
             bonus += 70000 + fromThreat.victimVal * 0.5;
-            if (piece.toLowerCase() === 'n') bonus += 45000;
+            if (piece.toLowerCase() === 'n') bonus += 65000;
+        } else if (piece.toLowerCase() === 'n' && fromThreat.attacked
+            && !toThreat.hanging && toThreat.enemySeeGain <= 0) {
+            bonus += 80000 + (fromThreat.victimVal - toThreat.victimVal * 0.2);
         } else if (fromThreat.attacked && toThreat.minAttackerVal !== null && fromThreat.minAttackerVal !== null
             && toThreat.minAttackerVal > fromThreat.minAttackerVal) {
             bonus += 40000;
@@ -2905,7 +3032,9 @@
         const victim = b[move.toRow][move.toCol];
         if (victim && getPieceColor(victim) !== color && fromThreat.attacked) {
             const net = captureNetGain(move, b, color);
-            if (net >= 0) bonus += 90000 + net;
+            if (piece.toLowerCase() === 'n' && isKnightAttackEscape(move, b, color)) {
+                bonus += 110000 + (fromThreat.victimVal - knightSquareRisk(newBoard, move.toRow, move.toCol, color));
+            } else if (net >= 0) bonus += 90000 + net;
             else bonus -= 120000 + Math.abs(net);
         }
 
@@ -3010,6 +3139,11 @@
         const attacker = b[move.fromRow][move.fromCol];
         if (attacker && attacker.toLowerCase() === 'q' && isRiskyQueenMove(move, b, color)) {
             return -100000;
+        }
+        if (attacker && attacker.toLowerCase() === 'n' && isKnightEscapeMove(move, b, color)) {
+            let score = 140000 + knightSquareRisk(b, move.fromRow, move.fromCol, color);
+            if (isKnightAttackEscape(move, b, color)) score += 25000;
+            return score;
         }
 
         const hist = historyBonus(move);
@@ -3336,6 +3470,9 @@
         }
 
         if (settings.evalLevel !== 'material') {
+            const knightEscape = findBestKnightEscape(moves, board, 'black');
+            if (knightEscape) return knightEscape;
+
             const attackedMinors = findAttackedMinors(board, 'black');
             if (attackedMinors.length > 0) {
                 const protectMoves = moves.filter(move => isProtectingMinorMove(move, board, 'black'));
@@ -3375,12 +3512,13 @@
             }
 
             const cheapCapture = findBestCheapCapture(moves, board, 'black');
-            if (cheapCapture && (minorSafetyDanger(board, 'black') === 0 || isSafeCheapCapture(cheapCapture, board, 'black'))) {
+            if (cheapCapture && findAttackedKnights(board, 'black').length === 0
+                && (minorSafetyDanger(board, 'black') === 0 || isSafeCheapCapture(cheapCapture, board, 'black'))) {
                 return cheapCapture;
             }
 
             const safePawnCapture = findBestSafePawnCapture(moves, board, 'black');
-            if (safePawnCapture) {
+            if (safePawnCapture && findAttackedKnights(board, 'black').length === 0) {
                 return safePawnCapture;
             }
         }
@@ -3389,6 +3527,7 @@
             ? moves.filter(move => isAcceptableMove(move, board, 'black'))
             : moves;
         if (settings.evalLevel !== 'material') {
+            searchMoves = filterWhenKnightInDanger(searchMoves, board, 'black');
             searchMoves = filterWhenCheapCaptureAvailable(searchMoves, board, 'black');
         }
         const candidateMoves = searchMoves.length > 0 ? searchMoves : moves;
