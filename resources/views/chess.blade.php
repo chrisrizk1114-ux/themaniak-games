@@ -1843,9 +1843,10 @@
         const attackerVal = PIECE_VALUES[attacker.toLowerCase()] || 0;
         const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
         const grossGain = victimVal - attackerVal;
+        const net = captureNetGain(move, b, color);
+        if (attacker.toLowerCase() === 'r' && net >= 0 && victimVal >= 300) return true;
         if (grossGain < 150) return false;
 
-        const net = captureNetGain(move, b, color);
         if (net >= 100) return true;
         if (grossGain >= 400 && net >= grossGain * 0.3) return true;
         return attackerVal <= 330 && victimVal >= 500 && net >= 0;
@@ -1883,6 +1884,48 @@
         return bestMove;
     }
 
+    function isEasyRookCapture(move, b, color) {
+        const attacker = b[move.fromRow][move.fromCol];
+        const victim = b[move.toRow][move.toCol];
+        if (!attacker || attacker.toLowerCase() !== 'r' || getPieceColor(attacker) !== color) return false;
+        if (!victim || getPieceColor(victim) === color) return false;
+        if (!isMoveSafeOnBoard(b, move.fromRow, move.fromCol, move.toRow, move.toCol)) return false;
+
+        const net = captureNetGain(move, b, color);
+        if (net < 0) return false;
+
+        const victimColor = getPieceColor(victim);
+        const victimThreat = getSquareThreat(b, move.toRow, move.toCol, victimColor);
+        if (victimThreat.hanging || !victimThreat.defended) return true;
+        if (net > 0) return true;
+        return net >= 0 && victimThreat.enemySeeGain <= 0;
+    }
+
+    function findBestEasyRookCapture(moves, b, color) {
+        let bestMove = null;
+        let bestScore = -Infinity;
+
+        for (const move of moves) {
+            if (!isEasyRookCapture(move, b, color)) continue;
+
+            const victim = b[move.toRow][move.toCol];
+            const victimVal = PIECE_VALUES[victim.toLowerCase()] || 0;
+            const net = captureNetGain(move, b, color);
+            const victimColor = getPieceColor(victim);
+            const victimThreat = getSquareThreat(b, move.toRow, move.toCol, victimColor);
+            let score = net * 5 + victimVal;
+            if (victimThreat.hanging) score += 120;
+            if (!victimThreat.defended) score += 80;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+
+        return bestMove;
+    }
+
     function findBestCheapCapture(moves, b, color) {
         let bestMove = null;
         let bestScore = -Infinity;
@@ -1910,11 +1953,13 @@
     function filterWhenCheapCaptureAvailable(moves, b, color) {
         const cheapCapture = findBestCheapCapture(moves, b, color);
         const pawnCapture = findBestSafePawnCapture(moves, b, color);
-        if (!cheapCapture && !pawnCapture) return moves;
+        const rookCapture = findBestEasyRookCapture(moves, b, color);
+        if (!cheapCapture && !pawnCapture && !rookCapture) return moves;
 
         return moves.filter(move => {
             if (isCheapWinsExpensiveCapture(move, b, color)) return true;
             if (isSafePawnCapture(move, b, color)) return true;
+            if (isEasyRookCapture(move, b, color)) return true;
             const piece = b[move.fromRow][move.fromCol];
             if (!piece || getPieceColor(piece) !== color) return true;
             if (!b[move.toRow][move.toCol]) return false;
@@ -1928,6 +1973,7 @@
         if (moveGivesCheck(move, b, color)) return true;
         if (isCheapWinsExpensiveCapture(move, b, color)) return true;
         if (isSafePawnCapture(move, b, color)) return true;
+        if (isEasyRookCapture(move, b, color)) return true;
         return captureNetGain(move, b, color) >= 0;
     }
 
@@ -3215,7 +3261,8 @@
                 break;
             case 'r': {
                 const seventh = color === 'black' ? 1 : 6;
-                if (move.toRow === seventh) score += 60;
+                if (victim && isEasyRookCapture(move, b, color)) score += 70;
+                else if (move.toRow === seventh) score += 60;
                 if (isFileOpen(after, move.toCol) || isSemiOpenFile(after, move.toCol, color)) score += 34;
                 if (victim && captureNetGain(move, b, color) >= 0) score += 32;
                 const homeRank = color === 'black' ? 0 : 7;
@@ -3296,6 +3343,11 @@
             let score = 140000 + knightSquareRisk(b, move.fromRow, move.fromCol, color);
             if (isKnightAttackEscape(move, b, color)) score += 25000;
             return score;
+        }
+        if (attacker && attacker.toLowerCase() === 'r' && isEasyRookCapture(move, b, color)) {
+            const victim = b[move.toRow][move.toCol];
+            const victimVal = victim ? (PIECE_VALUES[victim.toLowerCase()] || 0) : 0;
+            return 132000 + captureNetGain(move, b, color) * 22 + victimVal;
         }
 
         const hist = historyBonus(move);
@@ -3626,6 +3678,9 @@
         if (settings.evalLevel !== 'material') {
             const knightEscape = findBestKnightEscape(moves, board, 'black');
             if (knightEscape) return knightEscape;
+
+            const easyRookCapture = findBestEasyRookCapture(moves, board, 'black');
+            if (easyRookCapture) return easyRookCapture;
 
             const attackedMinors = findAttackedMinors(board, 'black');
             if (attackedMinors.length > 0) {
