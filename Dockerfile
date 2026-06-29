@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY deploy/php-opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY deploy/php-memory.ini /usr/local/etc/php/conf.d/memory.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

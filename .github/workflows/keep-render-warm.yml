@@ -36,5 +36,5 @@ jobs:
           }
 
           # Hit Render directly first — this is what keeps the free service awake.
-          warm "https://themaniak-games.onrender.com/up"
-          warm "https://themaniak.online/up"
+          warm "https://themaniak-games.onrender.com/health"
+          warm "https://themaniak.online/health"

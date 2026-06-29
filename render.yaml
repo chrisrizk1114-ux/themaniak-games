@@ -7,8 +7,10 @@ services:
     runtime: docker
     plan: free
     region: frankfurt
-    healthCheckPath: /up
+    healthCheckPath: /health
     envVars:
+      - key: RENDER
+        value: true
       - key: APP_NAME
         value: Mini Games
       - key: APP_ENV

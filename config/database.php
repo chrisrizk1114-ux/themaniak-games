@@ -68,6 +68,10 @@ return [
                     FILTER_VALIDATE_BOOLEAN
                 );
 
+                if (defined('PDO::MYSQL_ATTR_CONNECT_TIMEOUT')) {
+                    $options[PDO::MYSQL_ATTR_CONNECT_TIMEOUT] = 10;
+                }
+
                 if ($relaxed || $isAiven) {
                     // Aiven requires TLS; skip cert verification when project CA file is absent.
                     $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
